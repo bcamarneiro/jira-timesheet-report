@@ -12,6 +12,11 @@ const config: Configuration = {
     filename: 'bundle.js',
   },
   devtool: 'source-map',
+  builtins: {
+    define: {
+      'process.env.TEAM_DEVELOPERS': JSON.stringify(process.env.TEAM_DEVELOPERS || ''),
+    }
+  },
 
     plugins: [
     new HtmlWebpackPlugin({

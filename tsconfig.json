@@ -15,7 +15,8 @@
         "typeRoots": [
             "./types",
             "./node_modules/@types"
-        ]
+        ],
+        "jsx": "react-jsx"
     },
     "exclude": [
         "node_modules"

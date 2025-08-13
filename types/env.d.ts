@@ -4,5 +4,6 @@ declare namespace NodeJS {
     JIRA_PAT: string;
     API_URL?: string;
     FRONTEND_PORT?: string;
+    TEAM_DEVELOPERS?: string; // comma-separated display names
   }
 }

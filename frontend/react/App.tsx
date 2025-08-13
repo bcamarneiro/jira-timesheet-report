@@ -12,6 +12,11 @@ export const App: React.FC = () => {
   const [data, setData] = useState<JiraWorklog[] | null>(null);
   const [jiraDomain, setJiraDomain] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
+  const teamDevelopers = useMemo(() => {
+    const raw = (process.env.TEAM_DEVELOPERS || '').trim();
+    if (!raw) return null as string[] | null;
+    return raw.split(',').map(s => s.trim()).filter(Boolean);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -32,7 +37,11 @@ export const App: React.FC = () => {
     if (!data) return [] as string[];
     const unique: Record<string, true> = {};
     data.forEach(wl => { unique[wl.author.displayName] = true; });
-    return Object.keys(unique).sort();
+    let list = Object.keys(unique);
+    if (teamDevelopers && teamDevelopers.length > 0) {
+      list = list.filter(name => teamDevelopers.includes(name));
+    }
+    return list.sort();
   }, [data]);
 
   const grouped: Grouped = useMemo(() => {
@@ -71,7 +80,8 @@ export const App: React.FC = () => {
       </datalist>
 
       {Object.entries(grouped)
-        .filter(([user]) => selectedUser === '' || user === selectedUser)
+        .filter(([user]) => (selectedUser === '' || user === selectedUser))
+        .filter(([user]) => !teamDevelopers || teamDevelopers.includes(user))
         .map(([user, days]) => {
           let userTotalSeconds = 0;
 

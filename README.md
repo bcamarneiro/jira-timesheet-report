@@ -12,6 +12,7 @@ JIRA_DOMAIN=your-domain.atlassian.net
 JIRA_PAT=your-personal-access-token
 API_URL=http://localhost:3000
 FRONTEND_PORT=5173
+TEAM_DEVELOPERS=Alice Smith,Bob Jones
 ```
 
 ## Scripts (with Bun)
@@ -29,6 +30,7 @@ FRONTEND_PORT=5173
 ## Notes
 - The frontend uses React 18 with Rspack. The server augments worklogs with `issueKey` for correct Jira links.
 - Never commit tokens. `.env` is gitignored.
+- Optional `TEAM_DEVELOPERS` is a comma-separated allowlist of display names; only these users will be shown in the UI and user datalist.
 
 
 
