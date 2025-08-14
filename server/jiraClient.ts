@@ -20,8 +20,9 @@ if (!JIRA_DOMAIN || !JIRA_PAT) {
   throw new Error('Missing required environment variables: JIRA_DOMAIN, JIRA_PAT');
 }
 
-export async function fetchIssues(): Promise<string[]> {
+export async function fetchIssues(): Promise<{ keys: string[]; summaries: Record<string, string> }> {
   const issues: string[] = [];
+  const summaries: Record<string, string> = {};
   let startAt = 0;
   const jql = `worklogDate >= '${jqlStartDate}' AND worklogDate <= '${jqlEndDate}' AND component = "INV_III"`;
 
@@ -30,7 +31,7 @@ export async function fetchIssues(): Promise<string[]> {
   do {
     const params = new URLSearchParams({
       jql,
-      fields: 'key',
+      fields: 'key,summary',
       maxResults: '100',
       startAt: startAt.toString(),
     });
@@ -52,12 +53,18 @@ export async function fetchIssues(): Promise<string[]> {
 
     const data: JiraIssuePaginatedResponse = await resp.json();
 
-    data.issues.forEach(issue => issues.push(issue.key));
+    data.issues.forEach(issue => {
+      issues.push(issue.key);
+      const summary = (issue as any)?.fields?.summary as string | undefined;
+      if (summary) {
+        summaries[issue.key] = summary;
+      }
+    });
     startAt += data.issues.length;
     totalIssues = data.total;
   } while (startAt < totalIssues);
 
-  return issues;
+  return { keys: issues, summaries };
 }
 
 export async function fetchWorklogs(issues: string[]): Promise<JiraWorklog[]> {

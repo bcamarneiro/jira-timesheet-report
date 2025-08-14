@@ -3,4 +3,8 @@ export interface JiraIssue {
   id: string;
   self: string;
   key: string;
+  fields?: {
+    summary?: string;
+    [key: string]: unknown;
+  };
 }

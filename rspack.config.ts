@@ -1,4 +1,5 @@
 import type { Configuration } from '@rspack/core';
+import { DefinePlugin } from '@rspack/core';
 import path from 'path';
 import dotenv from 'dotenv';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
@@ -12,15 +13,12 @@ const config: Configuration = {
     filename: 'bundle.js',
   },
   devtool: 'source-map',
-  builtins: {
-    define: {
-      'process.env.TEAM_DEVELOPERS': JSON.stringify(process.env.TEAM_DEVELOPERS || ''),
-    }
-  },
-
-    plugins: [
+  plugins: [
     new HtmlWebpackPlugin({
       template: './frontend/index.html', // your HTML template
+    }),
+    new DefinePlugin({
+      'process.env.TEAM_DEVELOPERS': JSON.stringify(process.env.TEAM_DEVELOPERS || '')
     })
   ],
 

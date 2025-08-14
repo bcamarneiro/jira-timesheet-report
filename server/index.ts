@@ -12,11 +12,16 @@ app.use(express.json());
 
 app.get('/api/timesheet', async (req, res) => {
   try {
-    const issues = await fetchIssues();
-    const data = await fetchWorklogs(issues);
+    const { keys, summaries } = await fetchIssues();
+    const data = await fetchWorklogs(keys);
     res.json({
       jiraDomain: process.env.JIRA_DOMAIN,
-      worklogs: data
+      worklogs: data,
+      issueSummaries: summaries,
+      teamDevelopers: (process.env.TEAM_DEVELOPERS || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
     });
   } catch (err) {
     console.error("Error processing request:", err); // Log the error for debugging
