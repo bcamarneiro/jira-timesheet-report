@@ -14,6 +14,9 @@ export const App: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState('');
   const [issueSummaries, setIssueSummaries] = useState<Record<string, string>>({});
   const [teamDevelopers, setTeamDevelopers] = useState<string[] | null>(null);
+  const nowUtc = useMemo(() => new Date(), []);
+  const [currentYear, setCurrentYear] = useState<number>(nowUtc.getUTCFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(nowUtc.getUTCMonth()); // 0-11
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -117,6 +120,44 @@ export const App: React.FC = () => {
 
   if (!data) return <p>Loading...</p>;
 
+  function getMonthStartWeekday(year: number, monthZeroIndexed: number): number {
+    return new Date(Date.UTC(year, monthZeroIndexed, 1)).getUTCDay(); // 0 (Sun) - 6 (Sat)
+  }
+
+  function getDaysInMonth(year: number, monthZeroIndexed: number): number {
+    return new Date(Date.UTC(year, monthZeroIndexed + 1, 0)).getUTCDate();
+  }
+
+  function isoDateFromYMD(year: number, monthZeroIndexed: number, day: number): string {
+    // Ensure keys match the grouping strategy (UTC ISO yyyy-mm-dd)
+    const d = new Date(Date.UTC(year, monthZeroIndexed, day));
+    return d.toISOString().substring(0, 10);
+  }
+
+  function monthLabel(year: number, monthZeroIndexed: number): string {
+    return new Date(Date.UTC(year, monthZeroIndexed, 1)).toLocaleString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  }
+
+  function goPrevMonth() {
+    setCurrentMonth((m) => {
+      if (m === 0) {
+        setCurrentYear(y => y - 1);
+        return 11;
+      }
+      return m - 1;
+    });
+  }
+
+  function goNextMonth() {
+    setCurrentMonth((m) => {
+      if (m === 11) {
+        setCurrentYear(y => y + 1);
+        return 0;
+      }
+      return m + 1;
+    });
+  }
+
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
       <h1>Timesheet</h1>
@@ -139,32 +180,55 @@ export const App: React.FC = () => {
         )}>Download CSV for all</button>
       </div>
 
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '1em' }}>
+        <button onClick={goPrevMonth}>{'←'}</button>
+        <div style={{ fontWeight: 'bold' }}>{monthLabel(currentYear, currentMonth)}</div>
+        <button onClick={goNextMonth}>{'→'}</button>
+      </div>
+
       {Object.entries(grouped)
         .filter(([user]) => (selectedUser === '' || user === selectedUser))
         .filter(([user]) => !teamDevelopers || teamDevelopers.includes(user))
         .map(([user, days]) => {
+          const firstWeekday = getMonthStartWeekday(currentYear, currentMonth);
+          const numDays = getDaysInMonth(currentYear, currentMonth);
+
+          const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
           let userTotalSeconds = 0;
 
-          const dayTemplates = Object.entries(days)
-            .sort(([d1], [d2]) => d1.localeCompare(d2))
-            .map(([day, worklogs]) => {
+          const cells: React.ReactNode[] = [];
+          // Leading empty cells before day 1
+          for (let i = 0; i < firstWeekday; i++) {
+            cells.push(
+              <div key={`empty-${i}`} style={{ border: '1px solid #eee', minHeight: 100, padding: '0.5em', background: '#fafafa' }} />
+            );
+          }
+
+          for (let d = 1; d <= numDays; d++) {
+            const iso = isoDateFromYMD(currentYear, currentMonth, d);
+            const worklogs = days[iso] || [];
             const dayTotalSeconds = worklogs.reduce((sum, wl) => sum + wl.timeSpentSeconds, 0);
             userTotalSeconds += dayTotalSeconds;
-            return (
-              <div key={day} style={{ marginBottom: '1em', padding: '0.5em', border: '1px solid #ccc', borderRadius: 6 }}>
-                <h3>{day}</h3>
-                {worklogs.map((wl) => (
-                  <div key={wl.id} style={{ marginLeft: '1em' }}>
-                    <a href={`https://${jiraDomain}/browse/${wl.issueKey ?? wl.issueId}`} target="_blank" rel="noreferrer">
-                      {wl.issueKey ?? wl.issueId}
-                    </a>
-                    {` - ${truncate(wl.comment || '(No comment)')} - ${(wl.timeSpentSeconds / 3600).toFixed(2)} h`}
-                  </div>
-                ))}
-                <div style={{ fontWeight: 'bold', marginTop: '0.5em' }}>Day total: {(dayTotalSeconds / 3600).toFixed(2)} h</div>
+            cells.push(
+              <div key={iso} style={{ border: '1px solid #ccc', borderRadius: 6, minHeight: 100, padding: '0.5em', display: 'flex', flexDirection: 'column', gap: '0.25em' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.25em' }}>{String(d)}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {worklogs.map(wl => (
+                    <div key={wl.id}>
+                      <a href={`https://${jiraDomain}/browse/${wl.issueKey ?? wl.issueId}`} target="_blank" rel="noreferrer">
+                        {wl.issueKey ?? wl.issueId}
+                      </a>
+                      {` - ${truncate(wl.comment || '(No comment)')} - ${(wl.timeSpentSeconds / 3600).toFixed(2)} h`}
+                    </div>
+                  ))}
+                </div>
+                {worklogs.length > 0 && (
+                  <div style={{ fontWeight: 'bold', marginTop: 'auto' }}>Day: {(dayTotalSeconds / 3600).toFixed(2)} h</div>
+                )}
               </div>
             );
-          });
+          }
 
           return (
             <div key={user}>
@@ -172,8 +236,15 @@ export const App: React.FC = () => {
               <div style={{ marginBottom: '0.5em' }}>
                 <button onClick={() => handleDownloadUser(user)}>Download CSV</button>
               </div>
-              {dayTemplates}
-              <div style={{ fontWeight: 'bold', marginTop: '0.5em' }}>Monthly total: {(userTotalSeconds / 3600).toFixed(2)} h</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: '0.5em' }}>
+                {weekdayLabels.map(w => (
+                  <div key={w} style={{ textAlign: 'center', fontWeight: 'bold' }}>{w}</div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+                {cells}
+              </div>
+              <div style={{ fontWeight: 'bold', marginTop: '0.5em' }}>Month total: {(userTotalSeconds / 3600).toFixed(2)} h</div>
             </div>
           );
         })}
