@@ -74,14 +74,14 @@ export const App: React.FC = () => {
   function buildCsvForUser(user: string): string {
     if (!data) return '';
     const rows: string[] = [];
-    rows.push(['Name', 'TicketKey', 'TicketName', 'DateTime', 'BookedTime'].join(','));
+    rows.push(['Name', 'TicketKey', 'TicketName', 'Date', 'BookedTime'].join(','));
     (data || [])
       .filter(wl => wl.author.displayName === user)
       .sort((a, b) => new Date(a.started).getTime() - new Date(b.started).getTime())
       .forEach(wl => {
         const key = wl.issueKey ?? String(wl.issueId);
         const ticketName = issueSummaries[key] || '';
-        const startedIso = new Date(wl.started).toISOString();
+        const startedIso = new Date(wl.started).toISOString().substring(0, 10);
         const bookedHours = (wl.timeSpentSeconds / 3600).toFixed(2);
         rows.push([
           csvEscape(user),
