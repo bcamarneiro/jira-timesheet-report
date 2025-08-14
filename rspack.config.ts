@@ -6,6 +6,8 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 
 dotenv.config(); // Load .env variables
 
+const isOfflineMode = process.env.NODE_ENV === 'development' && process.env.OFFLINE_MODE === 'true';
+
 const config: Configuration = {
   entry: './frontend/main.tsx',
   output: {
@@ -18,16 +20,23 @@ const config: Configuration = {
       template: './frontend/index.html', // your HTML template
     }),
     new DefinePlugin({
-      'process.env.TEAM_DEVELOPERS': JSON.stringify(process.env.TEAM_DEVELOPERS || '')
+      'process.env.TEAM_DEVELOPERS': JSON.stringify(process.env.TEAM_DEVELOPERS || ''),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
     })
   ],
 
   devServer: {
-    static: {
-      directory: path.join(__dirname, 'dist'),
-    },
-    port: Number(process.env.FRONTEND_PORT) || 5173,
-    proxy: [
+    static: [
+      {
+        directory: path.join(__dirname, 'dist'),
+      },
+      {
+        directory: path.join(__dirname, 'frontend/public'),
+        publicPath: '/'
+      }
+    ],
+    port: Number(process.env.FRONTEND_PORT) || (isOfflineMode ? 5174 : 5173),
+    proxy: isOfflineMode ? undefined : [
       {
         context: ['/api'],
         target: process.env.API_URL || 'http://localhost:3000',

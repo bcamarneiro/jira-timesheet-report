@@ -18,7 +18,9 @@ TEAM_DEVELOPERS=Alice Smith,Bob Jones
 ## Scripts (with Bun)
 - `bun run server` – starts Express API on port 3000
 - `bun run frontend` – starts Rspack dev server (proxies `/api` to API)
+- `bun run frontend:offline` – starts frontend with MSW for offline development
 - `bun run dev` – runs both concurrently
+- `bun run dev:offline` – runs frontend in offline mode (no server needed)
 - `bun run build` – builds frontend bundle
 
 ## Usage
@@ -26,6 +28,16 @@ TEAM_DEVELOPERS=Alice Smith,Bob Jones
 2. Start with `bun run dev`
 2. Open the frontend URL printed by Rspack
 3. Optionally add `?user=Display%20Name` to filter
+
+## Offline Development
+For offline development without needing the Jira API or server:
+
+1. Run `bun run dev:offline` or `bun run frontend:offline`
+2. MSW will intercept API calls and return mock data
+3. The app will work exactly the same but with sample data
+4. Mock data includes sample worklogs for "John Doe" and "Jane Smith"
+
+Mock data is defined in `frontend/mocks/handlers.ts` and can be customized for your development needs.
 
 ## Notes
 - The frontend uses React 18 with Rspack. The server augments worklogs with `issueKey` for correct Jira links.
