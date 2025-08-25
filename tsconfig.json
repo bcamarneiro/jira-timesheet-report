@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "CommonJS",
+        "moduleResolution": "Node",
+        "outDir": "dist",
+        "rootDir": ".",
+        "esModuleInterop": true,
+        "allowJs": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "types": [
+            "node"
+        ],
+        "typeRoots": [
+            "./types",
+            "./node_modules/@types"
+        ],
+        "jsx": "react-jsx"
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}
