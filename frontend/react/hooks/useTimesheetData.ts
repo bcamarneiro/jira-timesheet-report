@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
+import type { ProjectConfig } from '../../../types/ProjectConfig';
 
 export type GroupedWorklogs = Record<string, Record<string, JiraWorklog[]>>;
 
@@ -16,7 +17,8 @@ export type UseTimesheetDataResult = {
 export function useTimesheetData(
   currentYear: number,
   currentMonth: number,
-  selectedUser: string
+  selectedUser: string,
+  projectConfig?: ProjectConfig
 ): UseTimesheetDataResult {
   const [data, setData] = useState<JiraWorklog[] | null>(null);
   const [jiraDomain, setJiraDomain] = useState('');
@@ -28,7 +30,17 @@ export function useTimesheetData(
       const params = new URLSearchParams();
       params.set('year', String(currentYear));
       params.set('month', String(currentMonth + 1));
-      const res = await fetch(`/api/timesheet?${params.toString()}`);
+      
+      const res = await fetch(`/api/timesheet?${params.toString()}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectConfig: projectConfig || {}
+        })
+      });
+      
       const json = await res.json();
       setJiraDomain(json.jiraDomain);
       setData(json.worklogs as JiraWorklog[]);
@@ -36,7 +48,7 @@ export function useTimesheetData(
       const td: string[] = Array.isArray(json.teamDevelopers) ? json.teamDevelopers : [];
       setTeamDevelopers(td.length > 0 ? td : null);
     })();
-  }, [currentYear, currentMonth]);
+  }, [currentYear, currentMonth, projectConfig]);
 
   const users = useMemo(() => {
     if (!data) return [] as string[];

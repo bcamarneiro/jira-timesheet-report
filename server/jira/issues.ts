@@ -1,13 +1,23 @@
 import { JiraIssuePaginatedResponse } from "../../types/JiraIssuePaginatedResponse";
 import { JIRA_DOMAIN, JIRA_PAT, JIRA_COMPONENT, getMonthBounds } from "./common";
 
-export async function fetchIssues(year: number, monthOneBased: number): Promise<{ keys: string[]; summaries: Record<string, string> }> {
+export async function fetchIssues(year: number, monthOneBased: number, jiraComponents: string[] = []): Promise<{ keys: string[]; summaries: Record<string, string> }> {
 	const { jqlStartDate, jqlEndDate } = getMonthBounds(year, monthOneBased);
 	const issues: string[] = [];
 	const summaries: Record<string, string> = {};
 	let startAt = 0;
 	
-	const componentFilter = JIRA_COMPONENT ? ` AND component = "${JIRA_COMPONENT}"` : '';
+	// Build component filter from project configuration or fallback to environment variable
+	let componentFilter = '';
+	if (jiraComponents.length > 0) {
+		// Use project configuration components
+		const componentConditions = jiraComponents.map(component => `component = "${component}"`).join(' OR ');
+		componentFilter = ` AND (${componentConditions})`;
+	} else if (JIRA_COMPONENT) {
+		// Fallback to environment variable
+		componentFilter = ` AND component = "${JIRA_COMPONENT}"`;
+	}
+	
 	const jql = `worklogDate >= '${jqlStartDate}' AND worklogDate <= '${jqlEndDate}'${componentFilter}`;
 
 	let totalIssues = 0;

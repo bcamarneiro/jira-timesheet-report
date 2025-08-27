@@ -1,13 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { buildCsvForUser, download } from './utils/csv';
 import { monthLabel } from './utils/date';
 import { UserSelector } from './components/UserSelector';
 import { MonthNavigator } from './components/MonthNavigator';
 import { TimesheetGrid } from './components/TimesheetGrid';
+import { SettingsModal } from './components/SettingsModal';
 import { useTimesheetQueryParams } from './hooks/useTimesheetQueryParams';
 import { useTimesheetData } from './hooks/useTimesheetData';
+import { useProjectConfig } from './hooks/useProjectConfig';
+import { usePersonalConfig } from './hooks/usePersonalConfig';
 
 export const App: React.FC = () => {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
   const {
     selectedUser,
     setSelectedUser,
@@ -17,6 +22,13 @@ export const App: React.FC = () => {
     goNextMonth
   } = useTimesheetQueryParams();
 
+  const projectConfig = useProjectConfig();
+  const personalConfig = usePersonalConfig();
+
+  const handleTimeOffChange = (date: string, hours: number) => {
+    personalConfig.setTimeOffForDate(date, hours);
+  };
+
   const {
     data,
     jiraDomain,
@@ -25,7 +37,14 @@ export const App: React.FC = () => {
     users,
     grouped,
     visibleEntries
-  } = useTimesheetData(currentYear, currentMonth, selectedUser);
+  } = useTimesheetData(currentYear, currentMonth, selectedUser, projectConfig.config);
+
+  // Auto-select default user if configured and no user is currently selected
+  useEffect(() => {
+    if (!selectedUser && personalConfig.config.uiPreferences.defaultUser && users && users.includes(personalConfig.config.uiPreferences.defaultUser)) {
+      setSelectedUser(personalConfig.config.uiPreferences.defaultUser);
+    }
+  }, [selectedUser, personalConfig.config.uiPreferences.defaultUser, users, setSelectedUser]);
 
   const handleUserChange = (value: string) => {
     setSelectedUser(value);
@@ -47,7 +66,23 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
-      <h1>Timesheet</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1 style={{ margin: 0 }}>Timesheet</h1>
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          style={{
+            padding: '0.5rem 1rem',
+            borderRadius: '4px',
+            border: '1px solid #ccc',
+            background: 'white',
+            cursor: 'pointer',
+            fontSize: '1rem'
+          }}
+          title="Settings"
+        >
+          ⚙️ Settings
+        </button>
+      </div>
       <UserSelector users={users} value={selectedUser} onChange={handleUserChange} />
 
       <div style={{ margin: '0.5em 0' }}>
@@ -70,7 +105,10 @@ export const App: React.FC = () => {
             monthZeroIndexed={currentMonth}
             jiraDomain={jiraDomain}
             issueSummaries={issueSummaries}
+            projectConfig={projectConfig.config}
+            personalConfig={personalConfig.config}
             onDownloadUser={handleDownloadUser}
+            onTimeOffChange={handleTimeOffChange}
           />
         ) : (
           <TimesheetGrid
@@ -81,12 +119,20 @@ export const App: React.FC = () => {
             monthZeroIndexed={currentMonth}
             jiraDomain={jiraDomain}
             issueSummaries={issueSummaries}
+            projectConfig={projectConfig.config}
+            personalConfig={personalConfig.config}
             onDownloadUser={handleDownloadUser}
+            onTimeOffChange={handleTimeOffChange}
           />
         )
       ) : (
         <div style={{ marginTop: '1em', fontWeight: 'bold' }}>please select a dev</div>
       )}
+      
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 };

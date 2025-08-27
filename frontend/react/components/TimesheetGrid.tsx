@@ -1,5 +1,7 @@
 import React from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
+import type { ProjectConfig } from '../../../types/ProjectConfig';
+import type { PersonalConfig } from '../../../types/PersonalConfig';
 import { getMonthStartWeekday, getDaysInMonth, isoDateFromYMD } from '../utils/date';
 import { useTimeOff } from '../hooks/useTimeOff';
 import { DayCell } from './DayCell';
@@ -11,17 +13,27 @@ type Props = {
   monthZeroIndexed: number;
   jiraDomain: string;
   issueSummaries: Record<string, string>;
+  projectConfig: ProjectConfig;
+  personalConfig: PersonalConfig;
   onDownloadUser: (user: string) => void;
+  onTimeOffChange?: (date: string, hours: number) => void;
 };
 
-export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroIndexed, jiraDomain, issueSummaries, onDownloadUser }) => {
+export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroIndexed, jiraDomain, issueSummaries, projectConfig, personalConfig, onDownloadUser, onTimeOffChange }) => {
   const firstWeekday = getMonthStartWeekday(year, monthZeroIndexed);
   const numDays = getDaysInMonth(year, monthZeroIndexed);
   const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const now = new Date();
   const todayStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const { getTimeOffHours, setTimeOffHours } = useTimeOff(user);
+  const { getTimeOffHours, setTimeOffHours } = useTimeOff(user, personalConfig);
+
+  const handleTimeOffChange = (iso: string, hours: number) => {
+    setTimeOffHours(iso, hours);
+    if (onTimeOffChange) {
+      onTimeOffChange(iso, hours);
+    }
+  };
 
   let userTotalSeconds = 0;
   let userNetKarmaSeconds = 0; // Sum of (dayTotal - baseline), baseline=8h on weekdays, 0h on weekends
@@ -57,8 +69,10 @@ export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroInde
         worklogs={worklogs}
         isWeekend={isWeekend}
         timeOffHours={!isWeekend ? getTimeOffHours(iso) : 0}
-        onTimeOffChange={(hours) => setTimeOffHours(iso, hours)}
+        onTimeOffChange={(hours) => handleTimeOffChange(iso, hours)}
         issueSummaries={issueSummaries}
+        projectConfig={projectConfig}
+        personalConfig={personalConfig}
       />
     );
   }

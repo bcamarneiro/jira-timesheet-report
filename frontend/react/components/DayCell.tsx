@@ -1,7 +1,10 @@
 import React from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
+import type { ProjectConfig } from '../../../types/ProjectConfig';
+import type { PersonalConfig } from '../../../types/PersonalConfig';
 import { truncate } from '../utils/text';
 import { formatHours } from '../utils/format';
+import { getEmojiForTicket } from '../utils/emojiMatcher';
 
 type Props = {
   iso: string;
@@ -12,9 +15,11 @@ type Props = {
   timeOffHours: number;
   onTimeOffChange: (hours: number) => void;
   issueSummaries: Record<string, string>;
+  projectConfig: ProjectConfig;
+  personalConfig: PersonalConfig;
 };
 
-export const DayCell: React.FC<Props> = ({ iso, dayNumber, jiraDomain, worklogs, isWeekend, timeOffHours, onTimeOffChange, issueSummaries }) => {
+export const DayCell: React.FC<Props> = ({ iso, dayNumber, jiraDomain, worklogs, isWeekend, timeOffHours, onTimeOffChange, issueSummaries, projectConfig, personalConfig }) => {
   const dayTotalSeconds = worklogs.reduce((sum, wl) => sum + wl.timeSpentSeconds, 0);
   const baselineSeconds = isWeekend ? 0 : 8 * 3600;
   const timeOffSeconds = !isWeekend ? timeOffHours * 3600 : 0;
@@ -65,9 +70,14 @@ export const DayCell: React.FC<Props> = ({ iso, dayNumber, jiraDomain, worklogs,
             issueTitle ? `Issue: ${issueTitle}` : '',
             comment ? `Comment: ${truncate(comment)}` : ''
           ].filter(Boolean).join('\n');
+          
+          // Get emoji for this ticket
+          const emoji = getEmojiForTicket(keyOrId, projectConfig, personalConfig);
+          
           return (
             <div key={wl.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ color: '#444', whiteSpace: 'nowrap' }}>{formatHours(wl.timeSpentSeconds)} - </span>
+              {emoji && <span style={{ fontSize: '1.1em' }}>{emoji}</span>}
               <a href={`https://${jiraDomain}/browse/${keyOrId}?focusedId=${wl.id}&page=com.atlassian.jira.plugin.system.issuetabpanels%3Aworklog-tabpanel#worklog-${wl.id}`} target="_blank" rel="noreferrer" style={{ color: '#0b5cff', textDecoration: 'none' }}>
                 {keyOrId}
               </a>
