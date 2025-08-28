@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import * as Tabs from '@radix-ui/react-tabs';
 import { ProjectSettings } from './ProjectSettings';
 import { PersonalSettings } from './PersonalSettings';
 import { useProjectConfig } from '../hooks/useProjectConfig';
@@ -10,131 +12,173 @@ interface Props {
 }
 
 export const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'project' | 'personal'>('project');
-  
   const projectConfig = useProjectConfig();
   const personalConfig = usePersonalConfig();
 
-  if (!isOpen) return null;
-
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        width: '90%',
-        maxWidth: '800px',
-        height: '90%',
-        maxHeight: '800px',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '1rem',
-          borderBottom: '1px solid #ddd',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Settings</h1>
-          <button
-            onClick={onClose}
-            style={{
-              border: 'none',
-              background: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              padding: '0.5rem',
-              borderRadius: '4px'
-            }}
-            title="Close"
-          >
-            ×
-          </button>
-        </div>
+    <Dialog.Root open={isOpen} onOpenChange={onClose}>
+      <Dialog.Portal>
+        <Dialog.Overlay
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            position: 'fixed',
+            inset: 0,
+            animation: 'overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        />
+        <Dialog.Content
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: 'hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px',
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '90vw',
+            maxWidth: '800px',
+            maxHeight: '85vh',
+            animation: 'contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {/* Header */}
+          <div style={{
+            padding: '1rem',
+            borderBottom: '1px solid #ddd',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <Dialog.Title style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
+              Settings
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '32px',
+                  height: '32px',
+                }}
+                title="Close"
+              >
+                ×
+              </button>
+            </Dialog.Close>
+          </div>
 
-        {/* Tabs */}
-        <div style={{
-          display: 'flex',
-          borderBottom: '1px solid #ddd'
-        }}>
-          <button
-            onClick={() => setActiveTab('project')}
-            style={{
-              padding: '1rem 2rem',
-              border: 'none',
-              background: activeTab === 'project' ? '#007bff' : 'transparent',
-              color: activeTab === 'project' ? 'white' : '#333',
-              cursor: 'pointer',
-              borderBottom: activeTab === 'project' ? '2px solid #007bff' : '2px solid transparent'
-            }}
-          >
-            Project Configuration
-          </button>
-          <button
-            onClick={() => setActiveTab('personal')}
-            style={{
-              padding: '1rem 2rem',
-              border: 'none',
-              background: activeTab === 'personal' ? '#007bff' : 'transparent',
-              color: activeTab === 'personal' ? 'white' : '#333',
-              cursor: 'pointer',
-              borderBottom: activeTab === 'personal' ? '2px solid #007bff' : '2px solid transparent'
-            }}
-          >
-            Personal Configuration
-          </button>
-        </div>
-
-        {/* Content */}
-        <div style={{
-          flex: 1,
-          overflow: 'auto'
-        }}>
-          {activeTab === 'project' ? (
-            <ProjectSettings
-              config={projectConfig.config}
-              onAddEmojiMapping={projectConfig.addEmojiMapping}
-              onUpdateEmojiMapping={projectConfig.updateEmojiMapping}
-              onRemoveEmojiMapping={projectConfig.removeEmojiMapping}
-              onAddJiraComponent={projectConfig.addJiraComponent}
-              onRemoveJiraComponent={projectConfig.removeJiraComponent}
-              onAddTeamDeveloper={projectConfig.addTeamDeveloper}
-              onRemoveTeamDeveloper={projectConfig.removeTeamDeveloper}
-              onExport={projectConfig.exportConfig}
-              onImport={projectConfig.importConfig}
-              isLoading={projectConfig.isLoading}
-            />
-          ) : (
-            <PersonalSettings
-              config={personalConfig.config}
-              onAddTimeOffEntry={personalConfig.addTimeOffEntry}
-              onUpdateTimeOffEntry={personalConfig.updateTimeOffEntry}
-              onRemoveTimeOffEntry={personalConfig.removeTimeOffEntry}
-              onAddPersonalEmojiOverride={personalConfig.addPersonalEmojiOverride}
-              onUpdatePersonalEmojiOverride={personalConfig.updatePersonalEmojiOverride}
-              onRemovePersonalEmojiOverride={personalConfig.removePersonalEmojiOverride}
-              onUpdateUIPreference={(key, value) => personalConfig.updateUIPreference(key as any, value)}
-              onExport={personalConfig.exportConfig}
-              onImport={personalConfig.importConfig}
-              isLoading={personalConfig.isLoading}
-            />
-          )}
-        </div>
-      </div>
-    </div>
+          {/* Tabs */}
+          <Tabs.Root defaultValue="project" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Tabs.List
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                borderBottom: '1px solid #ddd',
+              }}
+            >
+              <Tabs.Trigger
+                value="project"
+                style={{
+                  fontFamily: 'inherit',
+                  padding: '1rem 2rem',
+                  height: '45px',
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1rem',
+                  lineHeight: 1,
+                  color: '#6F767E',
+                  userSelect: 'none',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  borderBottom: '2px solid transparent',
+                }}
+              >
+                Project Configuration
+              </Tabs.Trigger>
+              <Tabs.Trigger
+                value="personal"
+                style={{
+                  fontFamily: 'inherit',
+                  padding: '1rem 2rem',
+                  height: '45px',
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1rem',
+                  lineHeight: 1,
+                  color: '#6F767E',
+                  userSelect: 'none',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  borderBottom: '2px solid transparent',
+                }}
+              >
+                Personal Configuration
+              </Tabs.Trigger>
+            </Tabs.List>
+            <Tabs.Content
+              value="project"
+              style={{
+                flexGrow: 1,
+                outline: 'none',
+                overflow: 'auto',
+                padding: '1rem',
+              }}
+            >
+              <ProjectSettings
+                config={projectConfig.config}
+                onAddEmojiMapping={projectConfig.addEmojiMapping}
+                onUpdateEmojiMapping={projectConfig.updateEmojiMapping}
+                onRemoveEmojiMapping={projectConfig.removeEmojiMapping}
+                onAddJiraComponent={projectConfig.addJiraComponent}
+                onRemoveJiraComponent={projectConfig.removeJiraComponent}
+                onAddTeamDeveloper={projectConfig.addTeamDeveloper}
+                onRemoveTeamDeveloper={projectConfig.removeTeamDeveloper}
+                onExport={projectConfig.exportConfig}
+                onImport={projectConfig.importConfig}
+                isLoading={projectConfig.isLoading}
+              />
+            </Tabs.Content>
+            <Tabs.Content
+              value="personal"
+              style={{
+                flexGrow: 1,
+                outline: 'none',
+                overflow: 'auto',
+                padding: '1rem',
+              }}
+            >
+              <PersonalSettings
+                config={personalConfig.config}
+                onAddTimeOffEntry={personalConfig.addTimeOffEntry}
+                onUpdateTimeOffEntry={personalConfig.updateTimeOffEntry}
+                onRemoveTimeOffEntry={personalConfig.removeTimeOffEntry}
+                onAddPersonalEmojiOverride={personalConfig.addPersonalEmojiOverride}
+                onUpdatePersonalEmojiOverride={personalConfig.updatePersonalEmojiOverride}
+                onRemovePersonalEmojiOverride={personalConfig.removePersonalEmojiOverride}
+                onUpdateUIPreference={(key, value) => personalConfig.updateUIPreference(key as any, value)}
+                onExport={personalConfig.exportConfig}
+                onImport={personalConfig.importConfig}
+                isLoading={personalConfig.isLoading}
+              />
+            </Tabs.Content>
+          </Tabs.Root>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 };

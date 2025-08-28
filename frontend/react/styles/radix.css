@@ -1,0 +1,53 @@
+/* Radix UI Dialog animations */
+@keyframes overlayShow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes contentShow {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Radix UI Tabs styles */
+[data-state="active"] {
+  color: #007bff !important;
+  border-bottom-color: #007bff !important;
+}
+
+/* Radix UI Select focus styles */
+[data-radix-select-trigger]:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Radix UI Button focus styles */
+[data-radix-button]:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Hover effects for buttons */
+[data-radix-button]:hover:not([disabled]) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Select item hover styles */
+[data-radix-select-item]:hover {
+  background-color: #f8f9fa;
+}
+
+[data-radix-select-item][data-highlighted] {
+  background-color: #e9ecef;
+}

@@ -5,10 +5,12 @@ import { UserSelector } from './components/UserSelector';
 import { MonthNavigator } from './components/MonthNavigator';
 import { TimesheetGrid } from './components/TimesheetGrid';
 import { SettingsModal } from './components/SettingsModal';
+import { Button } from './components/Button';
 import { useTimesheetQueryParams } from './hooks/useTimesheetQueryParams';
 import { useTimesheetData } from './hooks/useTimesheetData';
 import { useProjectConfig } from './hooks/useProjectConfig';
 import { usePersonalConfig } from './hooks/usePersonalConfig';
+import { Tooltip } from './components/Popover';
 
 export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -68,29 +70,27 @@ export const App: React.FC = () => {
     <div style={{ fontFamily: 'sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0 }}>Timesheet</h1>
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-            background: 'white',
-            cursor: 'pointer',
-            fontSize: '1rem'
-          }}
-          title="Settings"
-        >
-          ⚙️ Settings
-        </button>
+        <Tooltip content="Configure project settings and personal preferences">
+          <Button
+            onClick={() => setIsSettingsOpen(true)}
+            variant="secondary"
+          >
+            ⚙️ Settings
+          </Button>
+        </Tooltip>
       </div>
       <UserSelector users={users} value={selectedUser} onChange={handleUserChange} />
 
       <div style={{ margin: '0.5em 0' }}>
-        <button onClick={() => handleDownloadAll(
-          Object.keys(grouped)
-            .filter(user => (selectedUser === '' || user === selectedUser))
-            .filter(user => !teamDevelopers || teamDevelopers.includes(user))
-        )}>Download CSV for all</button>
+        <Tooltip content="Download CSV files for all visible users">
+          <Button onClick={() => handleDownloadAll(
+            Object.keys(grouped)
+              .filter(user => (selectedUser === '' || user === selectedUser))
+              .filter(user => !teamDevelopers || teamDevelopers.includes(user))
+          )}>
+            Download CSV for all
+          </Button>
+        </Tooltip>
       </div>
 
       <MonthNavigator label={monthLabel(currentYear, currentMonth)} onPrev={goPrevMonth} onNext={goNextMonth} />

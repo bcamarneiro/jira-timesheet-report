@@ -102,6 +102,10 @@ const config: Configuration = {
         ],
         exclude: /node_modules/,
       },
+      {
+        test: /\.css$/,
+        type: 'css/auto',
+      },
     ],
   },
 
