@@ -102,15 +102,20 @@ const config: Configuration = {
         ],
         exclude: /node_modules/,
       },
-      {
-        test: /\.css$/,
-        type: 'css/auto',
-      },
     ],
+    parser: {
+      'css/auto': {
+        namedExports: false,
+      },
+    },
   },
 
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
+  },
+
+  experiments: {
+    css: true,
   },
 };
 

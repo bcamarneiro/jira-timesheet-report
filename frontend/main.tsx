@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './react/App';
+import './react/styles/main.css';
 
 // Start MSW only in offline mode
 async function startApp() {

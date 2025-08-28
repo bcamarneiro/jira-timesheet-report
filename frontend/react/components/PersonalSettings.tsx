@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import * as Toast from '@radix-ui/react-toast';
 import type { TimeOffEntry } from '../../../types/PersonalConfig';
 import type { TicketEmojiMapping } from '../../../types/ProjectConfig';
 import { validateEmoji, validateTicketId } from '../utils/emojiMatcher';
+import { Button } from './Button';
 
 interface Props {
   config: {
@@ -47,6 +49,15 @@ export const PersonalSettings: React.FC<Props> = ({
   const [editingTimeOffIndex, setEditingTimeOffIndex] = useState<number | null>(null);
   const [editingEmojiIndex, setEditingEmojiIndex] = useState<number | null>(null);
   const [importText, setImportText] = useState('');
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastOpen(true);
+  };
 
   const handleAddTimeOffEntry = () => {
     if (!newTimeOffDate) return;
@@ -60,6 +71,7 @@ export const PersonalSettings: React.FC<Props> = ({
     setNewTimeOffDate('');
     setNewTimeOffHours(8);
     setNewTimeOffDescription('');
+    showToast('Time off entry added successfully!', 'success');
   };
 
   const handleUpdateTimeOffEntry = (index: number) => {
@@ -73,6 +85,7 @@ export const PersonalSettings: React.FC<Props> = ({
     setNewTimeOffDate('');
     setNewTimeOffHours(8);
     setNewTimeOffDescription('');
+    showToast('Time off entry updated successfully!', 'success');
   };
 
   const handleStartEditTimeOff = (index: number) => {
@@ -95,11 +108,11 @@ export const PersonalSettings: React.FC<Props> = ({
   const handleAddPersonalEmojiOverride = () => {
     if (!newTicketId.trim() || !newEmoji.trim()) return;
     if (!validateTicketId(newTicketId.trim())) {
-      alert('Invalid ticket ID format. Use format like "COM-12345"');
+      showToast('Invalid ticket ID format. Use format like "COM-12345"', 'error');
       return;
     }
     if (!validateEmoji(newEmoji)) {
-      alert('Please enter a valid emoji');
+      showToast('Please enter a valid emoji', 'error');
       return;
     }
 
@@ -112,6 +125,7 @@ export const PersonalSettings: React.FC<Props> = ({
     setNewTicketId('');
     setNewEmoji('');
     setNewDescription('');
+    showToast('Personal emoji override added successfully!', 'success');
   };
 
   const handleUpdatePersonalEmojiOverride = (index: number) => {
@@ -129,6 +143,7 @@ export const PersonalSettings: React.FC<Props> = ({
     setNewTicketId('');
     setNewEmoji('');
     setNewDescription('');
+    showToast('Personal emoji override updated successfully!', 'success');
   };
 
   const handleStartEditEmoji = (index: number) => {
@@ -153,14 +168,15 @@ export const PersonalSettings: React.FC<Props> = ({
     const success = await onImport(importText);
     if (success) {
       setImportText('');
-      alert('Configuration imported successfully!');
+      showToast('Configuration imported successfully!', 'success');
     } else {
-      alert('Failed to import configuration. Please check the JSON format.');
+      showToast('Failed to import configuration. Please check the JSON format.', 'error');
     }
   };
 
   const handleExport = () => {
     onExport();
+    showToast('Configuration exported to clipboard!', 'success');
   };
 
   return (
@@ -199,28 +215,31 @@ export const PersonalSettings: React.FC<Props> = ({
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}
           />
           {editingTimeOffIndex === null ? (
-            <button
+            <Button
               onClick={handleAddTimeOffEntry}
               disabled={!newTimeOffDate}
-              style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', background: '#007bff', color: 'white', cursor: 'pointer' }}
+              variant="primary"
+              size="small"
             >
               Add
-            </button>
+            </Button>
           ) : (
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
+              <Button
                 onClick={() => handleUpdateTimeOffEntry(editingTimeOffIndex)}
                 disabled={!newTimeOffDate}
-                style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', background: '#28a745', color: 'white', cursor: 'pointer' }}
+                variant="primary"
+                size="small"
               >
                 Update
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCancelEditTimeOff}
-                style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}
+                variant="secondary"
+                size="small"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -237,18 +256,23 @@ export const PersonalSettings: React.FC<Props> = ({
                 <span style={{ fontWeight: 'bold', minWidth: '120px' }}>{entry.date}</span>
                 <span style={{ minWidth: '60px' }}>{entry.hours}h</span>
                 <span style={{ color: '#666', flex: 1 }}>{entry.description || ''}</span>
-                <button
+                <Button
                   onClick={() => handleStartEditTimeOff(index)}
-                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}
+                  variant="secondary"
+                  size="small"
                 >
                   Edit
-                </button>
-                <button
-                  onClick={() => onRemoveTimeOffEntry(index)}
-                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #dc3545', background: '#dc3545', color: 'white', cursor: 'pointer' }}
+                </Button>
+                <Button
+                  onClick={() => {
+                    onRemoveTimeOffEntry(index);
+                    showToast('Time off entry removed successfully!', 'success');
+                  }}
+                  variant="danger"
+                  size="small"
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             ))
           )}
@@ -286,28 +310,31 @@ export const PersonalSettings: React.FC<Props> = ({
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}
           />
           {editingEmojiIndex === null ? (
-            <button
+            <Button
               onClick={handleAddPersonalEmojiOverride}
               disabled={!newTicketId.trim() || !newEmoji.trim()}
-              style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', background: '#007bff', color: 'white', cursor: 'pointer' }}
+              variant="primary"
+              size="small"
             >
               Add
-            </button>
+            </Button>
           ) : (
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
+              <Button
                 onClick={() => handleUpdatePersonalEmojiOverride(editingEmojiIndex)}
                 disabled={!newTicketId.trim() || !newEmoji.trim()}
-                style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', background: '#28a745', color: 'white', cursor: 'pointer' }}
+                variant="primary"
+                size="small"
               >
                 Update
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCancelEditEmoji}
-                style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}
+                variant="secondary"
+                size="small"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -324,18 +351,23 @@ export const PersonalSettings: React.FC<Props> = ({
                 <span style={{ fontSize: '1.2rem' }}>{mapping.emoji}</span>
                 <span style={{ fontWeight: 'bold', minWidth: '120px' }}>{mapping.ticketId}</span>
                 <span style={{ color: '#666', flex: 1 }}>{mapping.description || ''}</span>
-                <button
+                <Button
                   onClick={() => handleStartEditEmoji(index)}
-                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}
+                  variant="secondary"
+                  size="small"
                 >
                   Edit
-                </button>
-                <button
-                  onClick={() => onRemovePersonalEmojiOverride(index)}
-                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #dc3545', background: '#dc3545', color: 'white', cursor: 'pointer' }}
+                </Button>
+                <Button
+                  onClick={() => {
+                    onRemovePersonalEmojiOverride(index);
+                    showToast('Personal emoji override removed successfully!', 'success');
+                  }}
+                  variant="danger"
+                  size="small"
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             ))
           )}
@@ -401,12 +433,13 @@ export const PersonalSettings: React.FC<Props> = ({
       <section>
         <h3>Import/Export Configuration</h3>
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-          <button
+          <Button
             onClick={handleExport}
-            style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #28a745', background: '#28a745', color: 'white', cursor: 'pointer' }}
+            variant="primary"
+            size="small"
           >
             Export Configuration
-          </button>
+          </Button>
         </div>
         
         <div style={{ marginBottom: '1rem' }}>
@@ -418,14 +451,50 @@ export const PersonalSettings: React.FC<Props> = ({
           />
         </div>
         
-        <button
+        <Button
           onClick={handleImport}
           disabled={!importText.trim() || isLoading}
-          style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #007bff', background: '#007bff', color: 'white', cursor: 'pointer' }}
+          variant="primary"
+          size="small"
         >
           {isLoading ? 'Importing...' : 'Import Configuration'}
-        </button>
+        </Button>
       </section>
+
+      {/* Toast Notifications */}
+      <Toast.Provider>
+        <Toast.Root
+          open={toastOpen}
+          onOpenChange={setToastOpen}
+          style={{
+            backgroundColor: toastType === 'success' ? '#d4edda' : '#f8d7da',
+            border: `1px solid ${toastType === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+            borderRadius: '4px',
+            padding: '1rem',
+            margin: '1rem',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+            position: 'fixed',
+            bottom: '1rem',
+            right: '1rem',
+            zIndex: 1000,
+            maxWidth: '300px'
+          }}
+        >
+          <Toast.Title style={{ 
+            color: toastType === 'success' ? '#155724' : '#721c24',
+            fontWeight: 'bold',
+            marginBottom: '0.5rem'
+          }}>
+            {toastType === 'success' ? 'Success' : 'Error'}
+          </Toast.Title>
+          <Toast.Description style={{ 
+            color: toastType === 'success' ? '#155724' : '#721c24'
+          }}>
+            {toastMessage}
+          </Toast.Description>
+        </Toast.Root>
+        <Toast.Viewport />
+      </Toast.Provider>
     </div>
   );
 };

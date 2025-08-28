@@ -12,6 +12,31 @@ import { useProjectConfig } from './hooks/useProjectConfig';
 import { usePersonalConfig } from './hooks/usePersonalConfig';
 import { Tooltip } from './components/Popover';
 
+// Loading skeleton component
+const LoadingSkeleton: React.FC = () => (
+  <div className="font-sans">
+    <div className="flex justify-between items-center mb-4">
+      <div className="h-8 w-48 bg-gray-300 rounded animate-pulse" />
+      <div className="h-8 w-28 bg-gray-300 rounded animate-pulse" />
+    </div>
+    <div className="h-10 w-72 bg-gray-300 rounded mb-4 animate-pulse" />
+    <div className="h-8 w-36 bg-gray-300 rounded mb-4 animate-pulse" />
+    <div className="h-8 w-48 bg-gray-300 rounded mb-8 animate-pulse" />
+    
+    {/* Grid skeleton */}
+    <div className="grid grid-cols-7 gap-1.5 mb-2">
+      {Array.from({ length: 7 }).map((_, i) => (
+        <div key={i} className="h-8 bg-gray-300 rounded animate-pulse" />
+      ))}
+    </div>
+    <div className="grid grid-cols-7 gap-1.5">
+      {Array.from({ length: 35 }).map((_, i) => (
+        <div key={i} className="h-30 bg-gray-300 rounded-lg animate-pulse" />
+      ))}
+    </div>
+  </div>
+);
+
 export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
@@ -61,15 +86,15 @@ export const App: React.FC = () => {
     visibleUsers.forEach(user => handleDownloadUser(user));
   }
 
-  if (!data) return <p>Loading...</p>;
+  if (!data) return <LoadingSkeleton />;
 
   const isValidUser = selectedUser !== '' && users.includes(selectedUser);
   const selectedEntry = visibleEntries.find(([user]) => user === selectedUser);
 
   return (
-    <div style={{ fontFamily: 'sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1 style={{ margin: 0 }}>Timesheet</h1>
+    <div className="font-sans">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="m-0 text-2xl font-bold text-gray-900">Timesheet</h1>
         <Tooltip content="Configure project settings and personal preferences">
           <Button
             onClick={() => setIsSettingsOpen(true)}
@@ -81,7 +106,7 @@ export const App: React.FC = () => {
       </div>
       <UserSelector users={users} value={selectedUser} onChange={handleUserChange} />
 
-      <div style={{ margin: '0.5em 0' }}>
+      <div className="my-2">
         <Tooltip content="Download CSV files for all visible users">
           <Button onClick={() => handleDownloadAll(
             Object.keys(grouped)
@@ -126,7 +151,7 @@ export const App: React.FC = () => {
           />
         )
       ) : (
-        <div style={{ marginTop: '1em', fontWeight: 'bold' }}>please select a dev</div>
+        <div className="mt-4 font-bold text-gray-700">Please select a developer</div>
       )}
       
       <SettingsModal

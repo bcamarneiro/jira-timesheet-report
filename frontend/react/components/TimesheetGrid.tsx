@@ -1,10 +1,12 @@
 import React from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
 import type { ProjectConfig } from '../../../types/ProjectConfig';
 import type { PersonalConfig } from '../../../types/PersonalConfig';
 import { getMonthStartWeekday, getDaysInMonth, isoDateFromYMD } from '../utils/date';
 import { useTimeOff } from '../hooks/useTimeOff';
 import { DayCell } from './DayCell';
+import { Button } from './Button';
 
 type Props = {
   user: string;
@@ -41,7 +43,7 @@ export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroInde
 
   for (let i = 0; i < firstWeekday; i++) {
     cells.push(
-      <div key={`empty-${i}`} style={{ border: '1px solid #eee', minHeight: 100, padding: '0.5em', background: '#fafafa' }} />
+      <div key={`empty-${i}`} className="border border-gray-200 min-h-[100px] p-2 bg-gray-50" />
     );
   }
 
@@ -79,29 +81,46 @@ export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroInde
 
   return (
     <div key={user}>
-      <h2>{user}</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-2">{user}</h2>
       {userTotalSeconds > 0 && (
-        <div style={{ marginBottom: '0.5em' }}>
-          <button onClick={() => onDownloadUser(user)}>Download CSV</button>
+        <div className="mb-2">
+          <Button onClick={() => onDownloadUser(user)} variant="secondary" size="small">
+            Download CSV
+          </Button>
         </div>
       )}
-      <div style={{ marginBottom: '0.5em', fontWeight: 'bold' }}>Karma hours (net): {(userNetKarmaSeconds / 3600).toFixed(2)} h</div>
-      <div style={{ position: 'relative' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: '0.5em' }}>
+      <div className="mb-2 font-bold text-gray-700">Karma hours (net): {(userNetKarmaSeconds / 3600).toFixed(2)} h</div>
+      <div className="relative">
+        <div className="grid grid-cols-7 gap-1.5 mb-2">
           {weekdayLabels.map(w => (
-            <div key={w} style={{ textAlign: 'center', fontWeight: 'bold' }}>{w}</div>
+            <div key={w} className="text-center font-bold text-sm py-2">{w}</div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+        <div className="grid grid-cols-7 gap-1.5">
           {cells}
         </div>
         {userTotalSeconds === 0 && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(210, 210, 210, 0.9)', color: '#222', fontWeight: 'bold', fontSize: 22, textAlign: 'center' }}>
-            não tens dados, maninho!
-          </div>
+          <Dialog.Root open={true}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 bg-black bg-opacity-50 z-50" />
+              <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-xl shadow-large z-50 text-center max-w-md w-full mx-4">
+                <Dialog.Title className="text-2xl font-bold mb-4">
+                  No Data Available
+                </Dialog.Title>
+                <Dialog.Description className="text-lg text-gray-600">
+                  não tens dados, maninho!
+                </Dialog.Description>
+                <div className="mt-6">
+                  <Button onClick={() => window.location.reload()} variant="primary">
+                    Refresh Page
+                  </Button>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         )}
       </div>
-      <div style={{ fontWeight: 'bold', marginTop: '0.5em' }}>Month total: {(userTotalSeconds / 3600).toFixed(2)} h</div>
+      <div className="font-bold mt-2 text-gray-700">Month total: {(userTotalSeconds / 3600).toFixed(2)} h</div>
     </div>
   );
 };

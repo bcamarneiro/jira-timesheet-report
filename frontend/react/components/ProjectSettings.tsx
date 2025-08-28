@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import * as Toast from '@radix-ui/react-toast';
 import type { TicketEmojiMapping } from '../../../types/ProjectConfig';
 import { validateEmoji, validateTicketId } from '../utils/emojiMatcher';
+import { Button } from './Button';
 
 interface Props {
   config: {
@@ -40,15 +42,24 @@ export const ProjectSettings: React.FC<Props> = ({
   const [newDeveloper, setNewDeveloper] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [importText, setImportText] = useState('');
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastOpen(true);
+  };
 
   const handleAddEmojiMapping = () => {
     if (!newTicketId.trim() || !newEmoji.trim()) return;
     if (!validateTicketId(newTicketId.trim())) {
-      alert('Invalid ticket ID format. Use format like "COM-12345"');
+      showToast('Invalid ticket ID format. Use format like "COM-12345"', 'error');
       return;
     }
     if (!validateEmoji(newEmoji)) {
-      alert('Please enter a valid emoji');
+      showToast('Please enter a valid emoji', 'error');
       return;
     }
 
@@ -61,6 +72,7 @@ export const ProjectSettings: React.FC<Props> = ({
     setNewTicketId('');
     setNewEmoji('');
     setNewDescription('');
+    showToast('Emoji mapping added successfully!', 'success');
   };
 
   const handleUpdateEmojiMapping = (index: number) => {
@@ -78,6 +90,7 @@ export const ProjectSettings: React.FC<Props> = ({
     setNewTicketId('');
     setNewEmoji('');
     setNewDescription('');
+    showToast('Emoji mapping updated successfully!', 'success');
   };
 
   const handleStartEdit = (index: number) => {
@@ -102,14 +115,15 @@ export const ProjectSettings: React.FC<Props> = ({
     const success = await onImport(importText);
     if (success) {
       setImportText('');
-      alert('Configuration imported successfully!');
+      showToast('Configuration imported successfully!', 'success');
     } else {
-      alert('Failed to import configuration. Please check the JSON format.');
+      showToast('Failed to import configuration. Please check the JSON format.', 'error');
     }
   };
 
   const handleExport = () => {
     onExport();
+    showToast('Configuration exported to clipboard!', 'success');
   };
 
   return (
@@ -147,28 +161,31 @@ export const ProjectSettings: React.FC<Props> = ({
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}
           />
           {editingIndex === null ? (
-            <button
+            <Button
               onClick={handleAddEmojiMapping}
               disabled={!newTicketId.trim() || !newEmoji.trim()}
-              style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', background: '#007bff', color: 'white', cursor: 'pointer' }}
+              variant="primary"
+              size="small"
             >
               Add
-            </button>
+            </Button>
           ) : (
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
+              <Button
                 onClick={() => handleUpdateEmojiMapping(editingIndex)}
                 disabled={!newTicketId.trim() || !newEmoji.trim()}
-                style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', background: '#28a745', color: 'white', cursor: 'pointer' }}
+                variant="primary"
+                size="small"
               >
                 Update
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCancelEdit}
-                style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}
+                variant="secondary"
+                size="small"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -185,18 +202,20 @@ export const ProjectSettings: React.FC<Props> = ({
                 <span style={{ fontSize: '1.2rem' }}>{mapping.emoji}</span>
                 <span style={{ fontWeight: 'bold', minWidth: '120px' }}>{mapping.ticketId}</span>
                 <span style={{ color: '#666', flex: 1 }}>{mapping.description || ''}</span>
-                <button
+                <Button
                   onClick={() => handleStartEdit(index)}
-                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}
+                  variant="secondary"
+                  size="small"
                 >
                   Edit
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => onRemoveEmojiMapping(index)}
-                  style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #dc3545', background: '#dc3545', color: 'white', cursor: 'pointer' }}
+                  variant="danger"
+                  size="small"
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             ))
           )}
@@ -218,16 +237,18 @@ export const ProjectSettings: React.FC<Props> = ({
             onChange={(e) => setNewComponent(e.target.value)}
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}
           />
-          <button
+          <Button
             onClick={() => {
               onAddJiraComponent(newComponent);
               setNewComponent('');
+              showToast('Component added successfully!', 'success');
             }}
             disabled={!newComponent.trim()}
-            style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', background: '#007bff', color: 'white', cursor: 'pointer' }}
+            variant="primary"
+            size="small"
           >
             Add
-          </button>
+          </Button>
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -235,7 +256,10 @@ export const ProjectSettings: React.FC<Props> = ({
             <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.25rem 0.5rem', background: '#f8f9fa', borderRadius: '4px', border: '1px solid #dee2e6' }}>
               <span>{component}</span>
               <button
-                onClick={() => onRemoveJiraComponent(component)}
+                onClick={() => {
+                  onRemoveJiraComponent(component);
+                  showToast('Component removed successfully!', 'success');
+                }}
                 style={{ border: 'none', background: 'none', color: '#dc3545', cursor: 'pointer', fontSize: '1.2rem' }}
               >
                 ×
@@ -260,16 +284,18 @@ export const ProjectSettings: React.FC<Props> = ({
             onChange={(e) => setNewDeveloper(e.target.value)}
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}
           />
-          <button
+          <Button
             onClick={() => {
               onAddTeamDeveloper(newDeveloper);
               setNewDeveloper('');
+              showToast('Developer added successfully!', 'success');
             }}
             disabled={!newDeveloper.trim()}
-            style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', background: '#007bff', color: 'white', cursor: 'pointer' }}
+            variant="primary"
+            size="small"
           >
             Add
-          </button>
+          </Button>
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -277,7 +303,10 @@ export const ProjectSettings: React.FC<Props> = ({
             <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.25rem 0.5rem', background: '#f8f9fa', borderRadius: '4px', border: '1px solid #dee2e6' }}>
               <span>{developer}</span>
               <button
-                onClick={() => onRemoveTeamDeveloper(developer)}
+                onClick={() => {
+                  onRemoveTeamDeveloper(developer);
+                  showToast('Developer removed successfully!', 'success');
+                }}
                 style={{ border: 'none', background: 'none', color: '#dc3545', cursor: 'pointer', fontSize: '1.2rem' }}
               >
                 ×
@@ -291,12 +320,13 @@ export const ProjectSettings: React.FC<Props> = ({
       <section>
         <h3>Import/Export Configuration</h3>
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-          <button
+          <Button
             onClick={handleExport}
-            style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #28a745', background: '#28a745', color: 'white', cursor: 'pointer' }}
+            variant="primary"
+            size="small"
           >
             Export Configuration
-          </button>
+          </Button>
         </div>
         
         <div style={{ marginBottom: '1rem' }}>
@@ -308,14 +338,50 @@ export const ProjectSettings: React.FC<Props> = ({
           />
         </div>
         
-        <button
+        <Button
           onClick={handleImport}
           disabled={!importText.trim() || isLoading}
-          style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid #007bff', background: '#007bff', color: 'white', cursor: 'pointer' }}
+          variant="primary"
+          size="small"
         >
           {isLoading ? 'Importing...' : 'Import Configuration'}
-        </button>
+        </Button>
       </section>
+
+      {/* Toast Notifications */}
+      <Toast.Provider>
+        <Toast.Root
+          open={toastOpen}
+          onOpenChange={setToastOpen}
+          style={{
+            backgroundColor: toastType === 'success' ? '#d4edda' : '#f8d7da',
+            border: `1px solid ${toastType === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+            borderRadius: '4px',
+            padding: '1rem',
+            margin: '1rem',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+            position: 'fixed',
+            bottom: '1rem',
+            right: '1rem',
+            zIndex: 1000,
+            maxWidth: '300px'
+          }}
+        >
+          <Toast.Title style={{ 
+            color: toastType === 'success' ? '#155724' : '#721c24',
+            fontWeight: 'bold',
+            marginBottom: '0.5rem'
+          }}>
+            {toastType === 'success' ? 'Success' : 'Error'}
+          </Toast.Title>
+          <Toast.Description style={{ 
+            color: toastType === 'success' ? '#155724' : '#721c24'
+          }}>
+            {toastMessage}
+          </Toast.Description>
+        </Toast.Root>
+        <Toast.Viewport />
+      </Toast.Provider>
     </div>
   );
 };
