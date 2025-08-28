@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
 import type { ProjectConfig } from '../../../types/ProjectConfig';
+import { useTimesheetApi } from './useTimesheetApi';
 
 export type GroupedWorklogs = Record<string, Record<string, JiraWorklog[]>>;
 
@@ -12,6 +13,8 @@ export type UseTimesheetDataResult = {
   users: string[];
   grouped: GroupedWorklogs;
   visibleEntries: [string, Record<string, JiraWorklog[]>][];
+  loading: boolean;
+  error: string | null;
 };
 
 export function useTimesheetData(
@@ -20,35 +23,12 @@ export function useTimesheetData(
   selectedUser: string,
   projectConfig?: ProjectConfig
 ): UseTimesheetDataResult {
-  const [data, setData] = useState<JiraWorklog[] | null>(null);
-  const [jiraDomain, setJiraDomain] = useState('');
-  const [issueSummaries, setIssueSummaries] = useState<Record<string, string>>({});
-  const [teamDevelopers, setTeamDevelopers] = useState<string[] | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      const params = new URLSearchParams();
-      params.set('year', String(currentYear));
-      params.set('month', String(currentMonth + 1));
-      
-      const res = await fetch(`/api/timesheet?${params.toString()}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          projectConfig: projectConfig || {}
-        })
-      });
-      
-      const json = await res.json();
-      setJiraDomain(json.jiraDomain);
-      setData(json.worklogs as JiraWorklog[]);
-      setIssueSummaries((json.issueSummaries || {}) as Record<string, string>);
-      const td: string[] = Array.isArray(json.teamDevelopers) ? json.teamDevelopers : [];
-      setTeamDevelopers(td.length > 0 ? td : null);
-    })();
-  }, [currentYear, currentMonth, projectConfig]);
+  const { data: apiData, loading, error } = useTimesheetApi(currentYear, currentMonth, projectConfig);
+  
+  const data = apiData?.worklogs || null;
+  const jiraDomain = apiData?.jiraDomain || '';
+  const issueSummaries = apiData?.issueSummaries || {};
+  const teamDevelopers = apiData?.teamDevelopers && apiData.teamDevelopers.length > 0 ? apiData.teamDevelopers : null;
 
   const users = useMemo(() => {
     if (!data) return [] as string[];
@@ -86,7 +66,9 @@ export function useTimesheetData(
     teamDevelopers,
     users,
     grouped,
-    visibleEntries
+    visibleEntries,
+    loading,
+    error
   };
 }
 

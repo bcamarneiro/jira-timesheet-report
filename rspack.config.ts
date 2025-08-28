@@ -74,6 +74,7 @@ const config: Configuration = {
       reconnect: 5,
     },
     open: true,
+    historyApiFallback: true,
   },
 
   module: {
