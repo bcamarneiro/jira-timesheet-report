@@ -1,37 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ProjectSettings } from '../components/ProjectSettings';
 import { PersonalSettings } from '../components/PersonalSettings';
-import { useProjectConfig } from '../hooks/useProjectConfig';
-import { usePersonalConfig } from '../hooks/usePersonalConfig';
+import { useConfigMigration } from '../hooks/useConfigMigration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/Button';
 
 export const Settings: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  const projectConfig = useProjectConfig();
-  const personalConfig = usePersonalConfig();
+  const {
+    projectConfig,
+    personalConfig,
+    isLoading,
+    isMigrating,
+    migrationCompleted,
+    // Project actions
+    addEmojiMapping,
+    updateEmojiMapping,
+    removeEmojiMapping,
+    addJiraComponent,
+    removeJiraComponent,
+    addTeamDeveloper,
+    removeTeamDeveloper,
+    exportProjectConfig,
+    importProjectConfig,
+    // Personal actions
+    addTimeOffEntry,
+    updateTimeOffEntry,
+    removeTimeOffEntry,
+    addPersonalEmojiOverride,
+    updatePersonalEmojiOverride,
+    removePersonalEmojiOverride,
+    updateUIPreference,
+    exportPersonalConfig,
+    importPersonalConfig,
+  } = useConfigMigration();
 
-  useEffect(() => {
-    // Simulate loading time and check if localStorage is available
-    const timer = setTimeout(() => {
-      try {
-        // Test if localStorage is available
-        localStorage.setItem('test', 'test');
-        localStorage.removeItem('test');
-        setIsLoading(false);
-      } catch (err) {
-        setError('Settings cannot be loaded. Please check if localStorage is enabled.');
-        setIsLoading(false);
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
+  // Show loading state during migration
+  if (isMigrating || !migrationCompleted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -47,35 +52,6 @@ export const Settings: React.FC = () => {
                   <div className="h-32 bg-gray-300 rounded-lg"></div>
                   <div className="h-32 bg-gray-300 rounded-lg"></div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-          </div>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-red-600 text-2xl">⚠️</span>
-                </div>
-                <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Settings</h2>
-                <p className="text-red-700 mb-6">{error}</p>
-                <Button
-                  onClick={() => window.location.reload()}
-                  variant="danger"
-                >
-                  Retry
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -127,17 +103,17 @@ export const Settings: React.FC = () => {
                     </p>
                   </div>
                   <ProjectSettings
-                    config={projectConfig.config}
-                    onAddEmojiMapping={projectConfig.addEmojiMapping}
-                    onUpdateEmojiMapping={projectConfig.updateEmojiMapping}
-                    onRemoveEmojiMapping={projectConfig.removeEmojiMapping}
-                    onAddJiraComponent={projectConfig.addJiraComponent}
-                    onRemoveJiraComponent={projectConfig.removeJiraComponent}
-                    onAddTeamDeveloper={projectConfig.addTeamDeveloper}
-                    onRemoveTeamDeveloper={projectConfig.removeTeamDeveloper}
-                    onExport={projectConfig.exportConfig}
-                    onImport={projectConfig.importConfig}
-                    isLoading={projectConfig.isLoading}
+                    config={projectConfig}
+                    onAddEmojiMapping={addEmojiMapping}
+                    onUpdateEmojiMapping={updateEmojiMapping}
+                    onRemoveEmojiMapping={removeEmojiMapping}
+                    onAddJiraComponent={addJiraComponent}
+                    onRemoveJiraComponent={removeJiraComponent}
+                    onAddTeamDeveloper={addTeamDeveloper}
+                    onRemoveTeamDeveloper={removeTeamDeveloper}
+                    onExport={exportProjectConfig}
+                    onImport={importProjectConfig}
+                    isLoading={isLoading}
                   />
                 </TabsContent>
                 
@@ -148,19 +124,19 @@ export const Settings: React.FC = () => {
                       Set your default user, time-off preferences, and UI customizations to personalize your experience.
                     </p>
                   </div>
-                  <PersonalSettings
-                    config={personalConfig.config}
-                    onAddTimeOffEntry={personalConfig.addTimeOffEntry}
-                    onUpdateTimeOffEntry={personalConfig.updateTimeOffEntry}
-                    onRemoveTimeOffEntry={personalConfig.removeTimeOffEntry}
-                    onAddPersonalEmojiOverride={personalConfig.addPersonalEmojiOverride}
-                    onUpdatePersonalEmojiOverride={personalConfig.updatePersonalEmojiOverride}
-                    onRemovePersonalEmojiOverride={personalConfig.removePersonalEmojiOverride}
-                    onUpdateUIPreference={(key, value) => personalConfig.updateUIPreference(key as any, value)}
-                    onExport={personalConfig.exportConfig}
-                    onImport={personalConfig.importConfig}
-                    isLoading={personalConfig.isLoading}
-                  />
+                                      <PersonalSettings
+                      config={personalConfig}
+                      onAddTimeOffEntry={addTimeOffEntry}
+                      onUpdateTimeOffEntry={updateTimeOffEntry}
+                      onRemoveTimeOffEntry={removeTimeOffEntry}
+                      onAddPersonalEmojiOverride={addPersonalEmojiOverride}
+                      onUpdatePersonalEmojiOverride={updatePersonalEmojiOverride}
+                      onRemovePersonalEmojiOverride={removePersonalEmojiOverride}
+                      onUpdateUIPreference={(key, value) => updateUIPreference(key as keyof typeof personalConfig.uiPreferences, value)}
+                      onExport={exportPersonalConfig}
+                      onImport={importPersonalConfig}
+                      isLoading={isLoading}
+                    />
                 </TabsContent>
               </div>
             </Tabs>

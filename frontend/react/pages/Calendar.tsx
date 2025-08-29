@@ -9,8 +9,7 @@ import { ErrorState } from '../components/ErrorState';
 import { Card, CardContent } from '../components/ui/card';
 import { useTimesheetQueryParams } from '../hooks/useTimesheetQueryParams';
 import { useTimesheetData } from '../hooks/useTimesheetData';
-import { useProjectConfig } from '../hooks/useProjectConfig';
-import { usePersonalConfig } from '../hooks/usePersonalConfig';
+import { useConfigMigration } from '../hooks/useConfigMigration';
 import { CsvService } from '../services/csvService';
 
 // Loading skeleton component
@@ -48,11 +47,16 @@ export const Calendar: React.FC = () => {
     goNextMonth
   } = useTimesheetQueryParams();
 
-  const projectConfig = useProjectConfig();
-  const personalConfig = usePersonalConfig();
+  const {
+    projectConfig,
+    personalConfig,
+    setTimeOffForDate,
+    isMigrating,
+    migrationCompleted
+  } = useConfigMigration();
 
   const handleTimeOffChange = (date: string, hours: number) => {
-    personalConfig.setTimeOffForDate(date, hours);
+    setTimeOffForDate(date, hours);
   };
 
   const {
@@ -65,14 +69,14 @@ export const Calendar: React.FC = () => {
     visibleEntries,
     loading,
     error
-  } = useTimesheetData(currentYear, currentMonth, selectedUser, projectConfig.config);
+  } = useTimesheetData(currentYear, currentMonth, selectedUser, projectConfig);
 
   // Auto-select default user if configured and no user is currently selected
   useEffect(() => {
-    if (!selectedUser && personalConfig.config.uiPreferences.defaultUser && users && users.includes(personalConfig.config.uiPreferences.defaultUser)) {
-      setSelectedUser(personalConfig.config.uiPreferences.defaultUser);
+    if (!selectedUser && personalConfig.uiPreferences.defaultUser && users && users.includes(personalConfig.uiPreferences.defaultUser)) {
+      setSelectedUser(personalConfig.uiPreferences.defaultUser);
     }
-  }, [selectedUser, personalConfig.config.uiPreferences.defaultUser, users, setSelectedUser]);
+  }, [selectedUser, personalConfig.uiPreferences.defaultUser, users, setSelectedUser]);
 
   const handleUserChange = (value: string) => {
     setSelectedUser(value);
@@ -141,8 +145,8 @@ export const Calendar: React.FC = () => {
               monthZeroIndexed={currentMonth}
               jiraDomain={jiraDomain}
               issueSummaries={issueSummaries}
-              projectConfig={projectConfig.config}
-              personalConfig={personalConfig.config}
+              projectConfig={projectConfig}
+              personalConfig={personalConfig}
               onDownloadUser={handleDownloadUser}
               onTimeOffChange={handleTimeOffChange}
             />
@@ -155,8 +159,8 @@ export const Calendar: React.FC = () => {
               monthZeroIndexed={currentMonth}
               jiraDomain={jiraDomain}
               issueSummaries={issueSummaries}
-              projectConfig={projectConfig.config}
-              personalConfig={personalConfig.config}
+              projectConfig={projectConfig}
+              personalConfig={personalConfig}
               onDownloadUser={handleDownloadUser}
               onTimeOffChange={handleTimeOffChange}
             />
