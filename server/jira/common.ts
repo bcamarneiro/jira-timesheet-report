@@ -1,12 +1,9 @@
-const JIRA_DOMAIN = process.env.JIRA_DOMAIN;
-const JIRA_PAT = process.env.JIRA_PAT;
-const JIRA_COMPONENT = process.env.JIRA_COMPONENT || '';
-
-if (!JIRA_DOMAIN || !JIRA_PAT) {
-	throw new Error('Missing required environment variables: JIRA_DOMAIN, JIRA_PAT');
+export interface JiraConfig {
+  domain: string;
+  pat: string;
+  components: string[];
+  teamDevelopers: string[];
 }
-
-export { JIRA_DOMAIN, JIRA_PAT, JIRA_COMPONENT };
 
 export function getMonthBounds(year: number, monthOneBased: number) {
 	const startDate = new Date(Date.UTC(year, monthOneBased - 1, 1, 0, 0, 0));

@@ -7,14 +7,17 @@ import { Button } from './Button';
 
 interface Props {
   config: {
-    timeOffEntries: TimeOffEntry[];
+    timeOffEntries: Record<string, TimeOffEntry[]>;
     uiPreferences: {
       theme?: string;
       defaultView?: string;
       defaultUser?: string;
     };
     personalEmojiOverrides: TicketEmojiMapping[];
+    jiraPat: string;
+    userName: string;
   };
+  currentUser: string;
   onAddTimeOffEntry: (entry: TimeOffEntry) => void;
   onUpdateTimeOffEntry: (index: number, entry: TimeOffEntry) => void;
   onRemoveTimeOffEntry: (index: number) => void;
@@ -22,6 +25,10 @@ interface Props {
   onUpdatePersonalEmojiOverride: (index: number, mapping: TicketEmojiMapping) => void;
   onRemovePersonalEmojiOverride: (index: number) => void;
   onUpdateUIPreference: (key: string, value: string) => void;
+  onUpdatePersonalConfig: (updates: Partial<{
+    jiraPat: string;
+    userName: string;
+  }>) => void;
   onExport: () => void;
   onImport: (jsonString: string) => Promise<boolean>;
   isLoading: boolean;
@@ -29,6 +36,7 @@ interface Props {
 
 export const PersonalSettings: React.FC<Props> = ({
   config,
+  currentUser,
   onAddTimeOffEntry,
   onUpdateTimeOffEntry,
   onRemoveTimeOffEntry,
@@ -36,6 +44,7 @@ export const PersonalSettings: React.FC<Props> = ({
   onUpdatePersonalEmojiOverride,
   onRemovePersonalEmojiOverride,
   onUpdateUIPreference,
+  onUpdatePersonalConfig,
   onExport,
   onImport,
   isLoading
@@ -89,7 +98,8 @@ export const PersonalSettings: React.FC<Props> = ({
   };
 
   const handleStartEditTimeOff = (index: number) => {
-    const entry = config.timeOffEntries[index];
+    const userEntries = config.timeOffEntries[currentUser] || [];
+    const entry = userEntries[index];
     if (!entry) return;
 
     setEditingTimeOffIndex(index);
@@ -183,11 +193,53 @@ export const PersonalSettings: React.FC<Props> = ({
     <div style={{ padding: '1rem' }}>
       <h2>Personal Configuration</h2>
       
+      {/* JIRA Configuration */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h3>JIRA Configuration</h3>
+        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+          Configure your JIRA credentials and personal information.
+        </p>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              Your Name:
+            </label>
+            <input
+              type="text"
+              placeholder="Your full name (e.g., John Doe)"
+              value={config.userName}
+              onChange={(e) => onUpdatePersonalConfig({ userName: e.target.value })}
+              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
+            />
+            <small style={{ color: '#666', fontSize: '0.8rem' }}>
+              This is your display name in the application
+            </small>
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              JIRA Personal Access Token:
+            </label>
+            <input
+              type="password"
+              placeholder="Your JIRA PAT"
+              value={config.jiraPat}
+              onChange={(e) => onUpdatePersonalConfig({ jiraPat: e.target.value })}
+              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
+            />
+            <small style={{ color: '#666', fontSize: '0.8rem' }}>
+              Your JIRA Personal Access Token for API access
+            </small>
+          </div>
+        </div>
+      </section>
+      
       {/* Time Off Entries */}
       <section style={{ marginBottom: '2rem' }}>
-        <h3>Time Off Entries</h3>
+        <h3>Time Off Entries for {config.userName || 'You'}</h3>
         <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
-          Manage your time off entries for specific dates.
+          Manage time off entries for {config.userName || 'yourself'} on specific dates.
         </p>
         
         {/* Add new time off entry */}
@@ -246,12 +298,12 @@ export const PersonalSettings: React.FC<Props> = ({
 
         {/* Existing time off entries */}
         <div style={{ border: '1px solid #ddd', borderRadius: '4px', maxHeight: '300px', overflowY: 'auto' }}>
-          {config.timeOffEntries.length === 0 ? (
+          {(config.timeOffEntries[currentUser] || []).length === 0 ? (
             <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
               No time off entries configured
             </div>
           ) : (
-            config.timeOffEntries.map((entry, index) => (
+            (config.timeOffEntries[currentUser] || []).map((entry, index) => (
               <div key={index} style={{ padding: '0.75rem', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontWeight: 'bold', minWidth: '120px' }}>{entry.date}</span>
                 <span style={{ minWidth: '60px' }}>{entry.hours}h</span>
@@ -382,22 +434,6 @@ export const PersonalSettings: React.FC<Props> = ({
         </p>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-              Default User:
-            </label>
-            <input
-              type="text"
-              placeholder="Your display name (e.g., John Doe)"
-              value={config.uiPreferences.defaultUser || ''}
-              onChange={(e) => onUpdateUIPreference('defaultUser', e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
-            />
-            <small style={{ color: '#666', fontSize: '0.8rem' }}>
-              This will automatically select your user when the page loads
-            </small>
-          </div>
-          
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
               Theme:

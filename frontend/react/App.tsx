@@ -4,6 +4,9 @@ import { Navigation } from './components/Navigation';
 import { Dashboard } from './pages/Dashboard';
 import { Calendar } from './pages/Calendar';
 import { Settings } from './pages/Settings';
+import './utils/persistenceTest'; // Import for development testing
+import './utils/clearOldData'; // Import for clearing old localStorage
+import './utils/testUserSpecificTimeOff'; // Import for testing user-specific time off
 
 export const App: React.FC = () => {
   return (

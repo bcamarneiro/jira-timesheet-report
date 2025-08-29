@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
 import type { ProjectConfig } from '../../../types/ProjectConfig';
+import type { PersonalConfig } from '../../../types/PersonalConfig';
 import { useTimesheetApi } from './useTimesheetApi';
 
 export type GroupedWorklogs = Record<string, Record<string, JiraWorklog[]>>;
@@ -21,9 +22,10 @@ export function useTimesheetData(
   currentYear: number,
   currentMonth: number,
   selectedUser: string,
-  projectConfig?: ProjectConfig
+  projectConfig?: ProjectConfig,
+  personalConfig?: PersonalConfig
 ): UseTimesheetDataResult {
-  const { data: apiData, loading, error } = useTimesheetApi(currentYear, currentMonth, projectConfig);
+  const { data: apiData, loading, error } = useTimesheetApi(currentYear, currentMonth, projectConfig, personalConfig);
   
   const data = apiData?.worklogs || null;
   const jiraDomain = apiData?.jiraDomain || '';

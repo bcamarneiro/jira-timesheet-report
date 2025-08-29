@@ -9,6 +9,7 @@ interface Props {
     emojiMappings: TicketEmojiMapping[];
     jiraComponents: string[];
     teamDevelopers: string[];
+    jiraDomain: string;
   };
   onAddEmojiMapping: (mapping: TicketEmojiMapping) => void;
   onUpdateEmojiMapping: (index: number, mapping: TicketEmojiMapping) => void;
@@ -17,6 +18,9 @@ interface Props {
   onRemoveJiraComponent: (component: string) => void;
   onAddTeamDeveloper: (developer: string) => void;
   onRemoveTeamDeveloper: (developer: string) => void;
+  onUpdateProjectConfig: (updates: Partial<{
+    jiraDomain: string;
+  }>) => void;
   onExport: () => void;
   onImport: (jsonString: string) => Promise<boolean>;
   isLoading: boolean;
@@ -31,6 +35,7 @@ export const ProjectSettings: React.FC<Props> = ({
   onRemoveJiraComponent,
   onAddTeamDeveloper,
   onRemoveTeamDeveloper,
+  onUpdateProjectConfig,
   onExport,
   onImport,
   isLoading
@@ -129,6 +134,30 @@ export const ProjectSettings: React.FC<Props> = ({
   return (
     <div style={{ padding: '1rem' }}>
       <h2>Project Configuration</h2>
+      
+      {/* JIRA Domain Configuration */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h3>JIRA Domain</h3>
+        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+          Configure your JIRA domain for API access.
+        </p>
+        
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            JIRA Domain:
+          </label>
+          <input
+            type="text"
+            placeholder="yourcompany.atlassian.net"
+            value={config.jiraDomain}
+            onChange={(e) => onUpdateProjectConfig({ jiraDomain: e.target.value })}
+            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
+          />
+          <small style={{ color: '#666', fontSize: '0.8rem' }}>
+            Your JIRA domain (e.g., yourcompany.atlassian.net)
+          </small>
+        </div>
+      </section>
       
       {/* Emoji Mappings */}
       <section style={{ marginBottom: '2rem' }}>

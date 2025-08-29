@@ -23,11 +23,11 @@ interface ConfigState {
   
   // Personal Config Actions
   updatePersonalConfig: (updates: Partial<PersonalConfig>) => void;
-  addTimeOffEntry: (entry: TimeOffEntry) => void;
-  updateTimeOffEntry: (index: number, entry: TimeOffEntry) => void;
-  removeTimeOffEntry: (index: number) => void;
-  getTimeOffForDate: (date: string) => number;
-  setTimeOffForDate: (date: string, hours: number) => void;
+  addTimeOffEntry: (user: string, entry: TimeOffEntry) => void;
+  updateTimeOffEntry: (user: string, index: number, entry: TimeOffEntry) => void;
+  removeTimeOffEntry: (user: string, index: number) => void;
+  getTimeOffForDate: (user: string, date: string) => number;
+  setTimeOffForDate: (user: string, date: string, hours: number) => void;
   addPersonalEmojiOverride: (mapping: TicketEmojiMapping) => void;
   updatePersonalEmojiOverride: (index: number, mapping: TicketEmojiMapping) => void;
   removePersonalEmojiOverride: (index: number) => void;
@@ -131,45 +131,55 @@ export const useConfigStore = create<ConfigState>()(
         }));
       },
 
-      addTimeOffEntry: (entry) => {
+      addTimeOffEntry: (user, entry) => {
         set((state) => ({
           personalConfig: {
             ...state.personalConfig,
-            timeOffEntries: [...state.personalConfig.timeOffEntries, entry]
+            timeOffEntries: {
+              ...state.personalConfig.timeOffEntries,
+              [user]: [...(state.personalConfig.timeOffEntries[user] || []), entry]
+            }
           }
         }));
       },
 
-      updateTimeOffEntry: (index, entry) => {
+      updateTimeOffEntry: (user, index, entry) => {
         set((state) => ({
           personalConfig: {
             ...state.personalConfig,
-            timeOffEntries: state.personalConfig.timeOffEntries.map((e, i) => 
-              i === index ? entry : e
-            )
+            timeOffEntries: {
+              ...state.personalConfig.timeOffEntries,
+              [user]: (state.personalConfig.timeOffEntries[user] || []).map((e, i) => 
+                i === index ? entry : e
+              )
+            }
           }
         }));
       },
 
-      removeTimeOffEntry: (index) => {
+      removeTimeOffEntry: (user, index) => {
         set((state) => ({
           personalConfig: {
             ...state.personalConfig,
-            timeOffEntries: state.personalConfig.timeOffEntries.filter((_, i) => i !== index)
+            timeOffEntries: {
+              ...state.personalConfig.timeOffEntries,
+              [user]: (state.personalConfig.timeOffEntries[user] || []).filter((_, i) => i !== index)
+            }
           }
         }));
       },
 
-      getTimeOffForDate: (date) => {
+      getTimeOffForDate: (user, date) => {
         const state = get();
-        const entry = state.personalConfig.timeOffEntries.find(e => e.date === date);
+        const userEntries = state.personalConfig.timeOffEntries[user] || [];
+        const entry = userEntries.find(e => e.date === date);
         return entry ? entry.hours : 0;
       },
 
-      setTimeOffForDate: (date, hours) => {
+      setTimeOffForDate: (user, date, hours) => {
         const state = get();
-        const updatedEntries = [...state.personalConfig.timeOffEntries];
-        const existingIndex = updatedEntries.findIndex(e => e.date === date);
+        const userEntries = [...(state.personalConfig.timeOffEntries[user] || [])];
+        const existingIndex = userEntries.findIndex(e => e.date === date);
         
         if (hours > 0) {
           const entry: TimeOffEntry = {
@@ -179,20 +189,23 @@ export const useConfigStore = create<ConfigState>()(
           };
           
           if (existingIndex >= 0) {
-            updatedEntries[existingIndex] = entry;
+            userEntries[existingIndex] = entry;
           } else {
-            updatedEntries.push(entry);
+            userEntries.push(entry);
           }
         } else {
           if (existingIndex >= 0) {
-            updatedEntries.splice(existingIndex, 1);
+            userEntries.splice(existingIndex, 1);
           }
         }
         
         set((state) => ({
           personalConfig: {
             ...state.personalConfig,
-            timeOffEntries: updatedEntries
+            timeOffEntries: {
+              ...state.personalConfig.timeOffEntries,
+              [user]: userEntries
+            }
           }
         }));
       },

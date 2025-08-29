@@ -1,7 +1,7 @@
 import React from 'react';
 import { ProjectSettings } from '../components/ProjectSettings';
 import { PersonalSettings } from '../components/PersonalSettings';
-import { useConfigMigration } from '../hooks/useConfigMigration';
+import { useConfigStore } from '../stores/configStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/Button';
@@ -11,9 +11,8 @@ export const Settings: React.FC = () => {
     projectConfig,
     personalConfig,
     isLoading,
-    isMigrating,
-    migrationCompleted,
     // Project actions
+    updateProjectConfig,
     addEmojiMapping,
     updateEmojiMapping,
     removeEmojiMapping,
@@ -24,6 +23,7 @@ export const Settings: React.FC = () => {
     exportProjectConfig,
     importProjectConfig,
     // Personal actions
+    updatePersonalConfig,
     addTimeOffEntry,
     updateTimeOffEntry,
     removeTimeOffEntry,
@@ -33,32 +33,7 @@ export const Settings: React.FC = () => {
     updateUIPreference,
     exportPersonalConfig,
     importPersonalConfig,
-  } = useConfigMigration();
-
-  // Show loading state during migration
-  if (isMigrating || !migrationCompleted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-          </div>
-          <Card>
-            <CardContent className="p-6">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-300 rounded w-1/4 mb-4"></div>
-                <div className="h-4 bg-gray-300 rounded w-1/2 mb-6"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="h-32 bg-gray-300 rounded-lg"></div>
-                  <div className="h-32 bg-gray-300 rounded-lg"></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  } = useConfigStore();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -104,6 +79,7 @@ export const Settings: React.FC = () => {
                   </div>
                   <ProjectSettings
                     config={projectConfig}
+                    onUpdateProjectConfig={updateProjectConfig}
                     onAddEmojiMapping={addEmojiMapping}
                     onUpdateEmojiMapping={updateEmojiMapping}
                     onRemoveEmojiMapping={removeEmojiMapping}
@@ -121,22 +97,24 @@ export const Settings: React.FC = () => {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">Personal Preferences</h3>
                     <p className="text-sm text-gray-600">
-                      Set your default user, time-off preferences, and UI customizations to personalize your experience.
+                      Set your JIRA credentials, time-off preferences, and UI customizations to personalize your experience.
                     </p>
                   </div>
-                                      <PersonalSettings
-                      config={personalConfig}
-                      onAddTimeOffEntry={addTimeOffEntry}
-                      onUpdateTimeOffEntry={updateTimeOffEntry}
-                      onRemoveTimeOffEntry={removeTimeOffEntry}
-                      onAddPersonalEmojiOverride={addPersonalEmojiOverride}
-                      onUpdatePersonalEmojiOverride={updatePersonalEmojiOverride}
-                      onRemovePersonalEmojiOverride={removePersonalEmojiOverride}
-                      onUpdateUIPreference={(key, value) => updateUIPreference(key as keyof typeof personalConfig.uiPreferences, value)}
-                      onExport={exportPersonalConfig}
-                      onImport={importPersonalConfig}
-                      isLoading={isLoading}
-                    />
+                  <PersonalSettings
+                    config={personalConfig}
+                    currentUser={personalConfig.userName}
+                    onUpdatePersonalConfig={updatePersonalConfig}
+                    onAddTimeOffEntry={(entry) => addTimeOffEntry(personalConfig.userName, entry)}
+                    onUpdateTimeOffEntry={(index, entry) => updateTimeOffEntry(personalConfig.userName, index, entry)}
+                    onRemoveTimeOffEntry={(index) => removeTimeOffEntry(personalConfig.userName, index)}
+                    onAddPersonalEmojiOverride={addPersonalEmojiOverride}
+                    onUpdatePersonalEmojiOverride={updatePersonalEmojiOverride}
+                    onRemovePersonalEmojiOverride={removePersonalEmojiOverride}
+                    onUpdateUIPreference={(key, value) => updateUIPreference(key as keyof typeof personalConfig.uiPreferences, value)}
+                    onExport={exportPersonalConfig}
+                    onImport={importPersonalConfig}
+                    isLoading={isLoading}
+                  />
                 </TabsContent>
               </div>
             </Tabs>

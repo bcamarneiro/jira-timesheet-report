@@ -7,16 +7,20 @@ export interface TimeOffEntry {
 }
 
 export interface PersonalConfig {
-  timeOffEntries: TimeOffEntry[];
+  timeOffEntries: Record<string, TimeOffEntry[]>; // Key is username, value is array of time off entries
   uiPreferences: {
     theme?: string;
     defaultUser?: string;
   };
   personalEmojiOverrides: TicketEmojiMapping[];
+  jiraPat: string; // JIRA Personal Access Token
+  userName: string; // User's name for JIRA
 }
 
 export const DEFAULT_PERSONAL_CONFIG: PersonalConfig = {
-  timeOffEntries: [],
+  timeOffEntries: {},
   uiPreferences: {},
-  personalEmojiOverrides: []
+  personalEmojiOverrides: [],
+  jiraPat: '',
+  userName: ''
 };

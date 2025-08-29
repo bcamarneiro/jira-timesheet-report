@@ -4,7 +4,6 @@ import MockTeamDevelopers from './MockTeamDevelopers';
 import MockWorklogs from './MockWorklogs';
 import MockIssueSummaries from './MockIssueSummaries';
 
-
 export const handlers = [
   http.post('/api/timesheet', async ({ request }) => {
     const url = new URL(request.url);
@@ -15,14 +14,31 @@ export const handlers = [
     const year = Number.isFinite(yearParam) && yearParam > 1900 ? yearParam : now.getUTCFullYear();
     const monthOneBased = Number.isFinite(monthParam) && monthParam >= 1 && monthParam <= 12 ? monthParam : (now.getUTCMonth() + 1);
 
-    // Parse request body to get project configuration
+    // Parse request body to get configuration
     let projectConfig: any = {};
+    let personalConfig: any = {};
     try {
       const body = await request.json() as any;
       projectConfig = body?.projectConfig || {};
+      personalConfig = body?.personalConfig || {};
     } catch (error) {
       // If body parsing fails, use empty config
       projectConfig = {};
+      personalConfig = {};
+    }
+
+    // Validate required configuration for mock
+    if (!personalConfig.jiraPat) {
+      return HttpResponse.json(
+        { error: 'JIRA Personal Access Token is required' },
+        { status: 400 }
+      );
+    }
+    if (!projectConfig.jiraDomain) {
+      return HttpResponse.json(
+        { error: 'JIRA Domain is required' },
+        { status: 400 }
+      );
     }
 
     const start = new Date(Date.UTC(year, monthOneBased - 1, 1, 0, 0, 0));
@@ -39,7 +55,7 @@ export const handlers = [
       : MockTeamDevelopers;
 
     return HttpResponse.json({
-      jiraDomain: 'jira.example.com',
+      jiraDomain: projectConfig.jiraDomain || 'jira.example.com',
       worklogs: filtered,
       issueSummaries: MockIssueSummaries,
       teamDevelopers: teamDevelopers

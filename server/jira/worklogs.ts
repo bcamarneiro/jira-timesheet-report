@@ -1,8 +1,8 @@
 import { JiraWorklog } from "../../types/JiraWorklog";
 import { JiraWorklogPaginatedResponse } from "../../types/JiraWorklogPaginatedResponse";
-import { JIRA_DOMAIN, JIRA_PAT, getMonthBounds } from "./common";
+import { JiraConfig, getMonthBounds } from "./common";
 
-export async function fetchWorklogs(issues: string[], year: number, monthOneBased: number): Promise<JiraWorklog[]> {
+export async function fetchWorklogs(issues: string[], year: number, monthOneBased: number, jiraConfig: JiraConfig): Promise<JiraWorklog[]> {
 	const { startMillis, endMillis } = getMonthBounds(year, monthOneBased);
 	const allWorklogs: JiraWorklog[] = [];
 
@@ -18,11 +18,11 @@ export async function fetchWorklogs(issues: string[], year: number, monthOneBase
 				startAt: startAt.toString(),
 			});
 
-			const url = `https://${JIRA_DOMAIN}/rest/api/2/issue/${encodeURIComponent(issueKey)}/worklog?${params.toString()}`;
+			const url = `https://${jiraConfig.domain}/rest/api/2/issue/${encodeURIComponent(issueKey)}/worklog?${params.toString()}`;
 
 			const resp = await fetch(url, {
 				headers: {
-					Authorization: `Bearer ${JIRA_PAT}`,
+					Authorization: `Bearer ${jiraConfig.pat}`,
 					Accept: 'application/json',
 				},
 			});

@@ -9,7 +9,7 @@ import { ErrorState } from '../components/ErrorState';
 import { Card, CardContent } from '../components/ui/card';
 import { useTimesheetQueryParams } from '../hooks/useTimesheetQueryParams';
 import { useTimesheetData } from '../hooks/useTimesheetData';
-import { useConfigMigration } from '../hooks/useConfigMigration';
+import { useConfigStore } from '../stores/configStore';
 import { CsvService } from '../services/csvService';
 
 // Loading skeleton component
@@ -50,13 +50,13 @@ export const Calendar: React.FC = () => {
   const {
     projectConfig,
     personalConfig,
-    setTimeOffForDate,
-    isMigrating,
-    migrationCompleted
-  } = useConfigMigration();
+    setTimeOffForDate
+  } = useConfigStore();
 
   const handleTimeOffChange = (date: string, hours: number) => {
-    setTimeOffForDate(date, hours);
+    if (selectedUser) {
+      setTimeOffForDate(selectedUser, date, hours);
+    }
   };
 
   const {
@@ -69,7 +69,7 @@ export const Calendar: React.FC = () => {
     visibleEntries,
     loading,
     error
-  } = useTimesheetData(currentYear, currentMonth, selectedUser, projectConfig);
+  } = useTimesheetData(currentYear, currentMonth, selectedUser, projectConfig, personalConfig);
 
   // Auto-select default user if configured and no user is currently selected
   useEffect(() => {

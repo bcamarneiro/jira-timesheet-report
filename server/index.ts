@@ -18,20 +18,36 @@ app.post('/api/timesheet', async (req, res) => {
     const year = Number.isFinite(yearParam) && yearParam > 1900 ? yearParam : now.getUTCFullYear();
     const monthOneBased = Number.isFinite(monthParam) && monthParam >= 1 && monthParam <= 12 ? monthParam : (now.getUTCMonth() + 1);
 
-    // Get project configuration from request body
-    const projectConfig = req.body?.projectConfig || {};
-    const jiraComponents = projectConfig.jiraComponents || [];
+    // Get configuration from request body
+    const { projectConfig = {}, personalConfig = {} } = req.body || {};
+    
+    // Validate required configuration
+    if (!personalConfig.jiraPat) {
+      return res.status(400).json({ error: 'JIRA Personal Access Token is required' });
+    }
+    if (!projectConfig.jiraDomain) {
+      return res.status(400).json({ error: 'JIRA Domain is required' });
+    }
 
-    const { keys, summaries } = await fetchIssues(year, monthOneBased, jiraComponents);
-    const data = await fetchWorklogs(keys, year, monthOneBased);
+    const jiraComponents = projectConfig.jiraComponents || [];
+    const teamDevelopers = projectConfig.teamDevelopers || [];
+
+    // Pass configuration to JIRA services
+    const jiraConfig = {
+      domain: projectConfig.jiraDomain,
+      pat: personalConfig.jiraPat,
+      components: jiraComponents,
+      teamDevelopers: teamDevelopers
+    };
+
+    const { keys, summaries } = await fetchIssues(year, monthOneBased, jiraConfig);
+    const data = await fetchWorklogs(keys, year, monthOneBased, jiraConfig);
+    
     res.json({
-      jiraDomain: process.env.JIRA_DOMAIN,
+      jiraDomain: projectConfig.jiraDomain,
       worklogs: data,
       issueSummaries: summaries,
-      teamDevelopers: projectConfig.teamDevelopers || (process.env.TEAM_DEVELOPERS || '')
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)
+      teamDevelopers: teamDevelopers
     });
   } catch (err) {
     console.error("Error processing request:", err); // Log the error for debugging

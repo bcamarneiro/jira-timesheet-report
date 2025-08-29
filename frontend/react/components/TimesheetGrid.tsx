@@ -3,7 +3,7 @@ import type { JiraWorklog } from '../../../types/JiraWorklog';
 import type { ProjectConfig } from '../../../types/ProjectConfig';
 import type { PersonalConfig } from '../../../types/PersonalConfig';
 import { getDaysInMonth, isoDateFromYMD } from '../utils/date';
-import { useTimeOff } from '../hooks/useTimeOff';
+import { useConfigStore } from '../stores/configStore';
 import { DayCell } from './DayCell';
 import { CalendarGrid } from './CalendarGrid';
 import { UserStats } from './UserStats';
@@ -24,10 +24,10 @@ type Props = {
 
 export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroIndexed, jiraDomain, issueSummaries, projectConfig, personalConfig, onDownloadUser, onTimeOffChange }) => {
   const numDays = getDaysInMonth(year, monthZeroIndexed);
-  const { getTimeOffHours, setTimeOffHours } = useTimeOff(user, personalConfig);
+  const { getTimeOffForDate, setTimeOffForDate } = useConfigStore();
 
   const handleTimeOffChange = (iso: string, hours: number) => {
-    setTimeOffHours(iso, hours);
+    setTimeOffForDate(user, iso, hours);
     if (onTimeOffChange) {
       onTimeOffChange(iso, hours);
     }
@@ -41,7 +41,7 @@ export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroInde
     const weekday = jsDate.getUTCDay();
     const isWeekend = weekday === 0 || weekday === 6;
     if (!isWeekend) {
-      timeOffHours[iso] = getTimeOffHours(iso);
+      timeOffHours[iso] = getTimeOffForDate(user, iso);
     }
   }
 
@@ -62,7 +62,7 @@ export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroInde
         jiraDomain={jiraDomain}
         worklogs={worklogs}
         isWeekend={isWeekend}
-        timeOffHours={!isWeekend ? getTimeOffHours(iso) : 0}
+        timeOffHours={!isWeekend ? getTimeOffForDate(user, iso) : 0}
         onTimeOffChange={(hours) => handleTimeOffChange(iso, hours)}
         issueSummaries={issueSummaries}
         projectConfig={projectConfig}

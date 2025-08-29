@@ -1,21 +1,18 @@
 import { JiraIssuePaginatedResponse } from "../../types/JiraIssuePaginatedResponse";
-import { JIRA_DOMAIN, JIRA_PAT, JIRA_COMPONENT, getMonthBounds } from "./common";
+import { JiraConfig, getMonthBounds } from "./common";
 
-export async function fetchIssues(year: number, monthOneBased: number, jiraComponents: string[] = []): Promise<{ keys: string[]; summaries: Record<string, string> }> {
+export async function fetchIssues(year: number, monthOneBased: number, jiraConfig: JiraConfig): Promise<{ keys: string[]; summaries: Record<string, string> }> {
 	const { jqlStartDate, jqlEndDate } = getMonthBounds(year, monthOneBased);
 	const issues: string[] = [];
 	const summaries: Record<string, string> = {};
 	let startAt = 0;
 	
-	// Build component filter from project configuration or fallback to environment variable
+	// Build component filter from configuration
 	let componentFilter = '';
-	if (jiraComponents.length > 0) {
+	if (jiraConfig.components.length > 0) {
 		// Use project configuration components
-		const componentConditions = jiraComponents.map(component => `component = "${component}"`).join(' OR ');
+		const componentConditions = jiraConfig.components.map(component => `component = "${component}"`).join(' OR ');
 		componentFilter = ` AND (${componentConditions})`;
-	} else if (JIRA_COMPONENT) {
-		// Fallback to environment variable
-		componentFilter = ` AND component = "${JIRA_COMPONENT}"`;
 	}
 	
 	const jql = `worklogDate >= '${jqlStartDate}' AND worklogDate <= '${jqlEndDate}'${componentFilter}`;
@@ -30,11 +27,11 @@ export async function fetchIssues(year: number, monthOneBased: number, jiraCompo
 			startAt: startAt.toString(),
 		});
 
-		const url = `https://${JIRA_DOMAIN}/rest/api/2/search?${params.toString()}`;
+		const url = `https://${jiraConfig.domain}/rest/api/2/search?${params.toString()}`;
 
 		const resp = await fetch(url, {
 			headers: {
-				'Authorization': `Bearer ${JIRA_PAT}`,
+				'Authorization': `Bearer ${jiraConfig.pat}`,
 				'Accept': 'application/json',
 			},
 		});
