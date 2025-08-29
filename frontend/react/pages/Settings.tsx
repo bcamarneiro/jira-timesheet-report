@@ -26,6 +26,7 @@ export const Settings: React.FC = () => {
     updatePersonalConfig,
     addTimeOffEntry,
     updateTimeOffEntry,
+    
     removeTimeOffEntry,
     addPersonalEmojiOverride,
     updatePersonalEmojiOverride,

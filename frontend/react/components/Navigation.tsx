@@ -37,7 +37,7 @@ export const Navigation: React.FC = () => {
                 <Link
                   key={item.path}
                   to={isDisabled ? '/' : item.path}
-                  className={`inline-flex flex-row items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  className={`flex flex-row gap items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                     isDisabled
                       ? 'text-gray-400 cursor-not-allowed bg-gray-50 border border-gray-200'
                       : isActive(item.path)
@@ -46,7 +46,7 @@ export const Navigation: React.FC = () => {
                   }`}
                   title={isDisabled ? 'Configure essential settings first' : undefined}
                 >
-                  <span className="mr-2 text-base">{item.icon}</span>
+                  <span className="text-base">{item.icon}</span>
                   <span className="hidden sm:inline">{item.label}</span>
                 </Link>
               );
