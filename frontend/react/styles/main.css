@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* Dracula Light Theme (fallback) */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -27,25 +28,26 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    /* Dracula Dark Theme */
+    --background: 231 15% 18%; /* #282a36 - Dracula background */
+    --foreground: 60 30% 96%; /* #f8f8f2 - Dracula foreground */
+    --card: 231 15% 22%; /* #44475a - Dracula selection */
+    --card-foreground: 60 30% 96%;
+    --popover: 231 15% 22%;
+    --popover-foreground: 60 30% 96%;
+    --primary: 265 89% 78%; /* #bd93f9 - Dracula purple */
+    --primary-foreground: 231 15% 18%;
+    --secondary: 231 15% 25%; /* #6272a4 - Dracula comment */
+    --secondary-foreground: 60 30% 96%;
+    --muted: 231 15% 25%;
+    --muted-foreground: 60 20% 70%; /* #6272a4 - Dracula comment */
+    --accent: 231 15% 25%;
+    --accent-foreground: 60 30% 96%;
+    --destructive: 0 84% 60%; /* #ff5555 - Dracula red */
+    --destructive-foreground: 60 30% 96%;
+    --border: 231 15% 25%;
+    --input: 231 15% 25%;
+    --ring: 265 89% 78%;
   }
 }
 
@@ -64,10 +66,11 @@ html {
 }
 
 body {
-  background-color: #f9fafb;
-  color: #111827;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   margin: 0;
   padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Utility classes */
@@ -160,31 +163,31 @@ body {
 }
 
 .text-gray-900 {
-  color: #111827;
+  color: hsl(var(--foreground));
 }
 
 .text-gray-700 {
-  color: #374151;
+  color: hsl(var(--muted-foreground));
 }
 
 .text-gray-600 {
-  color: #4b5563;
+  color: hsl(var(--muted-foreground));
 }
 
 .bg-gray-300 {
-  background-color: #d1d5db;
+  background-color: hsl(var(--muted));
 }
 
 .bg-gray-50 {
-  background-color: #f9fafb;
+  background-color: hsl(var(--background));
 }
 
 .bg-white {
-  background-color: #ffffff;
+  background-color: hsl(var(--card));
 }
 
 .bg-black {
-  background-color: #000000;
+  background-color: hsl(var(--background));
 }
 
 .bg-opacity-50 {
@@ -208,11 +211,11 @@ body {
 }
 
 .border-gray-200 {
-  border-color: #e5e7eb;
+  border-color: hsl(var(--border));
 }
 
 .border-gray-300 {
-  border-color: #d1d5db;
+  border-color: hsl(var(--border));
 }
 
 .min-h-\[100px\] {
@@ -334,36 +337,36 @@ body {
 }
 
 .shadow-large {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }
 
-/* Radix UI overrides */
+/* Radix UI overrides for dark theme */
 [data-state="active"] {
-  color: #007bff !important;
-  border-bottom-color: #007bff !important;
+  color: hsl(var(--primary)) !important;
+  border-bottom-color: hsl(var(--primary)) !important;
 }
 
 [data-radix-select-trigger]:focus {
-  outline: 2px solid #007bff;
+  outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
 }
 
 [data-radix-button]:focus {
-  outline: 2px solid #007bff;
+  outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
 }
 
 [data-radix-button]:hover:not([disabled]) {
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 [data-radix-select-item]:hover {
-  background-color: #f8f9fa;
+  background-color: hsl(var(--accent));
 }
 
 [data-radix-select-item][data-highlighted] {
-  background-color: #e9ecef;
+  background-color: hsl(var(--accent));
 }
 
 /* Ensure Select dropdown is properly positioned */
@@ -380,4 +383,22 @@ body {
 .radix-select-content {
   z-index: 9999 !important;
   position: absolute !important;
+}
+
+/* Dark theme specific styles */
+.dark {
+  color-scheme: dark;
+}
+
+.dark [data-radix-select-item]:hover {
+  background-color: hsl(var(--accent));
+}
+
+.dark [data-radix-select-item][data-highlighted] {
+  background-color: hsl(var(--accent));
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

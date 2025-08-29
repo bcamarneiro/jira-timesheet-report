@@ -191,81 +191,114 @@ export const PersonalSettings: React.FC<Props> = ({
 
   return (
     <div style={{ padding: '1rem' }}>
-      <h2>Personal Configuration</h2>
+             <h2 style={{ color: 'hsl(var(--foreground))' }}>Personal Configuration</h2>
       
       {/* JIRA Configuration */}
       <section style={{ marginBottom: '2rem' }}>
-        <h3>JIRA Configuration</h3>
-        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
-          Configure your JIRA credentials and personal information.
-        </p>
+                 <h3 style={{ color: 'hsl(var(--foreground))' }}>JIRA Configuration</h3>
+         <p style={{ fontSize: '0.9rem', color: 'hsl(var(--muted-foreground))', marginBottom: '1rem' }}>
+           Configure your JIRA credentials and personal information.
+         </p>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-              Your Name:
-            </label>
-            <input
-              type="text"
-              placeholder="Your full name (e.g., John Doe)"
-              value={config.userName}
-              onChange={(e) => onUpdatePersonalConfig({ userName: e.target.value })}
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
-            />
-            <small style={{ color: '#666', fontSize: '0.8rem' }}>
-              This is your display name in the application
-            </small>
+                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'hsl(var(--foreground))' }}>
+               Your Name:
+             </label>
+                         <input
+               type="text"
+               placeholder="Your full name (e.g., John Doe)"
+               value={config.userName}
+               onChange={(e) => onUpdatePersonalConfig({ userName: e.target.value })}
+               style={{ 
+                 padding: '0.5rem', 
+                 borderRadius: '4px', 
+                 border: '1px solid hsl(var(--border))', 
+                 width: '100%',
+                 backgroundColor: 'hsl(var(--background))',
+                 color: 'hsl(var(--foreground))'
+               }}
+             />
+                         <small style={{ color: 'hsl(var(--muted-foreground))', fontSize: '0.8rem' }}>
+               This is your display name in the application
+             </small>
           </div>
           
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-              JIRA Personal Access Token:
-            </label>
-            <input
-              type="password"
-              placeholder="Your JIRA PAT"
-              value={config.jiraPat}
-              onChange={(e) => onUpdatePersonalConfig({ jiraPat: e.target.value })}
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
-            />
-            <small style={{ color: '#666', fontSize: '0.8rem' }}>
-              Your JIRA Personal Access Token for API access
-            </small>
+                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'hsl(var(--foreground))' }}>
+               JIRA Personal Access Token:
+             </label>
+                         <input
+               type="password"
+               placeholder="Your JIRA PAT"
+               value={config.jiraPat}
+               onChange={(e) => onUpdatePersonalConfig({ jiraPat: e.target.value })}
+               style={{ 
+                 padding: '0.5rem', 
+                 borderRadius: '4px', 
+                 border: '1px solid hsl(var(--border))', 
+                 width: '100%',
+                 backgroundColor: 'hsl(var(--background))',
+                 color: 'hsl(var(--foreground))'
+               }}
+             />
+                         <small style={{ color: 'hsl(var(--muted-foreground))', fontSize: '0.8rem' }}>
+               Your JIRA Personal Access Token for API access
+             </small>
           </div>
         </div>
       </section>
       
       {/* Time Off Entries */}
       <section style={{ marginBottom: '2rem' }}>
-        <h3>Time Off Entries for {config.userName || 'You'}</h3>
-        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
-          Manage time off entries for {config.userName || 'yourself'} on specific dates.
-        </p>
+                 <h3 style={{ color: 'hsl(var(--foreground))' }}>Time Off Entries for {config.userName || 'You'}</h3>
+         <p style={{ fontSize: '0.9rem', color: 'hsl(var(--muted-foreground))', marginBottom: '1rem' }}>
+           Manage time off entries for {config.userName || 'yourself'} on specific dates.
+         </p>
         
         {/* Add new time off entry */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-          <input
-            type="date"
-            value={newTimeOffDate}
-            onChange={(e) => setNewTimeOffDate(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-          <select
-            value={newTimeOffHours}
-            onChange={(e) => setNewTimeOffHours(Number(e.target.value))}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-          >
+                     <input
+             type="date"
+             value={newTimeOffDate}
+             onChange={(e) => setNewTimeOffDate(e.target.value)}
+             style={{ 
+               padding: '0.5rem', 
+               borderRadius: '4px', 
+               border: '1px solid hsl(var(--border))',
+               backgroundColor: 'hsl(var(--background))',
+               color: 'hsl(var(--foreground))'
+             }}
+           />
+                     <select
+             value={newTimeOffHours}
+             onChange={(e) => setNewTimeOffHours(Number(e.target.value))}
+             style={{ 
+               padding: '0.5rem', 
+               borderRadius: '4px', 
+               border: '1px solid hsl(var(--border))',
+               backgroundColor: 'hsl(var(--background))',
+               color: 'hsl(var(--foreground))'
+             }}
+           >
             {[1, 2, 3, 4, 5, 6, 7, 8].map(hours => (
               <option key={hours} value={hours}>{hours}h</option>
             ))}
           </select>
-          <input
-            type="text"
-            placeholder="Description (optional)"
-            value={newTimeOffDescription}
-            onChange={(e) => setNewTimeOffDescription(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}
-          />
+                     <input
+             type="text"
+             placeholder="Description (optional)"
+             value={newTimeOffDescription}
+             onChange={(e) => setNewTimeOffDescription(e.target.value)}
+             style={{ 
+               padding: '0.5rem', 
+               borderRadius: '4px', 
+               border: '1px solid hsl(var(--border))', 
+               flex: 1,
+               backgroundColor: 'hsl(var(--background))',
+               color: 'hsl(var(--foreground))'
+             }}
+           />
           {editingTimeOffIndex === null ? (
             <Button
               onClick={handleAddTimeOffEntry}
@@ -296,18 +329,18 @@ export const PersonalSettings: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Existing time off entries */}
-        <div style={{ border: '1px solid #ddd', borderRadius: '4px', maxHeight: '300px', overflowY: 'auto' }}>
+                 {/* Existing time off entries */}
+         <div style={{ border: '1px solid hsl(var(--border))', borderRadius: '4px', maxHeight: '300px', overflowY: 'auto' }}>
           {(config.timeOffEntries[currentUser] || []).length === 0 ? (
-            <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
-              No time off entries configured
-            </div>
+                         <div style={{ padding: '1rem', textAlign: 'center', color: 'hsl(var(--muted-foreground))' }}>
+               No time off entries configured
+             </div>
           ) : (
-            (config.timeOffEntries[currentUser] || []).map((entry, index) => (
-              <div key={index} style={{ padding: '0.75rem', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                         (config.timeOffEntries[currentUser] || []).map((entry, index) => (
+               <div key={index} style={{ padding: '0.75rem', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontWeight: 'bold', minWidth: '120px' }}>{entry.date}</span>
                 <span style={{ minWidth: '60px' }}>{entry.hours}h</span>
-                <span style={{ color: '#666', flex: 1 }}>{entry.description || ''}</span>
+                                 <span style={{ color: 'hsl(var(--muted-foreground))', flex: 1 }}>{entry.description || ''}</span>
                 <Button
                   onClick={() => handleStartEditTimeOff(index)}
                   variant="secondary"
@@ -333,34 +366,54 @@ export const PersonalSettings: React.FC<Props> = ({
 
       {/* Personal Emoji Overrides */}
       <section style={{ marginBottom: '2rem' }}>
-        <h3>Personal Emoji Overrides</h3>
-        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
-          Personal emoji mappings that override project settings for specific ticket IDs.
-        </p>
+                 <h3 style={{ color: 'hsl(var(--foreground))' }}>Personal Emoji Overrides</h3>
+         <p style={{ fontSize: '0.9rem', color: 'hsl(var(--muted-foreground))', marginBottom: '1rem' }}>
+           Personal emoji mappings that override project settings for specific ticket IDs.
+         </p>
         
         {/* Add new personal emoji override */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="Ticket ID (e.g., COM-12345)"
-            value={newTicketId}
-            onChange={(e) => setNewTicketId(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-          <input
-            type="text"
-            placeholder="Emoji"
-            value={newEmoji}
-            onChange={(e) => setNewEmoji(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', width: '80px' }}
-          />
-          <input
-            type="text"
-            placeholder="Description (optional)"
-            value={newDescription}
-            onChange={(e) => setNewDescription(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}
-          />
+                     <input
+             type="text"
+             placeholder="Ticket ID (e.g., COM-12345)"
+             value={newTicketId}
+             onChange={(e) => setNewTicketId(e.target.value)}
+             style={{ 
+               padding: '0.5rem', 
+               borderRadius: '4px', 
+               border: '1px solid hsl(var(--border))',
+               backgroundColor: 'hsl(var(--background))',
+               color: 'hsl(var(--foreground))'
+             }}
+           />
+                     <input
+             type="text"
+             placeholder="Emoji"
+             value={newEmoji}
+             onChange={(e) => setNewEmoji(e.target.value)}
+             style={{ 
+               padding: '0.5rem', 
+               borderRadius: '4px', 
+               border: '1px solid hsl(var(--border))', 
+               width: '80px',
+               backgroundColor: 'hsl(var(--background))',
+               color: 'hsl(var(--foreground))'
+             }}
+           />
+                     <input
+             type="text"
+             placeholder="Description (optional)"
+             value={newDescription}
+             onChange={(e) => setNewDescription(e.target.value)}
+             style={{ 
+               padding: '0.5rem', 
+               borderRadius: '4px', 
+               border: '1px solid hsl(var(--border))', 
+               flex: 1,
+               backgroundColor: 'hsl(var(--background))',
+               color: 'hsl(var(--foreground))'
+             }}
+           />
           {editingEmojiIndex === null ? (
             <Button
               onClick={handleAddPersonalEmojiOverride}
@@ -391,18 +444,18 @@ export const PersonalSettings: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Existing personal emoji overrides */}
-        <div style={{ border: '1px solid #ddd', borderRadius: '4px', maxHeight: '300px', overflowY: 'auto' }}>
+                 {/* Existing personal emoji overrides */}
+         <div style={{ border: '1px solid hsl(var(--border))', borderRadius: '4px', maxHeight: '300px', overflowY: 'auto' }}>
           {config.personalEmojiOverrides.length === 0 ? (
-            <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
-              No personal emoji overrides configured
-            </div>
+                         <div style={{ padding: '1rem', textAlign: 'center', color: 'hsl(var(--muted-foreground))' }}>
+               No personal emoji overrides configured
+             </div>
           ) : (
-            config.personalEmojiOverrides.map((mapping, index) => (
-              <div key={index} style={{ padding: '0.75rem', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                         config.personalEmojiOverrides.map((mapping, index) => (
+               <div key={index} style={{ padding: '0.75rem', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '1.2rem' }}>{mapping.emoji}</span>
                 <span style={{ fontWeight: 'bold', minWidth: '120px' }}>{mapping.ticketId}</span>
-                <span style={{ color: '#666', flex: 1 }}>{mapping.description || ''}</span>
+                                 <span style={{ color: 'hsl(var(--muted-foreground))', flex: 1 }}>{mapping.description || ''}</span>
                 <Button
                   onClick={() => handleStartEditEmoji(index)}
                   variant="secondary"
@@ -429,34 +482,46 @@ export const PersonalSettings: React.FC<Props> = ({
       {/* UI Preferences */}
       <section style={{ marginBottom: '2rem' }}>
         <h3>UI Preferences</h3>
-        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+        <p style={{ fontSize: '0.9rem', color: 'hsl(var(--muted-foreground))', marginBottom: '1rem' }}>
           Personal display preferences.
         </p>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'hsl(var(--foreground))' }}>
               Theme:
             </label>
             <select
               value={config.uiPreferences.theme || 'default'}
               onChange={(e) => onUpdateUIPreference('theme', e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{ 
+                padding: '0.5rem', 
+                borderRadius: '4px', 
+                border: '1px solid hsl(var(--border))',
+                backgroundColor: 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))'
+              }}
             >
-              <option value="default">Default</option>
+              <option value="default">Default (Dark)</option>
               <option value="dark">Dark</option>
               <option value="light">Light</option>
             </select>
           </div>
           
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'hsl(var(--foreground))' }}>
               Default View:
             </label>
             <select
               value={config.uiPreferences.defaultView || 'month'}
               onChange={(e) => onUpdateUIPreference('defaultView', e.target.value)}
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{ 
+                padding: '0.5rem', 
+                borderRadius: '4px', 
+                border: '1px solid hsl(var(--border))',
+                backgroundColor: 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))'
+              }}
             >
               <option value="month">Month</option>
               <option value="week">Week</option>
@@ -467,7 +532,7 @@ export const PersonalSettings: React.FC<Props> = ({
 
       {/* Import/Export */}
       <section>
-        <h3>Import/Export Configuration</h3>
+                 <h3 style={{ color: 'hsl(var(--foreground))' }}>Import/Export Configuration</h3>
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
           <Button
             onClick={handleExport}
@@ -479,12 +544,21 @@ export const PersonalSettings: React.FC<Props> = ({
         </div>
         
         <div style={{ marginBottom: '1rem' }}>
-          <textarea
-            placeholder="Paste JSON configuration here..."
-            value={importText}
-            onChange={(e) => setImportText(e.target.value)}
-            style={{ width: '100%', height: '100px', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', fontFamily: 'monospace' }}
-          />
+                     <textarea
+             placeholder="Paste JSON configuration here..."
+             value={importText}
+             onChange={(e) => setImportText(e.target.value)}
+             style={{ 
+               width: '100%', 
+               height: '100px', 
+               padding: '0.5rem', 
+               borderRadius: '4px', 
+               border: '1px solid hsl(var(--border))', 
+               fontFamily: 'monospace',
+               backgroundColor: 'hsl(var(--background))',
+               color: 'hsl(var(--foreground))'
+             }}
+           />
         </div>
         
         <Button

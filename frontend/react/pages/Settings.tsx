@@ -37,12 +37,12 @@ export const Settings: React.FC = () => {
   } = useConfigStore();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
+          <p className="text-muted-foreground">
             Configure your application preferences and project settings
           </p>
         </div>
@@ -51,18 +51,18 @@ export const Settings: React.FC = () => {
         <Card>
           <CardContent className="p-0">
             <Tabs defaultValue="project" className="w-full">
-              <div className="border-b border-gray-200">
+              <div className="border-b border-border">
                 <TabsList className="flex w-full h-14 rounded-none border-b-0 bg-transparent space-x-1">
                   <TabsTrigger 
                     value="project" 
-                    className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none flex-1"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none flex-1"
                   >
                     <span>🏢</span>
                     <span>Project</span>
                   </TabsTrigger>
                   <TabsTrigger 
                     value="personal" 
-                    className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none flex-1"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none flex-1"
                   >
                     <span>👤</span>
                     <span>Personal</span>
@@ -73,8 +73,8 @@ export const Settings: React.FC = () => {
               <div className="p-6">
                 <TabsContent value="project" className="space-y-8 mt-0">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Project Settings</h3>
-                    <p className="text-sm text-gray-600">
+                    <h3 className="text-xl font-semibold text-foreground mb-2">Project Settings</h3>
+                    <p className="text-sm text-muted-foreground">
                       Configure Jira domain, team members, and project-specific settings to customize how your timesheet data is processed and displayed.
                     </p>
                   </div>
@@ -96,8 +96,8 @@ export const Settings: React.FC = () => {
                 
                 <TabsContent value="personal" className="space-y-8 mt-0">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Personal Preferences</h3>
-                    <p className="text-sm text-gray-600">
+                    <h3 className="text-xl font-semibold text-foreground mb-2">Personal Preferences</h3>
+                    <p className="text-sm text-muted-foreground">
                       Set your JIRA credentials, time-off preferences, and UI customizations to personalize your experience.
                     </p>
                   </div>

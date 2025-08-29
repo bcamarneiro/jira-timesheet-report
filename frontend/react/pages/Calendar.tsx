@@ -14,22 +14,22 @@ import { CsvService } from '../services/csvService';
 
 // Loading skeleton component
 const LoadingSkeleton: React.FC = () => (
-  <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+  <div className="min-h-screen bg-background">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="animate-pulse">
-        <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
-        <div className="h-12 bg-gray-300 rounded w-1/3 mb-4"></div>
-        <div className="h-10 bg-gray-300 rounded w-1/4 mb-8"></div>
+        <div className="h-8 bg-muted rounded w-1/4 mb-6"></div>
+        <div className="h-12 bg-muted rounded w-1/3 mb-4"></div>
+        <div className="h-10 bg-muted rounded w-1/4 mb-8"></div>
         
         {/* Grid skeleton */}
         <div className="grid grid-cols-7 gap-1.5 mb-2">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-300 rounded animate-pulse" />
+            <div key={i} className="h-8 bg-muted rounded animate-pulse" />
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1.5">
           {Array.from({ length: 35 }).map((_, i) => (
-            <div key={i} className="h-32 bg-gray-300 rounded-lg animate-pulse" />
+            <div key={i} className="h-32 bg-muted rounded-lg animate-pulse" />
           ))}
         </div>
       </div>

@@ -17,17 +17,17 @@ export const Navigation: React.FC = () => {
   ];
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-card shadow-sm border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+            <h1 className="text-xl font-bold text-foreground tracking-tight">
               Timesheet Report
             </h1>
           </div>
           
-          {/* Navigation Links - Always visible, responsive */}
+          {/* Navigation Links */}
           <div className="flex items-center space-x-3">
             {navItems.map((item) => {
               const isConfigComplete = isEssentialConfigComplete();
@@ -39,10 +39,10 @@ export const Navigation: React.FC = () => {
                   to={isDisabled ? '/' : item.path}
                   className={`flex flex-row gap items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                     isDisabled
-                      ? 'text-gray-400 cursor-not-allowed bg-gray-50 border border-gray-200'
+                      ? 'text-muted-foreground cursor-not-allowed bg-muted border border-border'
                       : isActive(item.path)
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-transparent'
+                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent border border-transparent'
                   }`}
                   title={isDisabled ? 'Configure essential settings first' : undefined}
                 >
