@@ -1,5 +1,11 @@
 import React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
+import {
+  Tooltip as ShadcnTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 interface PopoverProps {
   trigger: React.ReactNode;
@@ -69,12 +75,15 @@ interface TooltipProps {
 
 export const Tooltip: React.FC<TooltipProps> = ({ content, children, side = 'top' }) => {
   return (
-    <Popover
-      trigger={children}
-      side={side}
-      sideOffset={8}
-    >
-      {content}
-    </Popover>
+    <TooltipProvider>
+      <ShadcnTooltip>
+        <TooltipTrigger asChild>
+          {children}
+        </TooltipTrigger>
+        <TooltipContent side={side}>
+          {content}
+        </TooltipContent>
+      </ShadcnTooltip>
+    </TooltipProvider>
   );
 };

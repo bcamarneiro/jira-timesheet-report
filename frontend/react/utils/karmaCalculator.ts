@@ -1,4 +1,4 @@
-import type { JiraWorklog } from '../../types/JiraWorklog';
+import type { JiraWorklog } from '../../../types/JiraWorklog';
 
 export type KarmaCalculation = {
   totalSeconds: number;

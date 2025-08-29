@@ -6,6 +6,7 @@ import { CalendarLayout } from '../components/CalendarLayout';
 import { CalendarControls } from '../components/CalendarControls';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
+import { Card, CardContent } from '../components/ui/card';
 import { useTimesheetQueryParams } from '../hooks/useTimesheetQueryParams';
 import { useTimesheetData } from '../hooks/useTimesheetData';
 import { useProjectConfig } from '../hooks/useProjectConfig';
@@ -117,16 +118,19 @@ export const Calendar: React.FC = () => {
       />
 
       {/* Month Navigator */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <MonthNavigator 
-          label={monthLabel(currentYear, currentMonth)} 
-          onPrev={goPrevMonth} 
-          onNext={goNextMonth} 
-        />
-      </div>
+      <Card className="mb-8">
+        <CardContent className="pt-6">
+          <MonthNavigator 
+            label={monthLabel(currentYear, currentMonth)} 
+            onPrev={goPrevMonth} 
+            onNext={goNextMonth} 
+          />
+        </CardContent>
+      </Card>
 
       {/* Calendar Grid */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <Card>
+        <CardContent className="pt-6">
         {isValidUser ? (
           selectedEntry ? (
             <TimesheetGrid
@@ -160,7 +164,8 @@ export const Calendar: React.FC = () => {
         ) : (
           <EmptyState />
         )}
-      </div>
+        </CardContent>
+      </Card>
     </CalendarLayout>
   );
 };

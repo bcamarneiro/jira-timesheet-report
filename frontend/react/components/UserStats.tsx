@@ -2,6 +2,8 @@ import React from 'react';
 import { Button } from './Button';
 import { calculateUserKarma } from '../utils/karmaCalculator';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
 
 type UserStatsProps = {
   user: string;
@@ -20,21 +22,31 @@ export const UserStats: React.FC<UserStatsProps> = ({
   const hasData = karma.totalSeconds > 0;
 
   return (
-    <div className="mb-4">
-      <h2 className="text-xl font-bold text-gray-900 mb-2">{user}</h2>
-      {hasData && (
-        <div className="mb-2">
-          <Button onClick={() => onDownloadUser(user)} variant="secondary" size="small">
-            Download CSV
-          </Button>
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle className="text-xl">{user}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {hasData && (
+          <div className="mb-4">
+            <Button onClick={() => onDownloadUser(user)} variant="secondary" size="small">
+              Download CSV
+            </Button>
+          </div>
+        )}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">
+              Karma hours (net): {karma.netKarmaHours.toFixed(2)} h
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="default">
+              Month total: {karma.totalHours.toFixed(2)} h
+            </Badge>
+          </div>
         </div>
-      )}
-      <div className="mb-2 font-bold text-gray-700">
-        Karma hours (net): {karma.netKarmaHours.toFixed(2)} h
-      </div>
-      <div className="font-bold mt-2 text-gray-700">
-        Month total: {karma.totalHours.toFixed(2)} h
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

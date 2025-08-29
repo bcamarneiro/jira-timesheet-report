@@ -8,27 +8,43 @@ The frontend has been refactored to improve maintainability and comprehension by
 
 ## Component Structure
 
+### shadcn/ui Components
+- **Button**: Accessible button with variants (default, secondary, destructive) and sizes
+- **Select**: Full-featured select component with proper accessibility
+- **Dialog**: Modal dialogs with proper focus management
+- **Card**: Content containers with header, content, and footer sections
+- **Badge**: Status indicators and labels
+- **Tooltip**: Accessible tooltips with proper positioning
+- **Separator**: Visual separation between content
+- **Tabs**: Tabbed interface for organizing content
+
 ### Layout Components
+- **Navigation**: Clean, responsive navigation bar with no mobile menu button
 - **CalendarLayout**: Handles the overall page structure and layout
 - **CalendarGrid**: Manages the calendar grid layout and weekday headers
 
 ### Control Components
 - **CalendarControls**: Handles user selection and action buttons
 - **MonthNavigator**: Navigation between months
-- **UserSelector**: User selection dropdown
-- **TimeOffSelector**: Time-off hours selection
+- **UserSelector**: User selection dropdown using shadcn/ui Select
+- **TimeOffSelector**: Time-off hours selection using shadcn/ui Select
 
 ### Display Components
 - **TimesheetGrid**: Main grid container for user timesheet data
 - **DayCell**: Individual day cell with worklogs and time-off
 - **WorklogDisplay**: Individual worklog item display
-- **UserStats**: User statistics and download actions
+- **UserStats**: User statistics and download actions using shadcn/ui Card and Badge
 
 ### State Components
 - **EmptyState**: Displayed when no user is selected
 - **ErrorState**: Displayed when there's an error loading data
-- **NoDataDialog**: Dialog shown when no data is available for a user
+- **NoDataDialog**: Dialog shown when no data is available using shadcn/ui Dialog
 - **LoadingSkeleton**: Loading state component
+
+### Settings Components
+- **Settings Page**: Dedicated settings page with tabs for project and personal configuration
+- **ProjectSettings**: Project-specific configuration management
+- **PersonalSettings**: Personal preferences and UI customization
 
 ## Services
 
@@ -67,6 +83,9 @@ The frontend has been refactored to improve maintainability and comprehension by
 3. **Testability**: Smaller, focused components are easier to test
 4. **Maintainability**: Changes to one concern don't affect others
 5. **Comprehension**: Clear component names and structure make the code easier to understand
+6. **Accessibility**: Built-in ARIA attributes and keyboard navigation with shadcn/ui
+7. **Consistency**: Unified design system across all components
+8. **Modern UI**: Professional, polished appearance with smooth animations
 
 ## Component Hierarchy
 

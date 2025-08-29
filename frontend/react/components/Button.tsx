@@ -1,11 +1,12 @@
 import React from 'react';
-import styles from './Button.module.css';
+import { Button as ShadcnButton } from './ui/button';
+import { cn } from '../lib/utils';
 
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  size?: 'small' | 'medium' | 'large';
+  variant?: 'primary' | 'secondary' | 'danger' | 'default';
+  size?: 'small' | 'medium' | 'large' | 'default';
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
@@ -23,28 +24,30 @@ export const Button: React.FC<ButtonProps> = ({
   title,
   ...props
 }) => {
-  const buttonClasses = [
-    styles.button,
-    variant === 'primary' && styles.buttonPrimary,
-    variant === 'secondary' && styles.buttonSecondary,
-    variant === 'danger' && styles.buttonDanger,
-    size === 'small' && styles.buttonSmall,
-    size === 'medium' && styles.buttonMedium,
-    size === 'large' && styles.buttonLarge,
-    disabled && styles.buttonDisabled,
-    className
-  ].filter(Boolean).join(' ');
+  // Map our variants to shadcn variants
+  const shadcnVariant = variant === 'primary' ? 'default' : 
+                       variant === 'secondary' ? 'secondary' : 
+                       variant === 'danger' ? 'destructive' : 
+                       variant === 'default' ? 'default' : 'default';
+  
+  // Map our sizes to shadcn sizes
+  const shadcnSize = size === 'small' ? 'sm' : 
+                    size === 'medium' ? 'default' : 
+                    size === 'large' ? 'lg' : 
+                    size === 'default' ? 'default' : 'default';
 
   return (
-    <button
+    <ShadcnButton
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={buttonClasses}
+      variant={shadcnVariant}
+      size={shadcnSize}
+      className={cn(className)}
       title={title}
       {...props}
     >
       {children}
-    </button>
+    </ShadcnButton>
   );
 };
