@@ -1,17 +1,19 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useConfigStore } from '../stores/configStore';
 
 export const Navigation: React.FC = () => {
   const location = useLocation();
+  const { isEssentialConfigComplete } = useConfigStore();
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/calendar', label: 'Calendar', icon: '📅' },
-    { path: '/settings', label: 'Settings', icon: '⚙️' },
+    { path: '/', label: 'Dashboard', icon: '📊', requiresConfig: false },
+    { path: '/calendar', label: 'Calendar', icon: '📅', requiresConfig: true },
+    { path: '/settings', label: 'Settings', icon: '⚙️', requiresConfig: false },
   ];
 
   return (
@@ -27,21 +29,28 @@ export const Navigation: React.FC = () => {
           
           {/* Navigation Links - Always visible, responsive */}
           <div className="flex items-center space-x-3">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  isActive(item.path)
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-transparent'
-                }`}
-              >
-                <span className="mr-2 text-base">{item.icon}</span>
-                <span className="hidden sm:inline">{item.label}</span>
-                <span className="sm:hidden">{item.icon}</span>
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const isConfigComplete = isEssentialConfigComplete();
+              const isDisabled = item.requiresConfig && !isConfigComplete;
+              
+              return (
+                <Link
+                  key={item.path}
+                  to={isDisabled ? '/' : item.path}
+                  className={`inline-flex flex-row items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    isDisabled
+                      ? 'text-gray-400 cursor-not-allowed bg-gray-50 border border-gray-200'
+                      : isActive(item.path)
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-transparent'
+                  }`}
+                  title={isDisabled ? 'Configure essential settings first' : undefined}
+                >
+                  <span className="mr-2 text-base">{item.icon}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -11,6 +11,10 @@ interface ConfigState {
   personalConfig: PersonalConfig;
   isLoading: boolean;
   
+  // Configuration Validation
+  isEssentialConfigComplete: () => boolean;
+  getMissingEssentialConfig: () => string[];
+  
   // Project Config Actions
   updateProjectConfig: (updates: Partial<ProjectConfig>) => void;
   addEmojiMapping: (mapping: TicketEmojiMapping) => void;
@@ -49,6 +53,33 @@ export const useConfigStore = create<ConfigState>()(
       projectConfig: DEFAULT_PROJECT_CONFIG,
       personalConfig: DEFAULT_PERSONAL_CONFIG,
       isLoading: false,
+
+      // Configuration Validation
+      isEssentialConfigComplete: () => {
+        const state = get();
+        return !!(
+          state.projectConfig.jiraDomain?.trim() &&
+          state.personalConfig.jiraPat?.trim() &&
+          state.personalConfig.userName?.trim()
+        );
+      },
+
+      getMissingEssentialConfig: () => {
+        const state = get();
+        const missing = [];
+        
+        if (!state.projectConfig.jiraDomain?.trim()) {
+          missing.push('JIRA Domain');
+        }
+        if (!state.personalConfig.jiraPat?.trim()) {
+          missing.push('JIRA Personal Access Token');
+        }
+        if (!state.personalConfig.userName?.trim()) {
+          missing.push('User Name');
+        }
+        
+        return missing;
+      },
 
       // Project Config Actions
       updateProjectConfig: (updates) => {
