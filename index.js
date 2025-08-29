@@ -1,3 +1,9 @@
+// ========= LEGACY STANDALONE SCRIPT ==========
+// This is a legacy standalone script that still uses environment variables.
+// The main application now uses the React frontend with Zustand configuration.
+// This script is kept for reference but is not part of the main application.
+// =============================================
+
 // ========= CONFIGS ==========
 // create PAT in Jira: https://ticket.rsint.net/secure/ViewProfile.jspa?selectedTab=com.atlassian.pats.pats-plugin:jira-user-personal-access-tokens
 // NOTE: Do not hardcode tokens. Use environment variables instead.

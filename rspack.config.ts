@@ -25,7 +25,6 @@ const config: Configuration = {
       template: './frontend/index.html', // your HTML template
     }),
     new DefinePlugin({
-      'process.env.TEAM_DEVELOPERS': JSON.stringify(process.env.TEAM_DEVELOPERS || ''),
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
       'process.env.OFFLINE_MODE': JSON.stringify(process.env.OFFLINE_MODE || 'false')
     })
