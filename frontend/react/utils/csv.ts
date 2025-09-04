@@ -20,7 +20,7 @@ function parseOriginalDateFromComment(comment: string): string | null {
 export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<string, string>, user: string, year: number, month: number): string {
   if (!data) return '';
   const rows: string[] = [];
-  rows.push(['Name', 'TicketKey', 'TicketName', 'ActualLoggedDate', 'OriginalIntendedDate', 'BookedTime'].join(','));
+  rows.push(['Name', 'TicketKey', 'TicketName', 'OriginalIntendedDate', 'ActualLoggedDate', 'BookedTime'].join(','));
   
   // Filter worklogs by user and by actual logged date within the selected month
   const filteredData = data
@@ -34,15 +34,7 @@ export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<stri
   
   filteredData
     .sort((a, b) => {
-      // Primary sort: ActualLoggedDate (started field)
-      const actualDateA = new Date(a.started).getTime();
-      const actualDateB = new Date(b.started).getTime();
-      
-      if (actualDateA !== actualDateB) {
-        return actualDateA - actualDateB;
-      }
-      
-      // Secondary sort: OriginalIntendedDate
+      // Sort by OriginalIntendedDate
       const originalDateA = parseOriginalDateFromComment(a.comment) || a.started;
       const originalDateB = parseOriginalDateFromComment(b.comment) || b.started;
       return new Date(originalDateA).getTime() - new Date(originalDateB).getTime();
@@ -59,8 +51,8 @@ export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<stri
         csvEscape(user),
         csvEscape(key),
         csvEscape(ticketName),
-        csvEscape(actualLoggedDate),
         csvEscape(originalIntendedDate),
+        csvEscape(actualLoggedDate),
         csvEscape(bookedHours)
       ].join(','));
     });
