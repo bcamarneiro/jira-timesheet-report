@@ -12,8 +12,7 @@ function parseOriginalDateFromComment(comment: string): string | null {
   const pattern = /Original Worklog Date was: (\d{4}\/\d{2}\/\d{2})/;
   const match = comment.match(pattern);
   if (match) {
-    // Convert from YYYY/MM/DD to YYYY-MM-DD format
-    return match[1].replace(/\//g, '-');
+    return match[1];
   }
   return null;
 }
@@ -50,7 +49,7 @@ export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<stri
       const key = wl.issueKey ?? String(wl.issueId);
       const ticketName = issueSummaries[key] || '';
       const actualLoggedDate = new Date(wl.started).toISOString().substring(0, 10);
-      const originalIntendedDate = parseOriginalDateFromComment(wl.comment) || actualLoggedDate;
+      const originalIntendedDate = new Date(parseOriginalDateFromComment(wl.comment) || actualLoggedDate).toISOString().substring(0, 10);
       const bookedHours = (wl.timeSpentSeconds / 3600).toFixed(2);
       rows.push([
         csvEscape(user),
