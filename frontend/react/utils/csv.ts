@@ -30,6 +30,8 @@ export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<stri
       return actualLoggedDate.getFullYear() === year && actualLoggedDate.getMonth() === month;
     });
   
+  let totalHours = 0;
+  
   filteredData
     .sort((a, b) => {
       // Primary sort: ActualLoggedDate (started field)
@@ -51,6 +53,8 @@ export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<stri
       const actualLoggedDate = new Date(wl.started).toISOString().substring(0, 10);
       const originalIntendedDate = new Date(parseOriginalDateFromComment(wl.comment) || actualLoggedDate).toISOString().substring(0, 10);
       const bookedHours = (wl.timeSpentSeconds / 3600).toFixed(2);
+      totalHours += wl.timeSpentSeconds / 3600;
+      
       rows.push([
         csvEscape(user),
         csvEscape(key),
@@ -60,6 +64,19 @@ export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<stri
         csvEscape(bookedHours)
       ].join(','));
     });
+  
+  // Add summary row with total hours
+  if (filteredData.length > 0) {
+    rows.push([
+      csvEscape('TOTAL'),
+      csvEscape(''),
+      csvEscape(''),
+      csvEscape(''),
+      csvEscape(''),
+      csvEscape(totalHours.toFixed(2))
+    ].join(','));
+  }
+  
   return rows.join('\n');
 }
 
