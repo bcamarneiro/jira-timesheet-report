@@ -18,12 +18,20 @@ function parseOriginalDateFromComment(comment: string): string | null {
   return null;
 }
 
-export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<string, string>, user: string): string {
+export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<string, string>, user: string, year: number, month: number): string {
   if (!data) return '';
   const rows: string[] = [];
   rows.push(['Name', 'TicketKey', 'TicketName', 'ActualLoggedDate', 'OriginalIntendedDate', 'BookedTime'].join(','));
-  data
+  
+  // Filter worklogs by user and by actual logged date within the selected month
+  const filteredData = data
     .filter(wl => wl.author.displayName === user)
+    .filter(wl => {
+      const actualLoggedDate = new Date(wl.started);
+      return actualLoggedDate.getFullYear() === year && actualLoggedDate.getMonth() === month;
+    });
+  
+  filteredData
     .sort((a, b) => {
       // Primary sort: ActualLoggedDate (started field)
       const actualDateA = new Date(a.started).getTime();
