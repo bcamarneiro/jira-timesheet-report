@@ -8,23 +8,48 @@ function csvEscape(value: string): string {
   return safe;
 }
 
+function parseOriginalDateFromComment(comment: string): string | null {
+  const pattern = /Original Worklog Date was: (\d{4}\/\d{2}\/\d{2})/;
+  const match = comment.match(pattern);
+  if (match) {
+    // Convert from YYYY/MM/DD to YYYY-MM-DD format
+    return match[1].replace(/\//g, '-');
+  }
+  return null;
+}
+
 export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<string, string>, user: string): string {
   if (!data) return '';
   const rows: string[] = [];
-  rows.push(['Name', 'TicketKey', 'TicketName', 'Date', 'BookedTime'].join(','));
+  rows.push(['Name', 'TicketKey', 'TicketName', 'ActualLoggedDate', 'OriginalIntendedDate', 'BookedTime'].join(','));
   data
     .filter(wl => wl.author.displayName === user)
-    .sort((a, b) => new Date(a.started).getTime() - new Date(b.started).getTime())
+    .sort((a, b) => {
+      // Primary sort: ActualLoggedDate (started field)
+      const actualDateA = new Date(a.started).getTime();
+      const actualDateB = new Date(b.started).getTime();
+      
+      if (actualDateA !== actualDateB) {
+        return actualDateA - actualDateB;
+      }
+      
+      // Secondary sort: OriginalIntendedDate
+      const originalDateA = parseOriginalDateFromComment(a.comment) || a.started;
+      const originalDateB = parseOriginalDateFromComment(b.comment) || b.started;
+      return new Date(originalDateA).getTime() - new Date(originalDateB).getTime();
+    })
     .forEach(wl => {
       const key = wl.issueKey ?? String(wl.issueId);
       const ticketName = issueSummaries[key] || '';
-      const startedIso = new Date(wl.started).toISOString().substring(0, 10);
+      const actualLoggedDate = new Date(wl.started).toISOString().substring(0, 10);
+      const originalIntendedDate = parseOriginalDateFromComment(wl.comment) || actualLoggedDate;
       const bookedHours = (wl.timeSpentSeconds / 3600).toFixed(2);
       rows.push([
         csvEscape(user),
         csvEscape(key),
         csvEscape(ticketName),
-        csvEscape(startedIso),
+        csvEscape(actualLoggedDate),
+        csvEscape(originalIntendedDate),
         csvEscape(bookedHours)
       ].join(','));
     });
