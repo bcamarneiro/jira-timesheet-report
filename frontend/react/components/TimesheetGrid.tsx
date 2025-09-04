@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
 import { getMonthStartWeekday, getDaysInMonth, isoDateFromYMD } from '../utils/date';
 import { useTimeOff } from '../hooks/useTimeOff';
@@ -59,6 +59,8 @@ export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroInde
         timeOffHours={!isWeekend ? getTimeOffHours(iso) : 0}
         onTimeOffChange={(hours) => setTimeOffHours(iso, hours)}
         issueSummaries={issueSummaries}
+        currentYear={year}
+        currentMonth={monthZeroIndexed}
       />
     );
   }
@@ -68,7 +70,7 @@ export const TimesheetGrid: React.FC<Props> = ({ user, days, year, monthZeroInde
       <h2>{user}</h2>
       {userTotalSeconds > 0 && (
         <div style={{ marginBottom: '0.5em' }}>
-          <button onClick={() => onDownloadUser(user)}>Download CSV</button>
+          <button type="button" onClick={() => onDownloadUser(user)}>Download CSV</button>
         </div>
       )}
       <div style={{ marginBottom: '0.5em', fontWeight: 'bold' }}>Karma hours (net): {(userNetKarmaSeconds / 3600).toFixed(2)} h</div>

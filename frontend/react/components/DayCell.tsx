@@ -1,7 +1,8 @@
-import React from 'react';
+import type React from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
 import { truncate } from '../utils/text';
 import { formatHours } from '../utils/format';
+import { isRetroactiveWorklog } from '../utils/csv';
 
 type Props = {
   iso: string;
@@ -12,9 +13,11 @@ type Props = {
   timeOffHours: number;
   onTimeOffChange: (hours: number) => void;
   issueSummaries: Record<string, string>;
+  currentYear: number;
+  currentMonth: number;
 };
 
-export const DayCell: React.FC<Props> = ({ iso, dayNumber, jiraDomain, worklogs, isWeekend, timeOffHours, onTimeOffChange, issueSummaries }) => {
+export const DayCell: React.FC<Props> = ({ iso, dayNumber, jiraDomain, worklogs, isWeekend, timeOffHours, onTimeOffChange, issueSummaries, currentYear, currentMonth }) => {
   const dayTotalSeconds = worklogs.reduce((sum, wl) => sum + wl.timeSpentSeconds, 0);
   const baselineSeconds = isWeekend ? 0 : 8 * 3600;
   const timeOffSeconds = !isWeekend ? timeOffHours * 3600 : 0;
@@ -61,9 +64,11 @@ export const DayCell: React.FC<Props> = ({ iso, dayNumber, jiraDomain, worklogs,
           const keyOrId = wl.issueKey ?? wl.issueId;
           const issueTitle = (wl.issueKey && issueSummaries[wl.issueKey]) ? issueSummaries[wl.issueKey] : '';
           const comment = wl.comment || '';
+          const isRetroactive = isRetroactiveWorklog(wl, currentYear, currentMonth);
           const tooltip = [
             issueTitle ? `Issue: ${issueTitle}` : '',
-            comment ? `Comment: ${truncate(comment)}` : ''
+            comment ? `Comment: ${truncate(comment)}` : '',
+            isRetroactive ? '⚠️ Logged in current month but belongs to previous month' : ''
           ].filter(Boolean).join('\n');
           return (
             <div key={wl.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -71,8 +76,11 @@ export const DayCell: React.FC<Props> = ({ iso, dayNumber, jiraDomain, worklogs,
               <a href={`https://${jiraDomain}/browse/${keyOrId}?focusedId=${wl.id}&page=com.atlassian.jira.plugin.system.issuetabpanels%3Aworklog-tabpanel#worklog-${wl.id}`} target="_blank" rel="noreferrer" style={{ color: '#0b5cff', textDecoration: 'none' }}>
                 {keyOrId}
               </a>
+              {isRetroactive && (
+                <span title="Logged in current month but belongs to previous month" style={{ color: '#ff6b35', fontSize: '14px', marginLeft: 2 }}>⚠️</span>
+              )}
               {(issueTitle || comment) && (
-                <span title={tooltip} aria-label="Details" style={{ cursor: 'help', marginLeft: 4 }}>🛈</span>
+                <span title={tooltip} style={{ cursor: 'help', marginLeft: 4 }}>🛈</span>
               )}
             </div>
           );

@@ -17,6 +17,23 @@ function parseOriginalDateFromComment(comment: string): string | null {
   return null;
 }
 
+export function isRetroactiveWorklog(worklog: JiraWorklog, currentYear: number, currentMonth: number): boolean {
+  const originalDate = parseOriginalDateFromComment(worklog.comment);
+  if (!originalDate) {
+    return false; // No original date found, not retroactive
+  }
+  
+  const originalDateObj = new Date(originalDate);
+  const loggedDateObj = new Date(worklog.started);
+  
+  // Check if logged in current month but original date is in a previous month
+  const isLoggedInCurrentMonth = loggedDateObj.getFullYear() === currentYear && loggedDateObj.getMonth() === currentMonth;
+  const isOriginalInPreviousMonth = originalDateObj.getFullYear() < currentYear || 
+    (originalDateObj.getFullYear() === currentYear && originalDateObj.getMonth() < currentMonth);
+  
+  return isLoggedInCurrentMonth && isOriginalInPreviousMonth;
+}
+
 export function buildCsvForUser(data: JiraWorklog[], issueSummaries: Record<string, string>, user: string, year: number, month: number): string {
   if (!data) return '';
   const rows: string[] = [];
