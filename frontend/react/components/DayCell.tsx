@@ -5,7 +5,7 @@ import { useDayCalculation } from "../hooks/useDayCalculation";
 import { DaySummary } from "./day/DaySummary";
 import { TimeOffSelector } from "./day/TimeOffSelector";
 import { WorklogList } from "./day/WorklogList";
-import styles from "./DayCell.module.css";
+import * as styles from "./DayCell.module.css";
 
 type Props = {
 	iso: string;
