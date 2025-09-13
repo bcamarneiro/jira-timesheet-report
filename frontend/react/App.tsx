@@ -1,11 +1,13 @@
 import type React from "react";
-import { buildCsvForUser, download } from "./utils/csv";
-import { monthLabel } from "./utils/date";
-import { UserSelector } from "./components/UserSelector";
+
+import { Button } from "./components/ui/Button";
 import { MonthNavigator } from "./components/MonthNavigator";
 import { TimesheetGrid } from "./components/TimesheetGrid";
-import { useTimesheetQueryParams } from "./hooks/useTimesheetQueryParams";
+import { UserSelector } from "./components/UserSelector";
+import { useDownload } from "./hooks/useDownload";
 import { useTimesheetData } from "./hooks/useTimesheetData";
+import { useTimesheetQueryParams } from "./hooks/useTimesheetQueryParams";
+import { monthLabel } from "./utils/date";
 
 export const App: React.FC = () => {
 	const {
@@ -27,22 +29,25 @@ export const App: React.FC = () => {
 		visibleEntries,
 	} = useTimesheetData(currentYear, currentMonth, selectedUser);
 
+	const { downloadUser, downloadAll } = useDownload();
+
 	const handleUserChange = (value: string) => {
 		setSelectedUser(value);
 	};
 
-	function handleDownloadUser(user: string) {
-		const csv = data
-			? buildCsvForUser(data, issueSummaries, user, currentYear, currentMonth)
-			: "";
-		download(`${user.replace(/[^a-z0-9-_]/gi, "_")}.csv`, csv);
-	}
+	const handleDownloadUser = (user: string) => {
+		downloadUser(user, data || [], issueSummaries, currentYear, currentMonth);
+	};
 
-	function handleDownloadAll(visibleUsers: string[]) {
-		visibleUsers.forEach((user) => {
-			handleDownloadUser(user);
-		});
-	}
+	const handleDownloadAll = (visibleUsers: string[]) => {
+		downloadAll(
+			visibleUsers,
+			data || [],
+			issueSummaries,
+			currentYear,
+			currentMonth,
+		);
+	};
 
 	if (!data) return <p>Loading...</p>;
 
@@ -59,8 +64,7 @@ export const App: React.FC = () => {
 			/>
 
 			<div style={{ margin: "0.5em 0" }}>
-				<button
-					type="button"
+				<Button
 					onClick={() =>
 						handleDownloadAll(
 							Object.keys(grouped)
@@ -72,7 +76,7 @@ export const App: React.FC = () => {
 					}
 				>
 					Download CSV for all
-				</button>
+				</Button>
 			</div>
 
 			<MonthNavigator

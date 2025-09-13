@@ -14,6 +14,9 @@ const config: Configuration = {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
   },
+  experiments: {
+    css: true,
+  },
   // Enable polling to ensure file changes are detected reliably on WSL/Windows filesystems
   watchOptions: {
     ignored: /node_modules/,
@@ -101,6 +104,18 @@ const config: Configuration = {
           }
         ],
         exclude: /node_modules/,
+      },
+      {
+        test: /\.module\.css$/,
+        type: 'css/module',
+        generator: {
+          localIdentName: '[name]__[local]--[hash:base64:5]',
+        },
+      },
+      {
+        test: /\.css$/,
+        exclude: /\.module\.css$/,
+        type: 'css',
       },
     ],
   },
