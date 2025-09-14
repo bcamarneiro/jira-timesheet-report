@@ -1,305 +1,278 @@
-# Client-Side Configuration Migration Plan
+# Jira Timesheet Report - Client-Side Configuration Migration
 
-## Overview
-Migrate from environment variable-based configuration to a client-side configuration system that allows users to manage their own Jira settings and share project configurations with their team.
+## What This App Does
+A web application that generates timesheet reports from Jira worklogs. Users can view their work hours, track time off, and export data to CSV. Currently requires manual setup with environment variables and a backend server.
 
-## Current State
-- Configuration stored in `.env` file
-- Server-side environment variables (`JIRA_DOMAIN`, `JIRA_PAT`, `JIRA_COMPONENT`, `TEAM_DEVELOPERS`)
-- Single-user setup requiring manual configuration
-- Backend server required for CORS handling
+## Why We're Migrating
+**Current Problems:**
+- Manual `.env` file setup required
+- Backend server needed for CORS handling
+- Single-user configuration only
+- No team collaboration features
+- Complex deployment process
 
-## Target State
-- **Pure frontend application** with client-side configuration
-- Configuration stored in IndexedDB
-- Settings page for configuration management
-- Split between project settings (shareable) and personal settings (private)
-- Optional CORS proxy configuration
-- Connection validation and status indicators
-- Export/import functionality for team collaboration
-- **No backend server required**
+**Target Benefits:**
+- Zero setup required - users just visit a URL
+- Client-side configuration stored in browser
+- Team collaboration with shared project settings
+- No backend server needed
+- Simple static hosting deployment
 
-## 1. Data Storage Strategy
-
-### IndexedDB Schema
-```typescript
-interface ProjectConfig {
-  id: string;
-  name: string;
-  jiraDomain: string;
-  componentFilter?: string;
-  teamDevelopers: string[];
-  corsProxy?: string; // Optional CORS proxy URL
-  createdAt: Date;
-  updatedAt: Date;
-  isActive: boolean;
-}
-
-interface PersonalConfig {
-  pat: string;
-  preferences: UserPreferences;
-  lastUsedProject: string;
-  theme: 'light' | 'dark' | 'auto';
-}
-
-interface ConnectionStatus {
-  projectId: string;
-  lastTested: Date;
-  status: 'success' | 'error' | 'unknown' | 'testing';
-  error?: string;
-  responseTime?: number;
-}
-
-interface UserPreferences {
-  defaultView: 'calendar' | 'list';
-  timeFormat: '12h' | '24h';
-  autoRefresh: boolean;
-  notifications: boolean;
-}
+## Current Architecture
+```
+Frontend (React) → Backend (Express) → Jira API
+                 ↑
+            .env file (JIRA_DOMAIN, JIRA_PAT, etc.)
 ```
 
-### Storage Benefits
-- **IndexedDB over localStorage**: Better for structured data, larger storage capacity, better performance
-- **Structured data**: Easy to query and manage
-- **Versioning**: Can handle schema migrations
-- **Offline support**: Works without network connection
-
-## 2. Settings Page Architecture
-
-### Page Structure
+## Target Architecture
 ```
-Settings Page
-├── Project Settings Tab
-│   ├── Project Selection/Dropdown
-│   ├── Jira Domain Configuration
-│   ├── CORS Proxy Configuration (Optional)
-│   ├── Component Filters
-│   ├── Team Developers Management
-│   ├── Export/Import Project Config
-│   └── Test Connection Button
-├── Personal Settings Tab
-│   ├── Personal Access Token
-│   ├── User Preferences
-│   ├── Theme Selection
-│   └── Personal Time Tracking Settings
-└── Connection Status Panel
-    ├── Current Project Status
-    ├── Last Connection Test
-    ├── Error Details (if any)
-    └── Connection History
+Frontend (React + Zustand) → CORS Proxy (optional) → Jira API
+                          ↑
+                    localStorage (user config)
 ```
 
-### Features
-- **Project Management**: Create, edit, delete, duplicate projects
-- **Import/Export**: JSON-based project configuration sharing
-- **Connection Testing**: Real-time validation of Jira credentials
-- **Status Indicators**: Visual feedback on connection health
-- **Validation**: Form validation with helpful error messages
+## Key Technical Decisions
 
-## 3. Connection Validation System
+### 1. State Management: Zustand + Persist
+**Decision:** Use Zustand with localStorage persistence
+**Why:** Simple API, perfect for solo development, built-in persistence, small bundle size
+**What it handles:** Configuration storage, UI state, API data caching
 
-### Validation Levels
-1. **Basic Validation**: Check if required fields are filled
-2. **Format Validation**: Validate domain format, PAT length, proxy URL format
-3. **Proxy Validation**: Test CORS proxy connection (if configured)
-4. **API Validation**: Test actual connection to Jira API
-5. **Permission Validation**: Verify PAT has required permissions
+### 2. Jira API Client: @narthia/jira-client
+**Decision:** Use @narthia/jira-client for direct Jira API communication
+**Why:** Browser-optimized, zero dependencies, PAT support, comprehensive TypeScript types
+**What it replaces:** All backend API calls
 
-### CORS Proxy Options
+### 3. CORS Handling: Optional Proxy Configuration
+**Decision:** Make CORS proxy optional in user settings
+**Why:** Different Jira instances have different CORS policies, gives users flexibility
+**Options:** No proxy, public proxy, self-hosted proxy, custom proxy
+
+### 4. Settings UI: Separate Page
+**Decision:** Settings as a dedicated page, not a modal
+**Why:** More space for configuration options, better UX for complex settings
+**What it includes:** Project settings tab, personal settings tab, connection status panel
+
+## Data Structure
+
+### Project Settings (Shareable)
+- Jira domain
+- Component filters
+- Team developers list
+- JQL filters for locating team tasks and worklogs
+- CORS proxy configuration
+- Project name and metadata
+
+### Personal Settings (Private)
+- Personal Access Token
+- User preferences (theme, time format, etc.)
+- Last used project
+
+### UI State (Temporary)
+- Selected user
+- Current month/year
+- Loading states
+- Error messages
+
+## Implementation Steps
+
+### Phase 1: Foundation Setup
+1. **Install dependencies**
+   - `npm install zustand @narthia/jira-client`
+   - Remove backend dependencies
+
+2. **Create Zustand store**
+   - Define state structure (projects, personal config, UI state)
+   - Add persistence configuration
+   - Create actions for state updates
+
+3. **Replace backend API calls**
+   - Remove all `/api/timesheet` calls
+   - Replace with direct Jira client calls
+   - Update data fetching logic
+
+4. **Basic settings page**
+   - Create dedicated settings page
+   - Add project configuration form
+   - Add personal settings form
+
+### Phase 2: Enhanced Configuration
+1. **CORS proxy support**
+   - Add proxy configuration UI
+   - Implement proxy testing
+   - Update API calls to use proxy when configured
+
+2. **Connection validation**
+   - Add connection testing functionality
+   - Show connection status indicators
+   - Implement error handling and retry logic
+
+3. **Import/Export features**
+   - Add project configuration JSON export
+   - Add project configuration JSON import
+   - Create file-based sharing functionality
+
+### Phase 3: Team Collaboration
+1. **Project sharing**
+   - JSON file-based project configuration sharing
+   - Project templates for common setups
+   - Team onboarding flows
+
+2. **Advanced features**
+   - Multiple project support
+   - Advanced connection monitoring
+
+## Settings Page Structure
+
+### Project Settings Tab
+- Project selection/dropdown
+- Jira domain configuration
+- CORS proxy configuration (optional)
+- Component filters
+- JQL filters for team tasks and worklogs
+- Team developers management
+- Export/import project config (JSON)
+- Test connection button
+
+### Personal Settings Tab
+- Personal Access Token
+- User preferences
+- Theme selection
+- Personal time tracking settings
+
+### Connection Status Panel
+- Current project status
+- Last connection test
+- Error details (if any)
+- Connection history
+
+## CORS Proxy Options
+
+### No Proxy
+- Direct connection to Jira API
+- Works if Jira instance allows CORS
+- Fastest option when available
+
+### Public Proxy
+- Use services like cors-anywhere, allorigins
+- Quick setup, no maintenance
+- May have rate limits
+
+### Self-Hosted Proxy
+- User's own CORS proxy instance
+- Full control and reliability
+- Requires deployment
+
+### Custom Proxy
+- Any CORS proxy service
+- Maximum flexibility
+- User provides URL
+
+## Connection Validation Flow
+
+**Trigger:** On-demand at time of request (when user tries to fetch data)
+1. **Basic Validation** - Check required fields are filled
+2. **Format Validation** - Validate domain format, PAT length, proxy URL
+3. **Proxy Test** - Test CORS proxy connection (if configured)
+4. **API Test** - Test actual connection to Jira API
+5. **Permission Test** - Verify PAT has required permissions
+
+## Security Considerations
+
+### Data Protection
+- PAT stored in localStorage (encrypted by browser)
+- No server-side storage of sensitive data
+- Clear data when clearing browser data
+
+### Sharing Security
+- Project configs don't include PATs (only domain, filters, team members)
+- Only share project settings, not personal tokens
+- User consent for data sharing
+
+## Deployment Strategy
+
+### Deployment Options
+- **Primary:** Vercel (recommended for easy deployment)
+- **Self-hosting:** Users can download and run locally
+- **Static hosting:** Deploy as static files to any hosting service
+- **No server required** - completely client-side
+
+### Environment Variables
+- Remove all `.env` dependencies
+- Everything configured client-side
+- No server-side configuration needed
+
+## Migration Benefits
+
+### For Users
+- **Zero setup** - just visit the URL
+- **Team collaboration** - share project settings
+- **Multiple projects** - switch between different Jira instances
+- **Better UX** - settings persist across sessions
+
+### For Development
+- **Simpler architecture** - no backend to maintain
+- **Faster development** - focus on frontend features
+- **Easier deployment** - just static files
+- **Better testing** - no server dependencies
+
+## CORS Proxy Explanation
+
+### Why CORS Proxy is Needed
+Browsers block direct API calls to different domains (CORS policy). Jira instances may not allow direct browser access, so a proxy is needed to:
+- Add proper CORS headers to Jira API responses
+- Handle authentication headers
+- Provide a bridge between browser and Jira API
+
+### CORS Proxy Options (No Default Provided)
 - **No Proxy**: Direct connection (if Jira allows CORS)
 - **Public Proxy**: Use services like cors-anywhere, allorigins
 - **Self-Hosted Proxy**: User's own CORS proxy instance
 - **Custom Proxy**: Any CORS proxy service
 
-### UI Components
-- **Connection Status Badge**: Shows current connection state
-- **Test Connection Button**: Manual connection testing
-- **Error Messages**: Clear, actionable error descriptions
-- **Retry Mechanisms**: Easy retry for failed connections
-- **Connection History**: Track connection attempts and results
+### Implementation
+- Users configure their preferred proxy option in settings
+- App tests connection with chosen proxy
+- Falls back gracefully if proxy fails
 
-### Validation Flow
-```
-User Input → Basic Validation → Format Validation → Proxy Test (if configured) → API Test → Permission Check → Status Update
-```
+## Future Considerations (Second Iteration)
 
-### CORS Proxy Configuration UI
-```
-CORS Proxy Settings:
-├── [ ] No Proxy (Direct Connection)
-├── [ ] Use Public Proxy
-│   └── Dropdown: cors-anywhere, allorigins, etc.
-├── [ ] Use Custom Proxy
-│   └── URL Input Field
-└── [ ] Use Self-Hosted Proxy
-    └── URL Input Field + Test Button
-```
+### Configuration Versioning
+- Handle schema changes when adding new features
+- Migration paths for existing configurations
+- Backward compatibility
 
-## 4. Implementation Phases
+### Offline Support
+- Cache worklog data for offline viewing
+- Queue actions when offline
+- Sync when connection restored
 
-### Phase 1: Foundation
-- [ ] Set up IndexedDB storage system
-- [ ] Install and configure `@narthia/jira-client`
-- [ ] Create basic settings page structure
-- [ ] Implement project configuration management
-- [ ] Basic connection validation
-- [ ] Replace backend API calls with client library
+## Decisions Made
 
-### Phase 2: Enhanced UX
-- [ ] Advanced settings page with tabs
-- [ ] Import/export functionality
-- [ ] Connection status indicators
-- [ ] Form validation and error handling
-
-### Phase 3: Team Collaboration
-- [ ] Project sharing features
-- [ ] Configuration versioning
-- [ ] Team onboarding flows
-- [ ] Advanced connection monitoring
-
-## 5. Technical Considerations
-
-### Backend Changes
-- **Remove backend entirely** - no server needed
-- All API calls go directly to Jira (via CORS proxy if needed)
-- Configuration validation happens client-side
-
-### Frontend Changes
-- Replace all environment variable usage with IndexedDB
-- Create comprehensive settings management system
-- **Integrate `@narthia/jira-client`** for direct Jira API communication
-- Add CORS proxy configuration and testing
-- Create configuration import/export functionality
-- Build connection validation and status monitoring
-- **Remove all backend API calls** - replace with client library calls
-
-### Architecture Simplification
-- **Pure SPA** - Single Page Application
-- **Static hosting** - Deploy to Vercel, Netlify, GitHub Pages, etc.
-- **No server costs** - Completely free to host
-- **Better performance** - No server round-trips for configuration
-
-### Jira API Client Library
-**Selected: `@narthia/jira-client`**
-
-**Why this library:**
-- ✅ **Browser-optimized** - designed for frontend use
-- ✅ **Zero runtime dependencies** - smaller bundle size
-- ✅ **Personal Access Token support** - exactly what we need
-- ✅ **Comprehensive TypeScript types** - auto-generated from OpenAPI
-- ✅ **ESM/CJS dual support** - modern module system
-- ✅ **Active maintenance** - regular updates
-
-**Installation:**
-```bash
-npm install @narthia/jira-client
-```
-
-**Usage Example:**
-```typescript
-import { JiraClient } from '@narthia/jira-client';
-
-const client = new JiraClient({
-  type: 'default',
-  auth: {
-    email: 'user@example.com', // Not used with PAT
-    apiToken: config.pat,
-    baseUrl: `https://${config.domain}`,
-  },
-});
-
-// Search issues with JQL
-const issues = await client.issues.searchIssues({
-  jql: 'worklogDate >= "2024-01-01" AND worklogDate <= "2024-01-31"',
-  fields: ['key', 'summary'],
-});
-
-// Get worklogs for an issue
-const worklogs = await client.worklogs.getWorklogsForIssue({
-  issueIdOrKey: 'PROJ-123',
-  startedAfter: startMillis,
-  startedBefore: endMillis,
-});
-```
-
-**API Methods We'll Use:**
-- `client.issues.searchIssues()` - JQL search for issues
-- `client.worklogs.getWorklogsForIssue()` - Get worklogs for specific issues
-- `client.issues.getIssue()` - Get issue details (summaries)
-- `client.myself.getMyself()` - Get current user information
-
-**Migration from Backend:**
-```typescript
-// Old backend approach:
-const response = await fetch(`https://${domain}/rest/api/2/search?${params}`);
-
-// New frontend approach:
-const issues = await client.issues.searchIssues({
-  jql: jqlQuery,
-  fields: ['key', 'summary'],
-});
-```
-
-## 6. User Experience Improvements
-
-### Onboarding
-- Guided setup wizard for new users
-- Import existing .env configuration
-- Team project sharing links
-
-### Daily Usage
-- Quick project switching
-- Connection status awareness
-- Easy settings updates
-- Clear error resolution
-
-### Team Collaboration
-- Share project configurations via URL/JSON
-- Version control for project settings
-- Team member onboarding assistance
-
-## 7. Security Considerations
-
-### Data Protection
-- PAT stored securely in IndexedDB
-- No server-side storage of sensitive data
-- Clear data when clearing browser data
-
-### Sharing Security
-- Project configs don't include PATs
-- Secure sharing mechanisms
-- User consent for data sharing
-
-## 8. Future Enhancements
-
-### Advanced Features
-- Multiple Jira instance support
-- Configuration templates
-- Automated connection monitoring
-- Integration with other tools
-
-### Analytics
-- Connection success rates
-- Most used configurations
-- Performance metrics
-
-## Questions & Decisions Pending
-
-1. **IndexedDB vs localStorage**: Confirmed IndexedDB for better structure and performance
-2. **Settings page location**: Separate page vs modal vs sidebar
-3. **Project sharing method**: URL-based vs file-based vs both
-4. **Connection validation frequency**: On-demand vs periodic vs real-time
-5. **Team collaboration features**: What level of sharing is needed
-6. **Configuration versioning**: How to handle schema changes
-7. **Offline support**: How much functionality should work offline
-8. **CORS proxy default**: Should we provide a default public proxy or require user configuration?
-9. **Proxy validation**: How to test if a CORS proxy is working correctly?
-10. **Deployment target**: Vercel, Netlify, GitHub Pages, or other?
+1. **Settings page location**: ✅ Separate page (not modal)
+2. **Project sharing method**: ✅ File-based JSON export/import
+3. **Connection validation frequency**: ✅ On-demand at time of request
+4. **Team collaboration features**: ✅ Share project configs (domain, team members, JQL filters)
+5. **Configuration versioning**: ⏳ Second iteration
+6. **Offline support**: ⏳ Second iteration
+7. **CORS proxy default**: ⏳ No default provided, explain options to users
+8. **Deployment target**: ✅ Vercel + self-hosting option
 
 ## Next Steps
 
-1. Finalize technical architecture decisions
-2. Create detailed implementation plan
-3. Set up development environment
-4. Begin Phase 1 implementation
-5. User testing and feedback collection
+1. **Start with Phase 1** - Foundation setup
+2. **Create Zustand store** - Define state structure
+3. **Replace API calls** - Use Jira client directly
+4. **Add basic settings** - Project and personal configuration
+5. **Test with real data** - Ensure everything works
+6. **Iterate and improve** - Add features based on usage
+
+## Success Criteria
+
+- [ ] Users can configure Jira settings without .env file
+- [ ] App works without backend server
+- [ ] Settings persist across browser sessions
+- [ ] Team members can share project configurations
+- [ ] CORS issues are handled gracefully
+- [ ] App can be deployed as static files
