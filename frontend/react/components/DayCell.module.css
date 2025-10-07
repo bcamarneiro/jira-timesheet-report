@@ -8,6 +8,28 @@
   gap: 0.25em;
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25em;
+}
+
+.dayNumber {
+  font-weight: bold;
+}
+
+.logInfo {
+  font-size: 11px;
+  color: #666;
+}
+
+.logsContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Weekend styles */
 .weekend {
   background: #ffd6d6;

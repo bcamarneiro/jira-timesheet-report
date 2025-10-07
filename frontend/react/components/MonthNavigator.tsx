@@ -1,5 +1,6 @@
 import type React from "react";
 import { Button } from "./ui/Button";
+import * as styles from "./MonthNavigator.module.css";
 
 type Props = {
 	label: string;
@@ -9,18 +10,11 @@ type Props = {
 
 export const MonthNavigator: React.FC<Props> = ({ label, onPrev, onNext }) => {
 	return (
-		<div
-			style={{
-				display: "flex",
-				alignItems: "center",
-				gap: "0.5em",
-				marginBottom: "1em",
-			}}
-		>
+		<div className={styles.container}>
 			<Button onClick={onPrev} variant="secondary">
 				{"←"}
 			</Button>
-			<div style={{ fontWeight: "bold" }}>{label}</div>
+			<div className={styles.label}>{label}</div>
 			<Button onClick={onNext} variant="secondary">
 				{"→"}
 			</Button>

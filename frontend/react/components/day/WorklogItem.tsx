@@ -3,6 +3,7 @@ import type { JiraWorklog } from "../../../../types/JiraWorklog";
 import { isRetroactiveWorklog } from "../../utils/csv";
 import { formatHours } from "../../utils/format";
 import { truncate } from "../../utils/text";
+import * as styles from "./WorklogItem.module.css";
 
 type Props = {
 	worklog: JiraWorklog;
@@ -41,28 +42,29 @@ export const WorklogItem: React.FC<Props> = ({
 		.join("\n");
 
 	return (
-		<div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-			<span style={{ color: "#444", whiteSpace: "nowrap" }}>
-				{formatHours(worklog.timeSpentSeconds)} -{" "}
+		<div className={styles.container}>
+			<span className={styles.hours}>
+				{formatHours(worklog.timeSpentSeconds)} -{
+				}
 			</span>
 			<a
 				href={`https://${jiraDomain}/browse/${keyOrId}?focusedId=${worklog.id}&page=com.atlassian.jira.plugin.system.issuetabpanels%3Aworklog-tabpanel#worklog-${worklog.id}`}
 				target="_blank"
 				rel="noreferrer"
-				style={{ color: "#0b5cff", textDecoration: "none" }}
+				className={styles.issueLink}
 			>
 				{keyOrId}
 			</a>
 			{isRetroactive && (
 				<span
 					title="Logged in current month but belongs to previous month"
-					style={{ color: "#ff6b35", fontSize: "14px", marginLeft: 2 }}
+					className={styles.retroactiveIcon}
 				>
 					⚠️
 				</span>
 			)}
 			{(issueTitle || comment) && (
-				<span title={tooltip} style={{ cursor: "help", marginLeft: 4 }}>
+				<span title={tooltip} className={styles.tooltipIcon}>
 					🛈
 				</span>
 			)}

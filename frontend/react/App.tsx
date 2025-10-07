@@ -1,5 +1,6 @@
 import type React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import * as styles from "./App.module.css";
 
 import { Navigation } from "./components/Navigation";
 import { HomePage } from "./pages/HomePage";
@@ -8,7 +9,7 @@ import { TimesheetPage } from "./pages/TimesheetPage";
 export const App: React.FC = () => {
 	return (
 		<Router>
-			<div style={{ fontFamily: "sans-serif" }}>
+			<div className={styles.appContainer}>
 				<Navigation />
 				<Routes>
 					<Route path="/" element={<HomePage />} />

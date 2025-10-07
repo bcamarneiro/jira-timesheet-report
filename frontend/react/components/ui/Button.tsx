@@ -1,4 +1,5 @@
 import type React from "react";
+import * as styles from "./Button.module.css";
 
 type Props = {
 	children: React.ReactNode;
@@ -6,6 +7,7 @@ type Props = {
 	type?: "button" | "submit" | "reset";
 	variant?: "primary" | "secondary";
 	style?: React.CSSProperties;
+	className?: string;
 };
 
 export const Button: React.FC<Props> = ({
@@ -14,6 +16,7 @@ export const Button: React.FC<Props> = ({
 	type = "button",
 	variant = "primary",
 	style = {},
+	className = "",
 }) => {
 	const baseStyle: React.CSSProperties = {
 		padding: "0.5em 1em",
@@ -25,27 +28,14 @@ export const Button: React.FC<Props> = ({
 		...style,
 	};
 
-	const variantStyles: Record<string, React.CSSProperties> = {
-		primary: {
-			backgroundColor: "#007bff",
-			color: "white",
-			borderColor: "#007bff",
-		},
-		secondary: {
-			backgroundColor: "#f8f9fa",
-			color: "#333",
-			borderColor: "#ccc",
-		},
-	};
-
 	return (
 		<button
 			type={type}
 			onClick={onClick}
-			style={{ ...baseStyle, ...variantStyles[variant] }}
+			className={`${styles.button} ${variant === "primary" ? styles.primary : styles.secondary} ${className}`}
+			style={baseStyle}
 		>
 			{children}
 		</button>
 	);
 };
-

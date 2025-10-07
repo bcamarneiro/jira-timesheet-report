@@ -1,0 +1,12 @@
+.container {
+  font-family: sans-serif;
+}
+
+.header {
+  margin: 0.5em 0;
+}
+
+.noUser {
+  margin-top: 1em;
+  font-weight: bold;
+}

@@ -41,25 +41,18 @@ export const DayCell: React.FC<Props> = ({
 			return dayTotalSeconds > 0 ? styles.weekend : styles.weekendEmpty;
 		} else {
 			if (effectiveSeconds === 8 * 3600) return styles.weekdayComplete;
-			else if (effectiveSeconds < 8 * 3600) return styles.weekdayIncomplete;
-			else return styles.weekdayOvertime;
+		else if (effectiveSeconds < 8 * 3600) return styles.weekdayIncomplete;
+		else return styles.weekdayOvertime;
 		}
 	};
 
 	return (
 		<div key={iso} className={`${styles.dayCell} ${getDayClass()}`}>
-			<div
-				style={{
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "space-between",
-					marginBottom: "0.25em",
-				}}
-			>
-				<div style={{ fontWeight: "bold" }}>{String(dayNumber)}</div>
-				<div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+			<div className={styles.header}>
+				<div className={styles.dayNumber}>{String(dayNumber)}</div>
+				<div className={styles.logsContainer}>
 					{worklogs.length > 0 && (
-						<div style={{ fontSize: 11, color: "#666" }}>
+						<div className={styles.logInfo}>
 							{worklogs.length} {worklogs.length === 1 ? "log" : "logs"}
 						</div>
 					)}

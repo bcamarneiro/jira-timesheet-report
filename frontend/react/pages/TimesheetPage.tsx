@@ -8,6 +8,7 @@ import { useDownload } from "../hooks/useDownload";
 import { useTimesheetData } from "../hooks/useTimesheetData";
 import { useTimesheetQueryParams } from "../hooks/useTimesheetQueryParams";
 import { monthLabel } from "../utils/date";
+import * as styles from "./TimesheetPage.module.css";
 
 export const TimesheetPage: React.FC = () => {
 	const {
@@ -55,7 +56,7 @@ export const TimesheetPage: React.FC = () => {
 	const selectedEntry = visibleEntries.find(([user]) => user === selectedUser);
 
 	return (
-		<div style={{ fontFamily: "sans-serif" }}>
+		<div className={styles.container}>
 			<h1>Timesheet</h1>
 			<UserSelector
 				users={users}
@@ -63,7 +64,7 @@ export const TimesheetPage: React.FC = () => {
 				onChange={handleUserChange}
 			/>
 
-			<div style={{ margin: "0.5em 0" }}>
+			<div className={styles.header}>
 				<Button
 					onClick={() =>
 						handleDownloadAll(
@@ -110,7 +111,7 @@ export const TimesheetPage: React.FC = () => {
 					/>
 				)
 			) : (
-				<div style={{ marginTop: "1em", fontWeight: "bold" }}>
+				<div className={styles.noUser}>
 					please select a dev
 				</div>
 			)}
