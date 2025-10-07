@@ -7,7 +7,6 @@ import { useKarmaCalculation } from "../hooks/useKarmaCalculation";
 import { DayCell } from "./DayCell";
 import { UserHeader } from "./user/UserHeader";
 import { CalendarGrid } from "./calendar/CalendarGrid";
-import { EmptyState } from "./calendar/EmptyState";
 
 type Props = {
 	user: string;
@@ -74,10 +73,11 @@ export const TimesheetGrid: React.FC<Props> = ({
 				netKarmaSeconds={netKarmaSeconds}
 				onDownloadUser={onDownloadUser}
 			/>
+
 			<CalendarGrid firstWeekday={firstWeekday} weekdayLabels={weekdayLabels}>
 				{cells}
 			</CalendarGrid>
-			<EmptyState hasData={totalSeconds > 0} />
+
 			<div style={{ fontWeight: "bold", marginTop: "0.5em" }}>
 				Month total: {(totalSeconds / 3600).toFixed(2)} h
 			</div>
