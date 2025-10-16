@@ -1,13 +1,13 @@
-import type React from "react";
-import { MonthNavigator } from "../components/MonthNavigator";
-import { TimesheetGrid } from "../components/TimesheetGrid";
-import { UserSelector } from "../components/UserSelector";
-import { Button } from "../components/ui/Button";
-import { useDownload } from "../hooks/useDownload";
-import { useTimesheetData } from "../hooks/useTimesheetData";
-import { useTimesheetQueryParams } from "../hooks/useTimesheetQueryParams";
-import { monthLabel } from "../utils/date";
-import * as styles from "./TimesheetPage.module.css";
+import type React from 'react';
+import { MonthNavigator } from '../components/MonthNavigator';
+import { TimesheetGrid } from '../components/TimesheetGrid';
+import { UserSelector } from '../components/UserSelector';
+import { Button } from '../components/ui/Button';
+import { useDownload } from '../hooks/useDownload';
+import { useTimesheetData } from '../hooks/useTimesheetData';
+import { useTimesheetQueryParams } from '../hooks/useTimesheetQueryParams';
+import { monthLabel } from '../utils/date';
+import * as styles from './TimesheetPage.module.css';
 
 export const TimesheetPage: React.FC = () => {
 	const {
@@ -51,7 +51,7 @@ export const TimesheetPage: React.FC = () => {
 
 	if (!data) return <p>Loading...</p>;
 
-	const isValidUser = selectedUser !== "" && users.includes(selectedUser);
+	const isValidUser = selectedUser !== '' && users.includes(selectedUser);
 	const selectedEntry = visibleEntries.find(([user]) => user === selectedUser);
 
 	return (
@@ -68,7 +68,7 @@ export const TimesheetPage: React.FC = () => {
 					onClick={() =>
 						handleDownloadAll(
 							Object.keys(grouped)
-								.filter((user) => selectedUser === "" || user === selectedUser)
+								.filter((user) => selectedUser === '' || user === selectedUser)
 								.filter(
 									(user) => !teamDevelopers || teamDevelopers.includes(user),
 								),

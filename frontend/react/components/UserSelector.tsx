@@ -1,6 +1,6 @@
-import type React from "react";
-import { useId } from "react";
-import styles from "./UserSelector.module.css";
+import type React from 'react';
+import { useId } from 'react';
+import styles from './UserSelector.module.css';
 
 type Props = {
 	users: string[];

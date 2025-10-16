@@ -1,6 +1,6 @@
-import type React from "react";
-import { formatHours } from "../../utils/format";
-import * as styles from "./DaySummary.module.css";
+import type React from 'react';
+import { formatHours } from '../../utils/format';
+import * as styles from './DaySummary.module.css';
 
 type Props = {
 	dayTotalSeconds: number;

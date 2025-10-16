@@ -1,6 +1,6 @@
-import type React from "react";
-import { Link, useLocation } from "react-router-dom";
-import * as styles from "./Navigation.module.css";
+import type React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import * as styles from './Navigation.module.css';
 
 export const Navigation: React.FC = () => {
 	const location = useLocation();
@@ -16,10 +16,10 @@ export const Navigation: React.FC = () => {
 					<h2 className={styles.brand}>Jira Timesheet</h2>
 				</Link>
 				<div className={styles.navLinks}>
-					<Link to="/" className={getLinkStyle("/")}>
+					<Link to="/" className={getLinkStyle('/')}>
 						Home
 					</Link>
-					<Link to="/timesheet" className={getLinkStyle("/timesheet")}>
+					<Link to="/timesheet" className={getLinkStyle('/timesheet')}>
 						Timesheet
 					</Link>
 				</div>

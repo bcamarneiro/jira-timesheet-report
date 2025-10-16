@@ -21,6 +21,6 @@ export function isoDateFromYMD(
 export function monthLabel(year: number, monthZeroIndexed: number): string {
 	return new Date(Date.UTC(year, monthZeroIndexed, 1)).toLocaleString(
 		undefined,
-		{ month: "long", year: "numeric", timeZone: "UTC" },
+		{ month: 'long', year: 'numeric', timeZone: 'UTC' },
 	);
 }

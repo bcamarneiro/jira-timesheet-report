@@ -1,12 +1,12 @@
-import type React from "react";
-import type { JiraWorklog } from "../../../types/JiraWorklog";
-import { useCalendar } from "../hooks/useCalendar";
-import { useKarmaCalculation } from "../hooks/useKarmaCalculation";
-import { useTimeOff } from "../hooks/useTimeOff";
-import { isoDateFromYMD } from "../utils/date";
-import { CalendarGrid } from "./calendar/CalendarGrid";
-import { DayCell } from "./DayCell";
-import { UserHeader } from "./user/UserHeader";
+import type React from 'react';
+import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { useCalendar } from '../hooks/useCalendar';
+import { useKarmaCalculation } from '../hooks/useKarmaCalculation';
+import { useTimeOff } from '../hooks/useTimeOff';
+import { isoDateFromYMD } from '../utils/date';
+import { CalendarGrid } from './calendar/CalendarGrid';
+import { DayCell } from './DayCell';
+import { UserHeader } from './user/UserHeader';
 
 type Props = {
 	user: string;
@@ -78,7 +78,7 @@ export const TimesheetGrid: React.FC<Props> = ({
 				{cells}
 			</CalendarGrid>
 
-			<div style={{ fontWeight: "bold", marginTop: "0.5em" }}>
+			<div style={{ fontWeight: 'bold', marginTop: '0.5em' }}>
 				Month total: {(totalSeconds / 3600).toFixed(2)} h
 			</div>
 		</div>

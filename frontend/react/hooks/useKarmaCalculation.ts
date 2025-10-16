@@ -1,7 +1,7 @@
-import { useMemo } from "react";
-import type { JiraWorklog } from "../../../types/JiraWorklog";
-import { BASELINE_HOURS, WEEKEND_DAYS } from "../constants/timesheet";
-import { isoDateFromYMD } from "../utils/date";
+import { useMemo } from 'react';
+import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { BASELINE_HOURS, WEEKEND_DAYS } from '../constants/timesheet';
+import { isoDateFromYMD } from '../utils/date';
 
 export function useKarmaCalculation(
 	days: Record<string, JiraWorklog[]>,

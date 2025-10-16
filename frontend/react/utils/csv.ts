@@ -1,11 +1,11 @@
-import type { JiraWorklog } from "../../../types/JiraWorklog";
+import type { JiraWorklog } from '../../../types/JiraWorklog';
 
 function csvEscape(value: string): string {
-	const safe = (value ?? "")
-		.replace(/\r?\n|\r/g, " ")
-		.replace(/\s+/g, " ")
+	const safe = (value ?? '')
+		.replace(/\r?\n|\r/g, ' ')
+		.replace(/\s+/g, ' ')
 		.trim();
-	if (safe.includes('"') || safe.includes(",") || safe.includes(";")) {
+	if (safe.includes('"') || safe.includes(',') || safe.includes(';')) {
 		return `"${safe.replace(/"/g, '""')}"`;
 	}
 	return safe;
@@ -52,17 +52,17 @@ export function buildCsvForUser(
 	year: number,
 	month: number,
 ): string {
-	if (!data) return "";
+	if (!data) return '';
 	const rows: string[] = [];
 	rows.push(
 		[
-			"Name",
-			"TicketKey",
-			"TicketName",
-			"OriginalIntendedDate",
-			"ActualLoggedDate",
-			"BookedTime",
-		].join(","),
+			'Name',
+			'TicketKey',
+			'TicketName',
+			'OriginalIntendedDate',
+			'ActualLoggedDate',
+			'BookedTime',
+		].join(','),
 	);
 
 	// Filter worklogs by user and by actual logged date within the selected month
@@ -91,7 +91,7 @@ export function buildCsvForUser(
 		})
 		.forEach((wl) => {
 			const key = wl.issueKey ?? String(wl.issueId);
-			const ticketName = issueSummaries[key] || "";
+			const ticketName = issueSummaries[key] || '';
 			const actualLoggedDate = new Date(wl.started)
 				.toISOString()
 				.substring(0, 10);
@@ -111,7 +111,7 @@ export function buildCsvForUser(
 					csvEscape(originalIntendedDate),
 					csvEscape(actualLoggedDate),
 					csvEscape(bookedHours),
-				].join(","),
+				].join(','),
 			);
 		});
 
@@ -119,23 +119,23 @@ export function buildCsvForUser(
 	if (filteredData.length > 0) {
 		rows.push(
 			[
-				csvEscape("TOTAL"),
-				csvEscape(""),
-				csvEscape(""),
-				csvEscape(""),
-				csvEscape(""),
+				csvEscape('TOTAL'),
+				csvEscape(''),
+				csvEscape(''),
+				csvEscape(''),
+				csvEscape(''),
 				csvEscape(totalHours.toFixed(2)),
-			].join(","),
+			].join(','),
 		);
 	}
 
-	return rows.join("\n");
+	return rows.join('\n');
 }
 
 export function download(filename: string, content: string) {
-	const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+	const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
 	const url = URL.createObjectURL(blob);
-	const link = document.createElement("a");
+	const link = document.createElement('a');
 	link.href = url;
 	link.download = filename;
 	document.body.appendChild(link);

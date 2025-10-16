@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type UseTimesheetQueryParams = {
 	selectedUser: string;
@@ -12,14 +12,14 @@ export type UseTimesheetQueryParams = {
 
 function updateUrlWithYearMonth(year: number, monthZeroIndexed: number) {
 	const url = new URL(window.location.href);
-	url.searchParams.set("year", String(year));
-	url.searchParams.set("month", String(monthZeroIndexed + 1));
-	window.history.pushState({}, "", url.toString());
+	url.searchParams.set('year', String(year));
+	url.searchParams.set('month', String(monthZeroIndexed + 1));
+	window.history.pushState({}, '', url.toString());
 }
 
 export function useTimesheetQueryParams(): UseTimesheetQueryParams {
 	const nowUtc = useMemo(() => new Date(), []);
-	const [selectedUser, setSelectedUserState] = useState("");
+	const [selectedUser, setSelectedUserState] = useState('');
 	const [currentYear, setCurrentYear] = useState<number>(
 		nowUtc.getUTCFullYear(),
 	);
@@ -29,10 +29,10 @@ export function useTimesheetQueryParams(): UseTimesheetQueryParams {
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
-		const user = params.get("user");
+		const user = params.get('user');
 		if (user) setSelectedUserState(user);
-		const yearParam = Number.parseInt(params.get("year") || "", 10);
-		const monthParam = Number.parseInt(params.get("month") || "", 10);
+		const yearParam = Number.parseInt(params.get('year') || '', 10);
+		const monthParam = Number.parseInt(params.get('month') || '', 10);
 		if (Number.isFinite(yearParam) && yearParam > 1900)
 			setCurrentYear(yearParam);
 		if (Number.isFinite(monthParam) && monthParam >= 1 && monthParam <= 12)
@@ -41,21 +41,21 @@ export function useTimesheetQueryParams(): UseTimesheetQueryParams {
 
 	useEffect(() => {
 		const url = new URL(window.location.href);
-		const hasYear = url.searchParams.get("year");
-		const hasMonth = url.searchParams.get("month");
+		const hasYear = url.searchParams.get('year');
+		const hasMonth = url.searchParams.get('month');
 		if (!hasYear || !hasMonth) {
-			url.searchParams.set("year", String(currentYear));
-			url.searchParams.set("month", String(currentMonth + 1));
-			window.history.replaceState({}, "", url.toString());
+			url.searchParams.set('year', String(currentYear));
+			url.searchParams.set('month', String(currentMonth + 1));
+			window.history.replaceState({}, '', url.toString());
 		}
 	}, [currentMonth, currentYear]);
 
 	const setSelectedUser = useCallback((value: string) => {
 		setSelectedUserState(value);
 		const url = new URL(window.location.href);
-		if (value) url.searchParams.set("user", value);
-		else url.searchParams.delete("user");
-		window.history.pushState({}, "", url.toString());
+		if (value) url.searchParams.set('user', value);
+		else url.searchParams.delete('user');
+		window.history.pushState({}, '', url.toString());
 	}, []);
 
 	const setYearMonth = useCallback((year: number, monthZeroIndexed: number) => {

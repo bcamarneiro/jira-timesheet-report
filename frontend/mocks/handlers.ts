@@ -1,13 +1,13 @@
-import { HttpResponse, http } from "msw";
-import MockIssueSummaries from "./MockIssueSummaries";
-import MockTeamDevelopers from "./MockTeamDevelopers";
-import MockWorklogs from "./MockWorklogs";
+import { HttpResponse, http } from 'msw';
+import MockIssueSummaries from './MockIssueSummaries';
+import MockTeamDevelopers from './MockTeamDevelopers';
+import MockWorklogs from './MockWorklogs';
 
 export const handlers = [
-	http.get("/api/timesheet", ({ request }) => {
+	http.get('/api/timesheet', ({ request }) => {
 		const url = new URL(request.url);
-		const yearParam = Number.parseInt(url.searchParams.get("year") || "", 10);
-		const monthParam = Number.parseInt(url.searchParams.get("month") || "", 10);
+		const yearParam = Number.parseInt(url.searchParams.get('year') || '', 10);
+		const monthParam = Number.parseInt(url.searchParams.get('month') || '', 10);
 
 		const now = new Date();
 		const year =
@@ -28,7 +28,7 @@ export const handlers = [
 		});
 
 		return HttpResponse.json({
-			jiraDomain: "jira.example.com",
+			jiraDomain: 'jira.example.com',
 			worklogs: filtered,
 			issueSummaries: MockIssueSummaries,
 			teamDevelopers: MockTeamDevelopers,

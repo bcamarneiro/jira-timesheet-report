@@ -1,15 +1,15 @@
-import React from "react";
+import React from 'react';
 
 type TimeOffMap = Record<string, number>;
 
 export function useTimeOff(user: string) {
-	const STORAGE_KEY = "timeOff:v1";
+	const STORAGE_KEY = 'timeOff:v1';
 	const [timeOffMap, setTimeOffMap] = React.useState<TimeOffMap>(() => {
 		try {
 			const raw = localStorage.getItem(STORAGE_KEY);
 			if (!raw) return {} as TimeOffMap;
 			const parsed = JSON.parse(raw) as unknown;
-			return parsed && typeof parsed === "object"
+			return parsed && typeof parsed === 'object'
 				? (parsed as TimeOffMap)
 				: ({} as TimeOffMap);
 		} catch {

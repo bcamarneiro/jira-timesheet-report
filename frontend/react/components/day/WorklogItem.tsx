@@ -1,9 +1,9 @@
-import type React from "react";
-import type { JiraWorklog } from "../../../../types/JiraWorklog";
-import { isRetroactiveWorklog } from "../../utils/csv";
-import { formatHours } from "../../utils/format";
-import { truncate } from "../../utils/text";
-import * as styles from "./WorklogItem.module.css";
+import type React from 'react';
+import type { JiraWorklog } from '../../../../types/JiraWorklog';
+import { isRetroactiveWorklog } from '../../utils/csv';
+import { formatHours } from '../../utils/format';
+import { truncate } from '../../utils/text';
+import * as styles from './WorklogItem.module.css';
 
 type Props = {
 	worklog: JiraWorklog;
@@ -24,22 +24,22 @@ export const WorklogItem: React.FC<Props> = ({
 	const issueTitle =
 		worklog.issueKey && issueSummaries[worklog.issueKey]
 			? issueSummaries[worklog.issueKey]
-			: "";
-	const comment = worklog.comment || "";
+			: '';
+	const comment = worklog.comment || '';
 	const isRetroactive = isRetroactiveWorklog(
 		worklog,
 		currentYear,
 		currentMonth,
 	);
 	const tooltip = [
-		issueTitle ? `Issue: ${issueTitle}` : "",
-		comment ? `Comment: ${truncate(comment)}` : "",
+		issueTitle ? `Issue: ${issueTitle}` : '',
+		comment ? `Comment: ${truncate(comment)}` : '',
 		isRetroactive
-			? "⚠️ Logged in current month but belongs to previous month"
-			: "",
+			? '⚠️ Logged in current month but belongs to previous month'
+			: '',
 	]
 		.filter(Boolean)
-		.join("\n");
+		.join('\n');
 
 	return (
 		<div className={styles.container}>

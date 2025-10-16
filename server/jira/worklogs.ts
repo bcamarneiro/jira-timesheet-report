@@ -1,6 +1,6 @@
-import type { JiraWorklog } from "../../types/JiraWorklog";
-import type { JiraWorklogPaginatedResponse } from "../../types/JiraWorklogPaginatedResponse";
-import { getMonthBounds, JIRA_DOMAIN, JIRA_PAT } from "./common";
+import type { JiraWorklog } from '../../types/JiraWorklog';
+import type { JiraWorklogPaginatedResponse } from '../../types/JiraWorklogPaginatedResponse';
+import { getMonthBounds, JIRA_DOMAIN, JIRA_PAT } from './common';
 
 export async function fetchWorklogs(
 	issues: string[],
@@ -18,7 +18,7 @@ export async function fetchWorklogs(
 			const params = new URLSearchParams({
 				startedAfter: startMillis.toString(),
 				startedBefore: endMillis.toString(),
-				maxResults: "100",
+				maxResults: '100',
 				startAt: startAt.toString(),
 			});
 
@@ -27,7 +27,7 @@ export async function fetchWorklogs(
 			const resp = await fetch(url, {
 				headers: {
 					Authorization: `Bearer ${JIRA_PAT}`,
-					Accept: "application/json",
+					Accept: 'application/json',
 				},
 			});
 

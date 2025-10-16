@@ -1,4 +1,4 @@
-import type { JiraWorklog } from "../../../types/JiraWorklog";
+import type { JiraWorklog } from '../../../types/JiraWorklog';
 
 export type GroupedWorklogs = Record<string, Record<string, JiraWorklog[]>>;
 

@@ -1,5 +1,5 @@
-import type React from "react";
-import { TIME_OFF_OPTIONS } from "../../constants/timesheet";
+import type React from 'react';
+import { TIME_OFF_OPTIONS } from '../../constants/timesheet';
 
 type Props = {
 	value: number;
@@ -21,16 +21,16 @@ export const TimeOffSelector: React.FC<Props> = ({
 			title="Time off (counts only for karma)"
 			style={{
 				fontSize: 11,
-				padding: "2px 4px",
+				padding: '2px 4px',
 				borderRadius: 4,
-				border: "1px solid #ccc",
-				background: "#fff",
-				color: "#333",
+				border: '1px solid #ccc',
+				background: '#fff',
+				color: '#333',
 			}}
 		>
 			{TIME_OFF_OPTIONS.map((hours) => (
 				<option key={hours} value={hours}>
-					{hours === 0 ? "time off" : `${hours}h`}
+					{hours === 0 ? 'time off' : `${hours}h`}
 				</option>
 			))}
 		</select>

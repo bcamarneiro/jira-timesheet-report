@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 type Props = {
 	firstWeekday: number;
@@ -19,10 +19,10 @@ export const CalendarGrid: React.FC<Props> = ({
 			<div
 				key={`empty-${i}`}
 				style={{
-					border: "1px solid #eee",
+					border: '1px solid #eee',
 					minHeight: 100,
-					padding: "0.5em",
-					background: "#fafafa",
+					padding: '0.5em',
+					background: '#fafafa',
 				}}
 			/>,
 		);
@@ -32,25 +32,25 @@ export const CalendarGrid: React.FC<Props> = ({
 	cells.push(...React.Children.toArray(children));
 
 	return (
-		<div style={{ position: "relative" }}>
+		<div style={{ position: 'relative' }}>
 			<div
 				style={{
-					display: "grid",
-					gridTemplateColumns: "repeat(7, 1fr)",
+					display: 'grid',
+					gridTemplateColumns: 'repeat(7, 1fr)',
 					gap: 6,
-					marginBottom: "0.5em",
+					marginBottom: '0.5em',
 				}}
 			>
 				{weekdayLabels.map((w) => (
-					<div key={w} style={{ textAlign: "center", fontWeight: "bold" }}>
+					<div key={w} style={{ textAlign: 'center', fontWeight: 'bold' }}>
 						{w}
 					</div>
 				))}
 			</div>
 			<div
 				style={{
-					display: "grid",
-					gridTemplateColumns: "repeat(7, 1fr)",
+					display: 'grid',
+					gridTemplateColumns: 'repeat(7, 1fr)',
 					gap: 6,
 				}}
 			>

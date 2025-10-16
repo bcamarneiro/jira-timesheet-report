@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import type { JiraWorklog } from "../../../types/JiraWorklog";
-import { BASELINE_HOURS } from "../constants/timesheet";
+import { useMemo } from 'react';
+import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { BASELINE_HOURS } from '../constants/timesheet';
 
 export function useDayCalculation(
 	worklogs: JiraWorklog[],

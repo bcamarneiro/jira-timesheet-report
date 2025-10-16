@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import type { JiraWorklog } from "../../../types/JiraWorklog";
+import { useEffect, useMemo, useState } from 'react';
+import type { JiraWorklog } from '../../../types/JiraWorklog';
 
 export type GroupedWorklogs = Record<string, Record<string, JiraWorklog[]>>;
 
@@ -19,7 +19,7 @@ export function useTimesheetData(
 	selectedUser: string,
 ): UseTimesheetDataResult {
 	const [data, setData] = useState<JiraWorklog[] | null>(null);
-	const [jiraDomain, setJiraDomain] = useState("");
+	const [jiraDomain, setJiraDomain] = useState('');
 	const [issueSummaries, setIssueSummaries] = useState<Record<string, string>>(
 		{},
 	);
@@ -28,8 +28,8 @@ export function useTimesheetData(
 	useEffect(() => {
 		(async () => {
 			const params = new URLSearchParams();
-			params.set("year", String(currentYear));
-			params.set("month", String(currentMonth + 1));
+			params.set('year', String(currentYear));
+			params.set('month', String(currentMonth + 1));
 			const res = await fetch(`/api/timesheet?${params.toString()}`);
 			const json = await res.json();
 			setJiraDomain(json.jiraDomain);
@@ -69,7 +69,7 @@ export function useTimesheetData(
 
 	const visibleEntries = useMemo(() => {
 		return Object.entries(grouped)
-			.filter(([user]) => selectedUser === "" || user === selectedUser)
+			.filter(([user]) => selectedUser === '' || user === selectedUser)
 			.filter(([user]) => !teamDevelopers || teamDevelopers.includes(user));
 	}, [grouped, selectedUser, teamDevelopers]);
 

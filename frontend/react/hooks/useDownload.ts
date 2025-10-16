@@ -1,6 +1,6 @@
-import { useCallback } from "react";
-import type { JiraWorklog } from "../../../types/JiraWorklog";
-import { buildCsvForUser, download } from "../utils/csv";
+import { useCallback } from 'react';
+import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { buildCsvForUser, download } from '../utils/csv';
 
 export function useDownload() {
 	const downloadUser = useCallback(
@@ -13,8 +13,8 @@ export function useDownload() {
 		) => {
 			const csv = data
 				? buildCsvForUser(data, issueSummaries, user, currentYear, currentMonth)
-				: "";
-			download(`${user.replace(/[^a-z0-9-_]/gi, "_")}.csv`, csv);
+				: '';
+			download(`${user.replace(/[^a-z0-9-_]/gi, '_')}.csv`, csv);
 		},
 		[],
 	);

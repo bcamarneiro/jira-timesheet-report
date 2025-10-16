@@ -1,11 +1,11 @@
-import type React from "react";
+import type React from 'react';
 
-import type { JiraWorklog } from "../../../types/JiraWorklog";
-import { useDayCalculation } from "../hooks/useDayCalculation";
-import * as styles from "./DayCell.module.css";
-import { DaySummary } from "./day/DaySummary";
-import { TimeOffSelector } from "./day/TimeOffSelector";
-import { WorklogList } from "./day/WorklogList";
+import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { useDayCalculation } from '../hooks/useDayCalculation';
+import * as styles from './DayCell.module.css';
+import { DaySummary } from './day/DaySummary';
+import { TimeOffSelector } from './day/TimeOffSelector';
+import { WorklogList } from './day/WorklogList';
 
 type Props = {
 	iso: string;
@@ -53,7 +53,7 @@ export const DayCell: React.FC<Props> = ({
 				<div className={styles.logsContainer}>
 					{worklogs.length > 0 && (
 						<div className={styles.logInfo}>
-							{worklogs.length} {worklogs.length === 1 ? "log" : "logs"}
+							{worklogs.length} {worklogs.length === 1 ? 'log' : 'logs'}
 						</div>
 					)}
 					<TimeOffSelector

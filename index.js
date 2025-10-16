@@ -1,15 +1,15 @@
 // ========= CONFIGS ==========
 // create PAT in Jira: https://ticket.rsint.net/secure/ViewProfile.jspa?selectedTab=com.atlassian.pats.pats-plugin:jira-user-personal-access-tokens
 // NOTE: Do not hardcode tokens. Use environment variables instead.
-const PAT = process.env.JIRA_PAT || "";
-const userName = process.env.USER_FILTER || "";
+const PAT = process.env.JIRA_PAT || '';
+const userName = process.env.USER_FILTER || '';
 
 const now = new Date();
 const year = now.getFullYear();
 const month = now.getMonth() + 1;
 // ============================
 
-const domain = process.env.JIRA_DOMAIN || "ticket.rsint.net";
+const domain = process.env.JIRA_DOMAIN || 'ticket.rsint.net';
 const bearerToken = `Bearer ${PAT}`;
 const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
 const endDate = new Date(Date.UTC(year, month, 0, 0, 0, 0));
@@ -28,13 +28,13 @@ async function fetchIssues() {
 	do {
 		const params = new URLSearchParams({
 			jql,
-			fields: "key",
-			maxResults: "100",
+			fields: 'key',
+			maxResults: '100',
 			startAt: startAt.toString(),
 		});
 		const url = `https://${domain}/rest/api/2/search?${params.toString()}`;
 		const resp = await fetch(url, {
-			headers: { Authorization: bearerToken, Accept: "application/json" },
+			headers: { Authorization: bearerToken, Accept: 'application/json' },
 		});
 
 		if (!resp.ok) {
@@ -64,12 +64,12 @@ async function fetchWorklogs(issues) {
 			const params = new URLSearchParams({
 				startedAfter: startMillis.toString(),
 				startedBefore: endMillis.toString(),
-				maxResults: "100",
+				maxResults: '100',
 				startAt: startAt.toString(),
 			});
 			const url = `https://${domain}/rest/api/2/issue/${encodeURIComponent(issueKey)}/worklog?${params.toString()}`;
 			const resp = await fetch(url, {
-				headers: { Authorization: bearerToken, Accept: "application/json" },
+				headers: { Authorization: bearerToken, Accept: 'application/json' },
 			});
 
 			if (!resp.ok) {
@@ -87,7 +87,7 @@ async function fetchWorklogs(issues) {
 			for (const wl of data.worklogs || []) {
 				const name = wl.author.displayName;
 				const date = new Date(wl.started).toISOString().substring(0, 10);
-				const issueKey = wl.issue ? wl.issue.key : "Unknown"; // Extract the issue key or set a default
+				const issueKey = wl.issue ? wl.issue.key : 'Unknown'; // Extract the issue key or set a default
 
 				if (!dailyTotals[name]) {
 					dailyTotals[name] = {};
@@ -114,7 +114,7 @@ async function fetchWorklogs(issues) {
 		);
 		const dailyTotals = await fetchWorklogs(issues);
 
-		console.log("Worklogs per user and day:");
+		console.log('Worklogs per user and day:');
 		for (const [user, dailyData] of Object.entries(dailyTotals)) {
 			if (userName && !user.toLowerCase().includes(userName.toLowerCase())) {
 				continue;
@@ -128,13 +128,13 @@ async function fetchWorklogs(issues) {
 				console.log(
 					`${date}: ${(
 						Object.values(issueData).reduce((acc, secs) => acc + secs, 0) / 3600
-					).toFixed(2)} h (Issues: ${Object.keys(issueData).join(", ")})`,
+					).toFixed(2)} h (Issues: ${Object.keys(issueData).join(', ')})`,
 				);
 			}
 
 			console.log(`> Total hours for ${user}: ${total.toFixed(2)} h`);
 		}
 	} catch (err) {
-		console.error("Error fetching worklogs:", err);
+		console.error('Error fetching worklogs:', err);
 	}
 })();

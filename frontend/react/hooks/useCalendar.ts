@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { WEEKDAY_LABELS } from "../constants/timesheet";
-import { getDaysInMonth, getMonthStartWeekday } from "../utils/date";
+import { useMemo } from 'react';
+import { WEEKDAY_LABELS } from '../constants/timesheet';
+import { getDaysInMonth, getMonthStartWeekday } from '../utils/date';
 
 export function useCalendar(year: number, monthZeroIndexed: number) {
 	const firstWeekday = useMemo(

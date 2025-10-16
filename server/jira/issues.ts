@@ -1,10 +1,10 @@
-import type { JiraIssuePaginatedResponse } from "../../types/JiraIssuePaginatedResponse";
+import type { JiraIssuePaginatedResponse } from '../../types/JiraIssuePaginatedResponse';
 import {
 	getMonthBounds,
 	JIRA_COMPONENT,
 	JIRA_DOMAIN,
 	JIRA_PAT,
-} from "./common";
+} from './common';
 
 export async function fetchIssues(
 	year: number,
@@ -17,7 +17,7 @@ export async function fetchIssues(
 
 	const componentFilter = JIRA_COMPONENT
 		? ` AND component = "${JIRA_COMPONENT}"`
-		: "";
+		: '';
 	const jql = `worklogDate >= '${jqlStartDate}' AND worklogDate <= '${jqlEndDate}'${componentFilter}`;
 
 	let totalIssues = 0;
@@ -25,8 +25,8 @@ export async function fetchIssues(
 	do {
 		const params = new URLSearchParams({
 			jql,
-			fields: "key,summary",
-			maxResults: "100",
+			fields: 'key,summary',
+			maxResults: '100',
 			startAt: startAt.toString(),
 		});
 
@@ -35,7 +35,7 @@ export async function fetchIssues(
 		const resp = await fetch(url, {
 			headers: {
 				Authorization: `Bearer ${JIRA_PAT}`,
-				Accept: "application/json",
+				Accept: 'application/json',
 			},
 		});
 
