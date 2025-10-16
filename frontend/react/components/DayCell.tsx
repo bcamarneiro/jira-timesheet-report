@@ -2,10 +2,10 @@ import type React from "react";
 
 import type { JiraWorklog } from "../../../types/JiraWorklog";
 import { useDayCalculation } from "../hooks/useDayCalculation";
+import * as styles from "./DayCell.module.css";
 import { DaySummary } from "./day/DaySummary";
 import { TimeOffSelector } from "./day/TimeOffSelector";
 import { WorklogList } from "./day/WorklogList";
-import * as styles from "./DayCell.module.css";
 
 type Props = {
 	iso: string;
@@ -41,8 +41,8 @@ export const DayCell: React.FC<Props> = ({
 			return dayTotalSeconds > 0 ? styles.weekend : styles.weekendEmpty;
 		} else {
 			if (effectiveSeconds === 8 * 3600) return styles.weekdayComplete;
-		else if (effectiveSeconds < 8 * 3600) return styles.weekdayIncomplete;
-		else return styles.weekdayOvertime;
+			else if (effectiveSeconds < 8 * 3600) return styles.weekdayIncomplete;
+			else return styles.weekdayOvertime;
 		}
 	};
 

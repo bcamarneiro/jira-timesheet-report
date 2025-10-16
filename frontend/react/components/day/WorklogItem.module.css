@@ -1,26 +1,26 @@
 .container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .hours {
-  color: #444;
-  white-space: nowrap;
+	color: #444;
+	white-space: nowrap;
 }
 
 .issueLink {
-  color: #0b5cff;
-  text-decoration: none;
+	color: #0b5cff;
+	text-decoration: none;
 }
 
 .retroactiveIcon {
-  color: #ff6b35;
-  font-size: 14px;
-  margin-left: 2px;
+	color: #ff6b35;
+	font-size: 14px;
+	margin-left: 2px;
 }
 
 .tooltipIcon {
-  cursor: help;
-  margin-left: 4px;
+	cursor: help;
+	margin-left: 4px;
 }

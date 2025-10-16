@@ -1,48 +1,48 @@
 .nav {
-  background-color: #f8f9fa;
-  padding: 1rem 0;
-  border-bottom: 1px solid #dee2e6;
-  margin-bottom: 2rem;
+	background-color: #f8f9fa;
+	padding: 1rem 0;
+	border-bottom: 1px solid #dee2e6;
+	margin-bottom: 2rem;
 }
 
 .navContent {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 0 2rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 .navLink {
-  text-decoration: none;
-  color: #333;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+	text-decoration: none;
+	color: #333;
+	font-weight: 500;
+	padding: 0.5rem 1rem;
+	border-radius: 4px;
+	transition: background-color 0.2s;
 }
 
 .navLinkActive {
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  background-color: #007bff;
-  color: white;
+	text-decoration: none;
+	font-weight: 500;
+	padding: 0.5rem 1rem;
+	border-radius: 4px;
+	transition: background-color 0.2s;
+	background-color: #007bff;
+	color: white;
 }
 
 .navLink:hover {
-  background-color: #e9ecef;
+	background-color: #e9ecef;
 }
 
 .brand {
-  margin: 0;
-  font-size: 1.5rem;
+	margin: 0;
+	font-size: 1.5rem;
 }
 
 .navLinks {
-  display: flex;
-  gap: 1rem;
+	display: flex;
+	gap: 1rem;
 }

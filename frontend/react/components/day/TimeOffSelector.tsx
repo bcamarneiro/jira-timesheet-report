@@ -36,4 +36,3 @@ export const TimeOffSelector: React.FC<Props> = ({
 		</select>
 	);
 };
-

@@ -1,26 +1,26 @@
 .container {
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  font-weight: 600;
+	margin-top: auto;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-size: 12px;
+	font-weight: 600;
 }
 
 .timeOffContainer {
-  display: flex;
-  align-items: center;
-  gap: 8;
+	display: flex;
+	align-items: center;
+	gap: 8;
 }
 
 .total {
-  color: #333;
+	color: #333;
 }
 
 .timeOff {
-  color: #333;
+	color: #333;
 }
 
 .missing {
-  color: #a14;
+	color: #a14;
 }

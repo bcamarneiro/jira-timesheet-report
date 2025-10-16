@@ -1,9 +1,8 @@
 import type React from "react";
-
-import { Button } from "../components/ui/Button";
 import { MonthNavigator } from "../components/MonthNavigator";
 import { TimesheetGrid } from "../components/TimesheetGrid";
 import { UserSelector } from "../components/UserSelector";
+import { Button } from "../components/ui/Button";
 import { useDownload } from "../hooks/useDownload";
 import { useTimesheetData } from "../hooks/useTimesheetData";
 import { useTimesheetQueryParams } from "../hooks/useTimesheetQueryParams";
@@ -111,9 +110,7 @@ export const TimesheetPage: React.FC = () => {
 					/>
 				)
 			) : (
-				<div className={styles.noUser}>
-					please select a dev
-				</div>
+				<div className={styles.noUser}>please select a dev</div>
 			)}
 		</div>
 	);

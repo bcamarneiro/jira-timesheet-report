@@ -1,6 +1,6 @@
 import type React from "react";
-import { Button } from "./ui/Button";
 import * as styles from "./MonthNavigator.module.css";
+import { Button } from "./ui/Button";
 
 type Props = {
 	label: string;

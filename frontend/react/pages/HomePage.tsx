@@ -5,9 +5,7 @@ import * as styles from "./HomePage.module.css";
 export const HomePage: React.FC = () => {
 	return (
 		<div className={styles.container}>
-			<h1 className={styles.title}>
-				Jira Timesheet Report
-			</h1>
+			<h1 className={styles.title}>Jira Timesheet Report</h1>
 
 			<p className={styles.description}>
 				Track and manage your team's time tracking data from Jira with ease.
@@ -15,10 +13,7 @@ export const HomePage: React.FC = () => {
 			</p>
 
 			<div className={styles.buttonContainer}>
-				<Link
-					to="/timesheet"
-					className={styles.button}
-				>
+				<Link to="/timesheet" className={styles.button}>
 					View Timesheet
 				</Link>
 			</div>

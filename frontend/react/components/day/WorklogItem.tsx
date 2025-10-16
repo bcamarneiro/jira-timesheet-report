@@ -44,8 +44,7 @@ export const WorklogItem: React.FC<Props> = ({
 	return (
 		<div className={styles.container}>
 			<span className={styles.hours}>
-				{formatHours(worklog.timeSpentSeconds)} -{
-				}
+				{formatHours(worklog.timeSpentSeconds)} -{}
 			</span>
 			<a
 				href={`https://${jiraDomain}/browse/${keyOrId}?focusedId=${worklog.id}&page=com.atlassian.jira.plugin.system.issuetabpanels%3Aworklog-tabpanel#worklog-${worklog.id}`}

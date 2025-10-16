@@ -1,53 +1,53 @@
 .dayCell {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  min-height: 100px;
-  padding: 0.5em;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25em;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	min-height: 100px;
+	padding: 0.5em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.25em;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.25em;
 }
 
 .dayNumber {
-  font-weight: bold;
+	font-weight: bold;
 }
 
 .logInfo {
-  font-size: 11px;
-  color: #666;
+	font-size: 11px;
+	color: #666;
 }
 
 .logsContainer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 /* Weekend styles */
 .weekend {
-  background: #ffd6d6;
+	background: #ffd6d6;
 }
 
 .weekendEmpty {
-  background: transparent;
+	background: transparent;
 }
 
 /* Weekday styles */
 .weekdayComplete {
-  background: #e6f6ea; /* Green for 8 hours */
+	background: #e6f6ea; /* Green for 8 hours */
 }
 
 .weekdayIncomplete {
-  background: #ffe9e3; /* Orange for less than 8 hours */
+	background: #ffe9e3; /* Orange for less than 8 hours */
 }
 
 .weekdayOvertime {
-  background: #fff6cc; /* Yellow for more than 8 hours */
+	background: #fff6cc; /* Yellow for more than 8 hours */
 }

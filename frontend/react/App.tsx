@@ -1,5 +1,5 @@
 import type React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import * as styles from "./App.module.css";
 
 import { Navigation } from "./components/Navigation";

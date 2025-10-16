@@ -1,8 +1,12 @@
-import { JiraWorklog } from "../../types/JiraWorklog";
-import { JiraWorklogPaginatedResponse } from "../../types/JiraWorklogPaginatedResponse";
-import { JIRA_DOMAIN, JIRA_PAT, getMonthBounds } from "./common";
+import type { JiraWorklog } from "../../types/JiraWorklog";
+import type { JiraWorklogPaginatedResponse } from "../../types/JiraWorklogPaginatedResponse";
+import { getMonthBounds, JIRA_DOMAIN, JIRA_PAT } from "./common";
 
-export async function fetchWorklogs(issues: string[], year: number, monthOneBased: number): Promise<JiraWorklog[]> {
+export async function fetchWorklogs(
+	issues: string[],
+	year: number,
+	monthOneBased: number,
+): Promise<JiraWorklog[]> {
 	const { startMillis, endMillis } = getMonthBounds(year, monthOneBased);
 	const allWorklogs: JiraWorklog[] = [];
 
@@ -14,7 +18,7 @@ export async function fetchWorklogs(issues: string[], year: number, monthOneBase
 			const params = new URLSearchParams({
 				startedAfter: startMillis.toString(),
 				startedBefore: endMillis.toString(),
-				maxResults: '100',
+				maxResults: "100",
 				startAt: startAt.toString(),
 			});
 
@@ -23,14 +27,18 @@ export async function fetchWorklogs(issues: string[], year: number, monthOneBase
 			const resp = await fetch(url, {
 				headers: {
 					Authorization: `Bearer ${JIRA_PAT}`,
-					Accept: 'application/json',
+					Accept: "application/json",
 				},
 			});
 
 			if (!resp.ok) {
 				const text = await resp.text();
-				console.error(`Error fetching worklogs for ${issueKey}: ${resp.status} - ${text}`);
-				throw new Error(`Failed to fetch worklogs for ${issueKey}: ${resp.status} - ${text}`);
+				console.error(
+					`Error fetching worklogs for ${issueKey}: ${resp.status} - ${text}`,
+				);
+				throw new Error(
+					`Failed to fetch worklogs for ${issueKey}: ${resp.status} - ${text}`,
+				);
 			}
 
 			const data: JiraWorklogPaginatedResponse = await resp.json();
@@ -49,5 +57,3 @@ export async function fetchWorklogs(issues: string[], year: number, monthOneBase
 
 	return allWorklogs;
 }
-
-
