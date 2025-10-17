@@ -1,4 +1,4 @@
-import { JiraClient } from '@narthia/jira-client';
+import { Version3Client } from 'jira.js';
 import { useConfigStore } from '../../stores/useConfigStore';
 
 export const useJiraClient = () => {
@@ -8,12 +8,17 @@ export const useJiraClient = () => {
 		return null;
 	}
 
-	return new JiraClient({
-		host: config.jiraHost,
+	const host = config.corsProxy
+		? `${config.corsProxy.replace(/\/$/, '')}/https://${config.jiraHost}`
+		: `https://${config.jiraHost}`;
+
+	return new Version3Client({
+		host,
 		authentication: {
-			personalAccessToken: config.apiToken,
+			basic: {
+				email: config.email,
+				apiToken: config.apiToken,
+			},
 		},
-		newErrorHandling: true,
-		...(config.corsProxy && { proxy: config.corsProxy }),
 	});
 };

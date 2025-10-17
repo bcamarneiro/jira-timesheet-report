@@ -41,9 +41,9 @@ export const TimesheetPage: React.FC = () => {
 		downloadUser(user, data || [], issueSummaries, currentYear, currentMonth);
 	};
 
-	const handleDownloadAll = (visibleUsers: string[]) => {
+	const handleDownloadAll = () => {
 		downloadAll(
-			visibleUsers,
+			visibleEntries.map(([user]) => user),
 			data || [],
 			issueSummaries,
 			currentYear,
@@ -82,19 +82,7 @@ export const TimesheetPage: React.FC = () => {
 			/>
 
 			<div className={styles.header}>
-				<Button
-					onClick={() =>
-						handleDownloadAll(
-							Object.keys(grouped)
-								.filter((user) => selectedUser === '' || user === selectedUser)
-								.filter(
-									(user) => !teamDevelopers || teamDevelopers.includes(user),
-								),
-						)
-					}
-				>
-					Download CSV for all
-				</Button>
+				<Button onClick={handleDownloadAll}>Download CSV for all</Button>
 			</div>
 
 			<MonthNavigator
@@ -128,7 +116,18 @@ export const TimesheetPage: React.FC = () => {
 					/>
 				)
 			) : (
-				<div className={styles.noUser}>please select a dev</div>
+				visibleEntries.map(([user, days]) => (
+					<TimesheetGrid
+						key={user}
+						user={user}
+						days={days}
+						year={currentYear}
+						monthZeroIndexed={currentMonth}
+						jiraDomain={jiraDomain}
+						issueSummaries={issueSummaries}
+						onDownloadUser={handleDownloadUser}
+					/>
+				))
 			)}
 		</div>
 	);

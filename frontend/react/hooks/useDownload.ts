@@ -1,38 +1,46 @@
 import { useCallback } from 'react';
-import type { JiraWorklog } from '../../../types/JiraWorklog';
 import { buildCsvForUser, download } from '../utils/csv';
+import { groupWorklogsByUserAndDate } from '../utils/groupWorklogs';
+import type { EnrichedJiraWorklog } from './useTimesheetData';
 
 export function useDownload() {
-	const downloadUser = useCallback(
-		(
-			user: string,
-			data: JiraWorklog[],
-			issueSummaries: Record<string, string>,
-			currentYear: number,
-			currentMonth: number,
-		) => {
-			const csv = data
-				? buildCsvForUser(data, issueSummaries, user, currentYear, currentMonth)
-				: '';
-			download(`${user.replace(/[^a-z0-9-_]/gi, '_')}.csv`, csv);
-		},
-		[],
-	);
+	const downloadUser = (
+		user: string,
+		worklogs: EnrichedJiraWorklog[],
+		issueSummaries: Record<string, string>,
+		year: number,
+		month: number,
+	) => {
+		const grouped = groupWorklogsByUserAndDate(worklogs);
+		const userWorklogs = grouped[user] || {};
+		const csvContent = buildCsvForUser(
+			Object.values(userWorklogs).flat(),
+			issueSummaries,
+			year,
+			month,
+		);
+		download(`${user}-${year}-${month + 1}.csv`, csvContent);
+	};
 
-	const downloadAll = useCallback(
-		(
-			users: string[],
-			data: JiraWorklog[],
-			issueSummaries: Record<string, string>,
-			currentYear: number,
-			currentMonth: number,
-		) => {
-			users.forEach((user) => {
-				downloadUser(user, data, issueSummaries, currentYear, currentMonth);
-			});
-		},
-		[downloadUser],
-	);
+	const downloadAll = (
+		users: string[],
+		worklogs: EnrichedJiraWorklog[],
+		issueSummaries: Record<string, string>,
+		year: number,
+		month: number,
+	) => {
+		const grouped = groupWorklogsByUserAndDate(worklogs);
+		for (const user of users) {
+			const userWorklogs = grouped[user] || {};
+			const csvContent = buildCsvForUser(
+				Object.values(userWorklogs).flat(),
+				issueSummaries,
+				year,
+				month,
+			);
+			download(`${user}-${year}-${month + 1}.csv`, csvContent);
+		}
+	};
 
 	return { downloadUser, downloadAll };
 }

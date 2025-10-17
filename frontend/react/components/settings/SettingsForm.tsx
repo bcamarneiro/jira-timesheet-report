@@ -10,6 +10,7 @@ export const SettingsForm: React.FC = () => {
 	const [formData, setFormData] = useState(config);
 
 	const jiraHostId = useId();
+	const emailId = useId();
 	const apiTokenId = useId();
 	const corsProxyId = useId();
 
@@ -35,6 +36,18 @@ export const SettingsForm: React.FC = () => {
 					value={formData.jiraHost}
 					onChange={handleChange}
 					placeholder="e.g., your-company.atlassian.net"
+					required
+				/>
+			</div>
+			<div className={styles.formGroup}>
+				<label htmlFor={emailId}>Email</label>
+				<input
+					type="email"
+					id={emailId}
+					name="email"
+					value={formData.email}
+					onChange={handleChange}
+					placeholder="e.g., your-email@example.com"
 					required
 				/>
 			</div>
