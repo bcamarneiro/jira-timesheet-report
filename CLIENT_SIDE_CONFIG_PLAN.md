@@ -75,6 +75,27 @@ Frontend (React + Zustand) → CORS Proxy (optional) → Jira API
 - Loading states
 - Error messages
 
+## Potential Challenges & Mitigations
+
+### 1. CORS (Cross-Origin Resource Sharing)
+- **Challenge**: The Jira Cloud API may block requests from browsers on different domains (e.g., `localhost`, static hosting). This is the most significant technical risk.
+- **Mitigation**:
+    - Before major refactoring, conduct a small proof-of-concept using `fetch` in the browser's developer console to test direct API calls.
+    - If CORS is an issue, the plan to include an optional CORS proxy is the correct approach. We should document how users can set up a simple proxy.
+
+### 2. First-Time User Experience
+- **Challenge**: A new user will have no configuration in `localStorage`, and the app will not know which Jira instance to contact.
+- **Mitigation**:
+    - On application load, check if the necessary configuration exists.
+    - If not, redirect the user to the settings page with a clear message explaining what information is needed.
+
+### 3. Robust Error Handling
+- **Challenge**: Direct API calls can fail due to network issues, invalid credentials (401/403), or incorrect permissions.
+- **Mitigation**:
+    - Implement a global error handling state in Zustand.
+    - For authentication errors, display a specific, user-friendly message that directs the user to the settings page to check their API token and Jira URL.
+    - Provide clear feedback for all API request failures.
+
 ## Implementation Steps
 
 ### Phase 1: Foundation Setup

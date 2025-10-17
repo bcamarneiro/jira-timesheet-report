@@ -1,37 +1,38 @@
-import { HttpResponse, http } from 'msw';
-import MockIssueSummaries from './MockIssueSummaries';
-import MockTeamDevelopers from './MockTeamDevelopers';
-import MockWorklogs from './MockWorklogs';
+import { HttpResponse, http } from "msw";
+import type { JiraIssue } from "../../types/JiraIssue";
+import MockIssueSummaries from "./MockIssueSummaries";
+import MockWorklogs from "./MockWorklogs";
+
+const mockIssues: JiraIssue[] = Object.entries(MockIssueSummaries).map(
+  ([id, summary]) => ({
+    id,
+    key: `JRA-${id}`,
+    expand: "",
+    self: "",
+    fields: {
+      summary,
+    },
+  })
+);
 
 export const handlers = [
-	http.get('/api/timesheet', ({ request }) => {
-		const url = new URL(request.url);
-		const yearParam = Number.parseInt(url.searchParams.get('year') || '', 10);
-		const monthParam = Number.parseInt(url.searchParams.get('month') || '', 10);
+  // Mock for searching issues
+  http.post("https://*.atlassian.net/rest/api/3/search", () => {
+    return HttpResponse.json({
+      issues: mockIssues,
+      total: mockIssues.length,
+    });
+  }),
 
-		const now = new Date();
-		const year =
-			Number.isFinite(yearParam) && yearParam > 1900
-				? yearParam
-				: now.getUTCFullYear();
-		const monthOneBased =
-			Number.isFinite(monthParam) && monthParam >= 1 && monthParam <= 12
-				? monthParam
-				: now.getUTCMonth() + 1;
-
-		const start = new Date(Date.UTC(year, monthOneBased - 1, 1, 0, 0, 0));
-		const end = new Date(Date.UTC(year, monthOneBased, 0, 23, 59, 59, 999));
-
-		const filtered = MockWorklogs.filter((wl) => {
-			const ts = new Date(wl.started).getTime();
-			return ts >= start.getTime() && ts <= end.getTime();
-		});
-
-		return HttpResponse.json({
-			jiraDomain: 'jira.example.com',
-			worklogs: filtered,
-			issueSummaries: MockIssueSummaries,
-			teamDevelopers: MockTeamDevelopers,
-		});
-	}),
+  // Mock for getting worklogs for an issue
+  http.get(
+    "https://*.atlassian.net/rest/api/3/issue/:issueId/worklog",
+    ({ params }) => {
+      const { issueId } = params;
+      const worklogs = MockWorklogs.filter((wl) => wl.issueId === issueId);
+      return HttpResponse.json({
+        worklogs,
+      });
+    }
+  ),
 ];

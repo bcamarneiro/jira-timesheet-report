@@ -1,4 +1,4 @@
-import type React from 'react';
+import { Link } from 'react-router-dom';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { TimesheetGrid } from '../components/TimesheetGrid';
 import { UserSelector } from '../components/UserSelector';
@@ -21,6 +21,8 @@ export const TimesheetPage: React.FC = () => {
 
 	const {
 		data,
+		isLoading,
+		error,
 		jiraDomain,
 		issueSummaries,
 		teamDevelopers,
@@ -49,7 +51,23 @@ export const TimesheetPage: React.FC = () => {
 		);
 	};
 
-	if (!data) return <p>Loading...</p>;
+	if (isLoading) return <p>Loading...</p>;
+
+	if (error) {
+		return (
+			<div className={styles.container}>
+				<div className={styles.error}>
+					<h2>Error</h2>
+					<p>{error}</p>
+					{error.includes('configured') && (
+						<Link to="/settings">Go to Settings</Link>
+					)}
+				</div>
+			</div>
+		);
+	}
+
+	if (!data) return null;
 
 	const isValidUser = selectedUser !== '' && users.includes(selectedUser);
 	const selectedEntry = visibleEntries.find(([user]) => user === selectedUser);
