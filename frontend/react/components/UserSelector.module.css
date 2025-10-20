@@ -1,12 +1,15 @@
-.user-selector {
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+.container {
+  margin-bottom: 1rem;
 }
 
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
 
-.container {
-  /* Add styles for the container class */
-  margin: 16px 0;
+.select {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
 }

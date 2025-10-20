@@ -7,7 +7,7 @@ import { useDownload } from '../hooks/useDownload';
 import { useTimesheetData } from '../hooks/useTimesheetData';
 import { useTimesheetQueryParams } from '../hooks/useTimesheetQueryParams';
 import { monthLabel } from '../utils/date';
-import * as styles from './TimesheetPage.module.css';
+import styles from './TimesheetPage.module.css';
 
 export const TimesheetPage: React.FC = () => {
 	const {
