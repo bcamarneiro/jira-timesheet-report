@@ -3,7 +3,7 @@ import { useId, useState } from 'react';
 import type { Config } from '../../../stores/useConfigStore';
 import { useConfigStore } from '../../../stores/useConfigStore';
 import { Button } from '../ui/Button';
-import styles from './SettingsForm.module.css';
+import * as styles from './SettingsForm.module.css';
 
 export const SettingsForm: React.FC = () => {
 	const { config, setConfig } = useConfigStore();

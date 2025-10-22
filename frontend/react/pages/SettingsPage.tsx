@@ -1,6 +1,6 @@
 import type React from 'react';
 import { SettingsForm } from '../components/settings/SettingsForm';
-import styles from './SettingsPage.module.css';
+import * as styles from './SettingsPage.module.css';
 
 export const SettingsPage: React.FC = () => {
 	return (
