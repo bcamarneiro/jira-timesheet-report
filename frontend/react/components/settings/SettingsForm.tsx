@@ -1,72 +1,42 @@
-import { Version3Client } from 'jira.js';
 import type React from 'react';
-import { useId, useState } from 'react';
-import type { Config } from '../../../stores/useConfigStore';
-import { useConfigStore } from '../../../stores/useConfigStore';
+import { useEffect, useId } from 'react';
+import { useSettingsFormStore } from '../../../stores/useSettingsFormStore';
 import { Button } from '../ui/Button';
 import * as styles from './SettingsForm.module.css';
 
 export const SettingsForm: React.FC = () => {
-	const { config, setConfig } = useConfigStore();
-	const [formData, setFormData] = useState(config);
-	const [isTesting, setIsTesting] = useState(false);
-	const [testResult, setTestResult] = useState<{
-		success: boolean;
-		message: string;
-	} | null>(null);
+	// Access the settings form store
+	const formData = useSettingsFormStore((state) => state.formData);
+	const isTesting = useSettingsFormStore((state) => state.isTesting);
+	const testResult = useSettingsFormStore((state) => state.testResult);
+	const updateFormField = useSettingsFormStore((state) => state.updateFormField);
+	const saveSettings = useSettingsFormStore((state) => state.saveSettings);
+	const testConnection = useSettingsFormStore((state) => state.testConnection);
+	const loadFromConfig = useSettingsFormStore((state) => state.loadFromConfig);
 
 	const jiraHostId = useId();
 	const emailId = useId();
 	const apiTokenId = useId();
 	const corsProxyId = useId();
 
+	// Load form data from config on mount
+	useEffect(() => {
+		loadFromConfig();
+	}, [loadFromConfig]);
+
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
-		setFormData((prev: Config) => ({ ...prev, [name]: value }));
+		updateFormField(name as keyof typeof formData, value);
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		setConfig(formData);
+		saveSettings();
 		alert('Settings saved!');
 	};
 
 	const handleTestConnection = async () => {
-		setIsTesting(true);
-		setTestResult(null);
-		try {
-			const host = formData.corsProxy
-				? `${formData.corsProxy.replace(/\/$/, '')}/https://${
-						formData.jiraHost
-					}`
-				: `https://${formData.jiraHost}`;
-
-			const client = new Version3Client({
-				host,
-				authentication: {
-					basic: {
-						email: formData.email,
-						apiToken: formData.apiToken,
-					},
-				},
-			});
-
-			const myself = await client.myself.getCurrentUser();
-			if (myself) {
-				setTestResult({
-					success: true,
-					message: `Connection successful! Hello, ${myself.displayName}.`,
-				});
-			} else {
-				throw new Error('Could not verify user.');
-			}
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : 'Connection failed.';
-			setTestResult({ success: false, message });
-		} finally {
-			setIsTesting(false);
-		}
+		await testConnection();
 	};
 
 	return (

@@ -1,40 +1,42 @@
 import { Link } from 'react-router-dom';
+import { useConfigStore } from '../../stores/useConfigStore';
+import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { TimesheetGrid } from '../components/TimesheetGrid';
 import { UserSelector } from '../components/UserSelector';
 import { Button } from '../components/ui/Button';
 import { useDownload } from '../hooks/useDownload';
-import { useTimesheetData } from '../hooks/useTimesheetData';
-import { useTimesheetQueryParams } from '../hooks/useTimesheetQueryParams';
+import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
+import { useTimesheetURLSync } from '../hooks/useTimesheetURLSync';
 import { monthLabel } from '../utils/date';
 import * as styles from './TimesheetPage.module.css';
 
 export const TimesheetPage: React.FC = () => {
-	const {
-		selectedUser,
-		setSelectedUser,
-		currentYear,
-		currentMonth,
-		goPrevMonth,
-		goNextMonth,
-	} = useTimesheetQueryParams();
+	// Fetch data into store
+	useTimesheetDataFetcher();
 
-	const {
-		data,
-		isLoading,
-		error,
-		jiraDomain,
-		issueSummaries,
-		teamDevelopers,
-		users,
-		grouped,
-		visibleEntries,
-	} = useTimesheetData(currentYear, currentMonth, selectedUser);
+	// Sync URL with store
+	const { handleSetSelectedUser } = useTimesheetURLSync();
+
+	// Read from stores
+	const currentYear = useTimesheetStore((state) => state.currentYear);
+	const currentMonth = useTimesheetStore((state) => state.currentMonth);
+	const selectedUser = useTimesheetStore((state) => state.selectedUser);
+	const data = useTimesheetStore((state) => state.data);
+	const isLoading = useTimesheetStore((state) => state.isLoading);
+	const error = useTimesheetStore((state) => state.error);
+	const issueSummaries = useTimesheetStore((state) => state.issueSummaries);
+	const users = useTimesheetStore((state) => state.users);
+	const visibleEntries = useTimesheetStore((state) => state.visibleEntries);
+	const goPrevMonth = useTimesheetStore((state) => state.goPrevMonth);
+	const goNextMonth = useTimesheetStore((state) => state.goNextMonth);
+
+	const jiraDomain = useConfigStore((state) => state.config.jiraHost);
 
 	const { downloadUser, downloadAll } = useDownload();
 
 	const handleUserChange = (value: string) => {
-		setSelectedUser(value);
+		handleSetSelectedUser(value);
 	};
 
 	const handleDownloadUser = (user: string) => {

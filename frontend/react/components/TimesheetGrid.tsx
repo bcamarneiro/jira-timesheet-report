@@ -1,8 +1,9 @@
 import type React from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { useTimesheetStore } from '../../stores/useTimesheetStore';
+import { useTimeOffStore } from '../../stores/useTimeOffStore';
 import { useCalendar } from '../hooks/useCalendar';
 import { useKarmaCalculation } from '../hooks/useKarmaCalculation';
-import { useTimeOff } from '../hooks/useTimeOff';
 import { isoDateFromYMD } from '../utils/date';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
@@ -11,32 +12,38 @@ import { UserHeader } from './user/UserHeader';
 type Props = {
 	user: string;
 	days: Record<string, JiraWorklog[]>;
-	year: number;
-	monthZeroIndexed: number;
-	jiraDomain: string;
-	issueSummaries: Record<string, string>;
 	onDownloadUser: (user: string) => void;
 };
 
 export const TimesheetGrid: React.FC<Props> = ({
 	user,
 	days,
-	year,
-	monthZeroIndexed,
-	jiraDomain,
-	issueSummaries,
 	onDownloadUser,
 }) => {
+	// Read from stores
+	const year = useTimesheetStore((state) => state.currentYear);
+	const monthZeroIndexed = useTimesheetStore((state) => state.currentMonth);
+	const getTimeOffHours = useTimeOffStore((state) => state.getTimeOffHours);
+	const setTimeOffHoursStore = useTimeOffStore((state) => state.setTimeOffHours);
+
 	const { firstWeekday, numDays, weekdayLabels } = useCalendar(
 		year,
 		monthZeroIndexed,
 	);
-	const { getTimeOffHours, setTimeOffHours } = useTimeOff(user);
+
+	const setTimeOffHours = (iso: string, hours: number) => {
+		setTimeOffHoursStore(user, iso, hours);
+	};
+
+	const getTimeOffHoursForUser = (iso: string) => {
+		return getTimeOffHours(user, iso);
+	};
+
 	const { totalSeconds, netKarmaSeconds } = useKarmaCalculation(
 		days,
 		year,
 		monthZeroIndexed,
-		getTimeOffHours,
+		getTimeOffHoursForUser,
 	);
 
 	const cells: React.ReactNode[] = [];
@@ -53,14 +60,11 @@ export const TimesheetGrid: React.FC<Props> = ({
 				key={iso}
 				iso={iso}
 				dayNumber={d}
-				jiraDomain={jiraDomain}
+				user={user}
 				worklogs={worklogs}
 				isWeekend={isWeekend}
-				timeOffHours={!isWeekend ? getTimeOffHours(iso) : 0}
+				timeOffHours={!isWeekend ? getTimeOffHoursForUser(iso) : 0}
 				onTimeOffChange={(hours) => setTimeOffHours(iso, hours)}
-				issueSummaries={issueSummaries}
-				currentYear={year}
-				currentMonth={monthZeroIndexed}
 			/>,
 		);
 	}

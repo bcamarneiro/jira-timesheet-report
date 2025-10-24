@@ -1,5 +1,7 @@
 import type React from 'react';
 import type { JiraWorklog } from '../../../../types/JiraWorklog';
+import { useConfigStore } from '../../../stores/useConfigStore';
+import { useTimesheetStore } from '../../../stores/useTimesheetStore';
 import { isRetroactiveWorklog } from '../../utils/csv';
 import { formatHours } from '../../utils/format';
 import { truncate } from '../../utils/text';
@@ -7,19 +9,14 @@ import * as styles from './WorklogItem.module.css';
 
 type Props = {
 	worklog: JiraWorklog;
-	jiraDomain: string;
-	issueSummaries: Record<string, string>;
-	currentYear: number;
-	currentMonth: number;
 };
 
-export const WorklogItem: React.FC<Props> = ({
-	worklog,
-	jiraDomain,
-	issueSummaries,
-	currentYear,
-	currentMonth,
-}) => {
+export const WorklogItem: React.FC<Props> = ({ worklog }) => {
+	// Access stores directly - no prop drilling!
+	const jiraDomain = useConfigStore((state) => state.config.jiraHost);
+	const issueSummaries = useTimesheetStore((state) => state.issueSummaries);
+	const currentYear = useTimesheetStore((state) => state.currentYear);
+	const currentMonth = useTimesheetStore((state) => state.currentMonth);
 	const keyOrId = worklog.issueKey ?? worklog.issueId;
 	const issueTitle =
 		worklog.issueKey && issueSummaries[worklog.issueKey]

@@ -10,27 +10,21 @@ import { WorklogList } from './day/WorklogList';
 type Props = {
 	iso: string;
 	dayNumber: number;
-	jiraDomain: string;
+	user: string;
 	worklogs: JiraWorklog[];
 	isWeekend: boolean;
 	timeOffHours: number;
 	onTimeOffChange: (hours: number) => void;
-	issueSummaries: Record<string, string>;
-	currentYear: number;
-	currentMonth: number;
 };
 
 export const DayCell: React.FC<Props> = ({
 	iso,
 	dayNumber,
-	jiraDomain,
+	user,
 	worklogs,
 	isWeekend,
 	timeOffHours,
 	onTimeOffChange,
-	issueSummaries,
-	currentYear,
-	currentMonth,
 }) => {
 	const { dayTotalSeconds, effectiveSeconds, missingSeconds } =
 		useDayCalculation(worklogs, isWeekend, timeOffHours);
@@ -63,13 +57,7 @@ export const DayCell: React.FC<Props> = ({
 					/>
 				</div>
 			</div>
-			<WorklogList
-				worklogs={worklogs}
-				jiraDomain={jiraDomain}
-				issueSummaries={issueSummaries}
-				currentYear={currentYear}
-				currentMonth={currentMonth}
-			/>
+			<WorklogList worklogs={worklogs} />
 			<DaySummary
 				dayTotalSeconds={dayTotalSeconds}
 				timeOffHours={timeOffHours}

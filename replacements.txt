@@ -1,0 +1,10 @@
+Sena Aydin==>Sarah Adams
+AYDIN_SE==>ADAMS_S
+CAMARNEI==>COOPER_B
+compass: ==>
+Component RsSnackbar==>Component Snackbar Implementation
+Component RsPassword==>Component Password Field
+Component RsSkeleton==>Component Skeleton Loader
+RsSnackbar==>Snackbar Implementation
+RsPassword==>Password Field
+RsSkeleton==>Skeleton Loader

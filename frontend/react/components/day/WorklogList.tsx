@@ -4,19 +4,9 @@ import { WorklogItem } from './WorklogItem';
 
 type Props = {
 	worklogs: JiraWorklog[];
-	jiraDomain: string;
-	issueSummaries: Record<string, string>;
-	currentYear: number;
-	currentMonth: number;
 };
 
-export const WorklogList: React.FC<Props> = ({
-	worklogs,
-	jiraDomain,
-	issueSummaries,
-	currentYear,
-	currentMonth,
-}) => {
+export const WorklogList: React.FC<Props> = ({ worklogs }) => {
 	return (
 		<div
 			style={{
@@ -28,14 +18,7 @@ export const WorklogList: React.FC<Props> = ({
 			}}
 		>
 			{worklogs.map((wl) => (
-				<WorklogItem
-					key={wl.id}
-					worklog={wl}
-					jiraDomain={jiraDomain}
-					issueSummaries={issueSummaries}
-					currentYear={currentYear}
-					currentMonth={currentMonth}
-				/>
+				<WorklogItem key={wl.id} worklog={wl} />
 			))}
 		</div>
 	);

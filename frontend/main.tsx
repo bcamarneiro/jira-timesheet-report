@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { App } from './react/App';
+import { useConfigStore } from './stores/useConfigStore';
 
 // Start MSW only in offline mode
 async function startApp() {
@@ -12,9 +13,19 @@ async function startApp() {
 					url: '/mockServiceWorker.js',
 				},
 			});
-			console.log('MSW started successfully');
+			console.log('[OFFLINE MODE] MSW started successfully');
+
+			// Set up default configuration for offline mode
+			const { setConfig } = useConfigStore.getState();
+			setConfig({
+				jiraHost: 'mock.atlassian.net',
+				email: 'dev@example.com',
+				apiToken: 'mock-token',
+				corsProxy: '',
+			});
+			console.log('[OFFLINE MODE] Default configuration set');
 		} catch (error) {
-			console.error('Failed to start MSW:', error);
+			console.error('[OFFLINE MODE] Failed to start MSW:', error);
 		}
 	}
 

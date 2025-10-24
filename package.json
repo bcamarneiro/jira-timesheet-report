@@ -5,7 +5,8 @@
 	"main": "frontend/main.ts",
 	"scripts": {
 		"start": "rspack dev",
-		"dev": "NODE_ENV=development OFFLINE_MODE=true rspack dev",
+		"dev": "NODE_ENV=development rspack dev",
+		"dev:offline": "NODE_ENV=development OFFLINE_MODE=true rspack dev",
 		"build": "rspack build",
 		"lint": "biome lint .",
 		"format": "biome format . --write",
