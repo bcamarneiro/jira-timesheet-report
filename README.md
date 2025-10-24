@@ -9,7 +9,8 @@ This is a frontend-only application that connects directly to Jira's API using t
 
 **No backend server is required.**
 
-## Scripts (with Bun)
+## Scripts
+
 - `bun run start` – starts Rspack dev server on port 5173
 - `bun run dev` – same as start (development mode)
 - `bun run dev:offline` – runs frontend in offline mode with mock data (no Jira connection needed)
@@ -17,6 +18,9 @@ This is a frontend-only application that connects directly to Jira's API using t
 - `bun run lint` – runs Biome linter
 - `bun run format` – formats code with Biome
 - `bun run check` – runs Biome check with auto-fix
+- `bun run cors-proxy` – runs CORS proxy server on port 8081
+- `bun run cors-proxy:docker` – runs CORS proxy in Docker
+- `bun run cors-proxy:compose` – runs CORS proxy with Docker Compose
 
 ## Usage
 1. Install deps: `bun install`
@@ -26,8 +30,62 @@ This is a frontend-only application that connects directly to Jira's API using t
    - Jira Host (e.g., your-domain.atlassian.net)
    - Email (your Jira email)
    - API Token (generate from https://id.atlassian.com/manage-profile/security/api-tokens)
-   - CORS Proxy (optional, only needed if you encounter CORS issues)
+   - CORS Proxy (optional, see [CORS Proxy Guide](CORS_PROXY_GUIDE.md) for setup instructions)
 5. Navigate to "Timesheet" to view your worklogs
+
+## CORS Proxy Setup
+
+Since this is a client-side only application, you may encounter CORS (Cross-Origin Resource Sharing) errors when connecting to Jira from your browser.
+
+### Quick Start (Easiest)
+
+**Option 1: Using bun script**
+
+```bash
+# Run the built-in CORS proxy
+bun run cors-proxy
+```
+
+**Option 2: Using Docker**
+
+```bash
+# Start Docker container
+bun run cors-proxy:docker
+
+# Stop Docker container
+bun run cors-proxy:docker:stop
+```
+
+**Option 3: Using Docker Compose**
+
+```bash
+# Start with docker-compose
+bun run cors-proxy:compose
+
+# Stop
+bun run cors-proxy:compose:stop
+```
+
+All options run the proxy on `http://localhost:8081`
+
+### Configuration
+
+1. Start the proxy using one of the methods above
+2. In the app, go to **Settings**
+3. Set **CORS Proxy** to: `http://localhost:8081`
+4. Click **Test Connection** to verify
+
+### Available Scripts
+
+- `bun run cors-proxy` - Run Node.js CORS proxy (requires `bun install`)
+- `bun run cors-proxy:docker` - Run CORS proxy in Docker container
+- `bun run cors-proxy:docker:stop` - Stop Docker container
+- `bun run cors-proxy:compose` - Run CORS proxy with Docker Compose
+- `bun run cors-proxy:compose:stop` - Stop Docker Compose services
+
+### More Information
+
+For detailed documentation including testing, troubleshooting, and security considerations, see the complete [CORS Proxy Guide](CORS_PROXY_GUIDE.md).
 
 ## Offline Development
 For offline development without needing a Jira connection:
