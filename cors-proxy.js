@@ -16,35 +16,31 @@
  */
 
 const corsAnywhere = require('cors-anywhere');
-const https = require('https');
 
 const host = process.env.CORS_PROXY_HOST || 'localhost';
 const port = process.env.CORS_PROXY_PORT || 8081;
-
-// Create an HTTPS agent that ignores certificate errors
-const httpsAgent = new https.Agent({
-    rejectUnauthorized: false
-});
 
 const proxy = corsAnywhere.createServer({
     originWhitelist: [], // Allow all origins
     requireHeader: [], // Don't require any special headers
     removeHeaders: ['cookie', 'cookie2'], // Remove cookies for security
-    httpsOptions: {
-        agent: httpsAgent
-    },
     httpProxyOptions: {
         // Increase timeout for large responses
         timeout: 30000,
-        // Ignore SSL certificate errors
-        secure: false,
-        agent: httpsAgent
+        // Ignore SSL certificate errors for self-signed certificates
+        secure: false
     }
 });
 
 // Add request logging
 proxy.on('request', (req, res) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+});
+
+// Add error logging
+proxy.on('proxyError', (err, req, res) => {
+    console.error(`[${new Date().toISOString()}] Proxy Error:`, err.message);
+    console.error('Request URL:', req.url);
 });
 
 proxy.listen(port, host, () => {
