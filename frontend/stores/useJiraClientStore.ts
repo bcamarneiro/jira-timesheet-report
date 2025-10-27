@@ -1,3 +1,4 @@
+import type { AxiosInstance } from 'axios';
 import { Version3Client } from 'jira.js';
 import { create } from 'zustand';
 import type { Config } from './useConfigStore';
@@ -25,14 +26,12 @@ const createClient = (config: Config): Version3Client | null => {
 	// Always use the actual Jira host for the client configuration
 	const host = `https://${config.jiraHost}`;
 
-	// If CORS proxy is configured, override the baseURL
-	const baseRequestConfig = config.corsProxy
-		? {
-				baseURL: `${config.corsProxy.replace(/\/$/, '')}/https://${config.jiraHost}`,
-		  }
-		: undefined;
+	console.log('[Jira Client] Creating client with config:', {
+		host,
+		corsProxy: config.corsProxy,
+	});
 
-	return new Version3Client({
+	const client = new Version3Client({
 		host,
 		authentication: {
 			basic: {
@@ -40,8 +39,32 @@ const createClient = (config: Config): Version3Client | null => {
 				apiToken: config.apiToken,
 			},
 		},
-		baseRequestConfig,
 	});
+
+	// If CORS proxy is configured, add a request interceptor to modify the URL
+	if (config.corsProxy) {
+		const corsProxyUrl = config.corsProxy.replace(/\/$/, '');
+		const targetHost = `https://${config.jiraHost}`;
+
+		// Access the internal axios instance and add an interceptor
+		const axiosInstance = (client as any).instance as AxiosInstance;
+
+		if (axiosInstance?.interceptors) {
+			axiosInstance.interceptors.request.use((requestConfig) => {
+				// Modify the URL to go through the CORS proxy
+				if (requestConfig.url) {
+					const originalUrl = requestConfig.url.startsWith('http')
+						? requestConfig.url
+						: `${targetHost}${requestConfig.url}`;
+					requestConfig.url = `${corsProxyUrl}/${originalUrl}`;
+					console.log('[CORS Proxy] Rewriting URL to:', requestConfig.url);
+				}
+				return requestConfig;
+			});
+		}
+	}
+
+	return client;
 };
 
 const configToKey = (config: Config): string => {

@@ -1,7 +1,9 @@
+import type { AxiosInstance } from 'axios';
 import { Version3Client } from 'jira.js';
 import { create } from 'zustand';
 import type { Config } from './useConfigStore';
 import { useConfigStore } from './useConfigStore';
+import { useJiraClientStore } from './useJiraClientStore';
 
 interface SettingsFormState {
 	// Form state (separate from saved config)
@@ -46,6 +48,8 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 	saveSettings: () => {
 		const { formData } = get();
 		useConfigStore.getState().setConfig(formData);
+		// Force reinitialize the Jira client with new config
+		useJiraClientStore.getState().reinitialize();
 	},
 
 	resetForm: () => {
@@ -62,13 +66,6 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			// Always use the actual Jira host for the client configuration
 			const host = `https://${formData.jiraHost}`;
 
-			// If CORS proxy is configured, override the baseURL
-			const baseRequestConfig = formData.corsProxy
-				? {
-						baseURL: `${formData.corsProxy.replace(/\/$/, '')}/https://${formData.jiraHost}`,
-				  }
-				: undefined;
-
 			const client = new Version3Client({
 				host,
 				authentication: {
@@ -77,8 +74,30 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 						apiToken: formData.apiToken,
 					},
 				},
-				baseRequestConfig,
 			});
+
+			// If CORS proxy is configured, add a request interceptor to modify the URL
+			if (formData.corsProxy) {
+				const corsProxyUrl = formData.corsProxy.replace(/\/$/, '');
+				const targetHost = `https://${formData.jiraHost}`;
+
+				// Access the internal axios instance and add an interceptor
+				const axiosInstance = (client as any).instance as AxiosInstance;
+
+				if (axiosInstance?.interceptors) {
+					axiosInstance.interceptors.request.use((requestConfig) => {
+						// Modify the URL to go through the CORS proxy
+						if (requestConfig.url) {
+							const originalUrl = requestConfig.url.startsWith('http')
+								? requestConfig.url
+								: `${targetHost}${requestConfig.url}`;
+							requestConfig.url = `${corsProxyUrl}/${originalUrl}`;
+							console.log('[CORS Proxy] Test connection rewriting URL to:', requestConfig.url);
+						}
+						return requestConfig;
+					});
+				}
+			}
 
 			const myself = await client.myself.getCurrentUser();
 			if (myself) {
