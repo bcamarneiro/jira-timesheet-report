@@ -23,7 +23,20 @@ const port = process.env.CORS_PROXY_PORT || 8081;
 const proxy = corsAnywhere.createServer({
     originWhitelist: [], // Allow all origins
     requireHeader: [], // Don't require any special headers
-    removeHeaders: ['cookie', 'cookie2'], // Remove cookies for security
+    // Remove browser-specific headers that trigger SAML/SSO
+    removeHeaders: [
+        'cookie',
+        'cookie2',
+        'origin',
+        'referer',
+        'user-agent',
+        'sec-fetch-dest',
+        'sec-fetch-mode',
+        'sec-fetch-site',
+        'sec-ch-ua',
+        'sec-ch-ua-mobile',
+        'sec-ch-ua-platform'
+    ],
     httpProxyOptions: {
         // Increase timeout for large responses
         timeout: 30000,
