@@ -11,11 +11,7 @@
 		"lint": "biome lint .",
 		"format": "biome format . --write",
 		"check": "biome check --write --verbose .",
-		"cors-proxy": "node cors-proxy.js",
-		"cors-proxy:docker": "docker run -d --name jira-timesheet-cors-proxy -p 8081:8080 redocly/cors-anywhere && echo '\n✓ CORS proxy started on http://localhost:8081\n  Configure this URL in app settings'",
-		"cors-proxy:docker:stop": "docker stop jira-timesheet-cors-proxy && docker rm jira-timesheet-cors-proxy && echo '\n✓ CORS proxy stopped'",
-		"cors-proxy:compose": "docker-compose -f docker-compose.cors.yml up -d && echo '\n✓ CORS proxy started on http://localhost:8081\n  Configure this URL in app settings'",
-		"cors-proxy:compose:stop": "docker-compose -f docker-compose.cors.yml down"
+		"cors-proxy": "node cors-proxy.js"
 	},
 	"keywords": [],
 	"author": "",
