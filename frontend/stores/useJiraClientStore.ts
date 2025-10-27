@@ -34,9 +34,8 @@ const createClient = (config: Config): Version3Client | null => {
 	const client = new Version3Client({
 		host,
 		authentication: {
-			basic: {
-				email: config.email,
-				apiToken: config.apiToken,
+			oauth2: {
+				accessToken: config.apiToken,
 			},
 		},
 	});

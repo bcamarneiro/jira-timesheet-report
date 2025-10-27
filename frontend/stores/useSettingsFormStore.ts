@@ -69,9 +69,8 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			const client = new Version3Client({
 				host,
 				authentication: {
-					basic: {
-						email: formData.email,
-						apiToken: formData.apiToken,
+					oauth2: {
+						accessToken: formData.apiToken,
 					},
 				},
 			});
