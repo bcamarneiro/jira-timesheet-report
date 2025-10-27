@@ -22,9 +22,15 @@ const createClient = (config: Config): Version3Client | null => {
 		return null;
 	}
 
-	const host = config.corsProxy
-		? `${config.corsProxy.replace(/\/$/, '')}/https://${config.jiraHost}`
-		: `https://${config.jiraHost}`;
+	// Always use the actual Jira host for the client configuration
+	const host = `https://${config.jiraHost}`;
+
+	// If CORS proxy is configured, override the baseURL
+	const baseRequestConfig = config.corsProxy
+		? {
+				baseURL: `${config.corsProxy.replace(/\/$/, '')}/https://${config.jiraHost}`,
+		  }
+		: undefined;
 
 	return new Version3Client({
 		host,
@@ -34,6 +40,7 @@ const createClient = (config: Config): Version3Client | null => {
 				apiToken: config.apiToken,
 			},
 		},
+		baseRequestConfig,
 	});
 };
 

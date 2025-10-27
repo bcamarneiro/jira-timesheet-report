@@ -58,9 +58,16 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 
 		try {
 			const { formData } = get();
-			const host = formData.corsProxy
-				? `${formData.corsProxy.replace(/\/$/, '')}/https://${formData.jiraHost}`
-				: `https://${formData.jiraHost}`;
+
+			// Always use the actual Jira host for the client configuration
+			const host = `https://${formData.jiraHost}`;
+
+			// If CORS proxy is configured, override the baseURL
+			const baseRequestConfig = formData.corsProxy
+				? {
+						baseURL: `${formData.corsProxy.replace(/\/$/, '')}/https://${formData.jiraHost}`,
+				  }
+				: undefined;
 
 			const client = new Version3Client({
 				host,
@@ -70,6 +77,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 						apiToken: formData.apiToken,
 					},
 				},
+				baseRequestConfig,
 			});
 
 			const myself = await client.myself.getCurrentUser();

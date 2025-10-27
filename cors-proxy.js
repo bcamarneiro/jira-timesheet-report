@@ -20,7 +20,7 @@ const corsAnywhere = require('cors-anywhere');
 const host = process.env.CORS_PROXY_HOST || 'localhost';
 const port = process.env.CORS_PROXY_PORT || 8081;
 
-corsAnywhere.createServer({
+const proxy = corsAnywhere.createServer({
     originWhitelist: [], // Allow all origins
     requireHeader: [], // Don't require any special headers
     removeHeaders: ['cookie', 'cookie2'], // Remove cookies for security
@@ -28,7 +28,14 @@ corsAnywhere.createServer({
         // Increase timeout for large responses
         timeout: 30000
     }
-}).listen(port, host, () => {
+});
+
+// Add request logging
+proxy.on('request', (req, res) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+});
+
+proxy.listen(port, host, () => {
     console.log('\n========================================');
     console.log('🚀 CORS Proxy Server Started');
     console.log('========================================');
