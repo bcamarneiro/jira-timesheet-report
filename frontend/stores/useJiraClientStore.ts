@@ -46,21 +46,32 @@ const createClient = (config: Config): Version3Client | null => {
 		const corsProxyUrl = config.corsProxy.replace(/\/$/, '');
 		const targetHost = `https://${config.jiraHost}`;
 
+		console.log('[Jira Client] CORS proxy detected, setting up interceptor');
+		console.log('[Jira Client] corsProxyUrl:', corsProxyUrl);
+		console.log('[Jira Client] targetHost:', targetHost);
+
 		// Access the internal axios instance and add an interceptor
 		const axiosInstance = (client as any).instance as AxiosInstance;
 
+		console.log('[Jira Client] axiosInstance exists?', !!axiosInstance);
+		console.log('[Jira Client] interceptors exists?', !!axiosInstance?.interceptors);
+
 		if (axiosInstance?.interceptors) {
 			axiosInstance.interceptors.request.use((requestConfig) => {
+				console.log('[CORS Proxy] Interceptor triggered! Original URL:', requestConfig.url);
 				// Modify the URL to go through the CORS proxy
 				if (requestConfig.url) {
 					const originalUrl = requestConfig.url.startsWith('http')
 						? requestConfig.url
 						: `${targetHost}${requestConfig.url}`;
 					requestConfig.url = `${corsProxyUrl}/${originalUrl}`;
-					console.log('[CORS Proxy] Rewriting URL to:', requestConfig.url);
+					console.log('[CORS Proxy] Rewritten URL:', requestConfig.url);
 				}
 				return requestConfig;
 			});
+			console.log('[Jira Client] Interceptor registered successfully');
+		} else {
+			console.error('[Jira Client] Failed to access axios instance for interceptor');
 		}
 	}
 
