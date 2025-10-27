@@ -1,0 +1,12 @@
+.user-selector {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+
+.container {
+  /* Add styles for the container class */
+  margin: 16px 0;
+}
