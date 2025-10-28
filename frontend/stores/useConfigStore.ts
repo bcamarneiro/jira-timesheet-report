@@ -6,6 +6,7 @@ export interface Config {
 	email: string;
 	apiToken: string;
 	corsProxy: string;
+	jqlFilter: string;
 }
 
 interface ConfigState {
@@ -21,6 +22,7 @@ export const useConfigStore = create<ConfigState>()(
 				email: '',
 				apiToken: '',
 				corsProxy: '',
+				jqlFilter: '',
 			},
 			setConfig: (newConfig) => set({ config: newConfig }),
 		}),

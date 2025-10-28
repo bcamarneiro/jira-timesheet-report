@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { JiraWorklog } from '../../../../types/JiraWorklog';
+import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
 import { useConfigStore } from '../../../stores/useConfigStore';
 import { useTimesheetStore } from '../../../stores/useTimesheetStore';
 import { isRetroactiveWorklog } from '../../utils/csv';
@@ -8,7 +8,7 @@ import { truncate } from '../../utils/text';
 import * as styles from './WorklogItem.module.css';
 
 type Props = {
-	worklog: JiraWorklog;
+	worklog: EnrichedJiraWorklog;
 };
 
 export const WorklogItem: React.FC<Props> = ({ worklog }) => {
@@ -17,10 +17,10 @@ export const WorklogItem: React.FC<Props> = ({ worklog }) => {
 	const issueSummaries = useTimesheetStore((state) => state.issueSummaries);
 	const currentYear = useTimesheetStore((state) => state.currentYear);
 	const currentMonth = useTimesheetStore((state) => state.currentMonth);
-	const keyOrId = worklog.issueKey ?? worklog.issueId;
+	const keyOrId = worklog.issue?.key ?? worklog.issueId;
 	const issueTitle =
-		worklog.issueKey && issueSummaries[worklog.issueKey]
-			? issueSummaries[worklog.issueKey]
+		worklog.issue?.key && issueSummaries[worklog.issue.key]
+			? issueSummaries[worklog.issue.key]
 			: '';
 	const comment = worklog.comment || '';
 	const isRetroactive = isRetroactiveWorklog(

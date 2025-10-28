@@ -1,9 +1,9 @@
-import type { Version3Models } from 'jira.js';
+import type { Version2Models } from 'jira.js';
 import { create } from 'zustand';
 
 // Create an enriched type that includes the parent issue
-export type EnrichedJiraWorklog = Version3Models.Worklog & {
-	issue: Version3Models.Issue;
+export type EnrichedJiraWorklog = Version2Models.Worklog & {
+	issue: Version2Models.Issue;
 };
 
 export type GroupedWorklogs = Record<

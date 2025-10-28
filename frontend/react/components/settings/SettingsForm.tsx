@@ -18,6 +18,7 @@ export const SettingsForm: React.FC = () => {
 	const emailId = useId();
 	const apiTokenId = useId();
 	const corsProxyId = useId();
+	const jqlFilterId = useId();
 
 	// Load form data from config on mount
 	useEffect(() => {
@@ -84,8 +85,20 @@ export const SettingsForm: React.FC = () => {
 					name="corsProxy"
 					value={formData.corsProxy}
 					onChange={handleChange}
-					placeholder="e.g., https://cors-anywhere.herokuapp.com/"
+					placeholder="e.g., http://localhost:8081"
 				/>
+			</div>
+			<div className={styles.formGroup}>
+				<label htmlFor={jqlFilterId}>Additional JQL Filter (Optional)</label>
+				<input
+					type="text"
+					id={jqlFilterId}
+					name="jqlFilter"
+					value={formData.jqlFilter}
+					onChange={handleChange}
+					placeholder="e.g., component = INV_III"
+				/>
+				<small>This filter will be applied to all timesheet queries</small>
 			</div>
 			<div className={styles.buttonGroup}>
 				<Button type="submit">Save Settings</Button>

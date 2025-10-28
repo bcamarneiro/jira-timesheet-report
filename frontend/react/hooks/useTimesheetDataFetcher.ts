@@ -1,5 +1,6 @@
 import type { Version2Models } from 'jira.js';
 import { useEffect } from 'react';
+import { useConfigStore } from '../../stores/useConfigStore';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useJiraClient } from './useJiraClient';
@@ -15,6 +16,7 @@ export function useTimesheetDataFetcher() {
 	const setData = useTimesheetStore((state) => state.setData);
 	const setLoading = useTimesheetStore((state) => state.setLoading);
 	const setError = useTimesheetStore((state) => state.setError);
+	const jqlFilter = useConfigStore((state) => state.config.jqlFilter);
 
 	useEffect(() => {
 		const fetchTimesheetData = async () => {
@@ -30,11 +32,16 @@ export function useTimesheetDataFetcher() {
 				const startDate = new Date(currentYear, currentMonth, 1);
 				const endDate = new Date(currentYear, currentMonth + 1, 0);
 
-				const jql = `worklogDate >= "${startDate
+				let jql = `worklogDate >= "${startDate
 					.toISOString()
 					.substring(0, 10)}" AND worklogDate <= "${endDate
 					.toISOString()
 					.substring(0, 10)}"`;
+
+				// Apply additional JQL filter if configured
+				if (jqlFilter && jqlFilter.trim()) {
+					jql += ` AND ${jqlFilter.trim()}`;
+				}
 
 				const searchResult =
 					await jiraClient.issueSearch.searchForIssuesUsingJql({
@@ -73,5 +80,5 @@ export function useTimesheetDataFetcher() {
 		};
 
 		fetchTimesheetData();
-	}, [currentYear, currentMonth, jiraClient, setData, setLoading, setError]);
+	}, [currentYear, currentMonth, jiraClient, jqlFilter, setData, setLoading, setError]);
 }

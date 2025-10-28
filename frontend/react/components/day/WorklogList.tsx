@@ -1,9 +1,9 @@
 import type React from 'react';
-import type { JiraWorklog } from '../../../../types/JiraWorklog';
+import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
 import { WorklogItem } from './WorklogItem';
 
 type Props = {
-	worklogs: JiraWorklog[];
+	worklogs: EnrichedJiraWorklog[];
 };
 
 export const WorklogList: React.FC<Props> = ({ worklogs }) => {

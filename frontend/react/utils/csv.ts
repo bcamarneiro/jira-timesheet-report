@@ -1,4 +1,4 @@
-import type { EnrichedJiraWorklog } from '../hooks/useTimesheetData';
+import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 
 function csvEscape(value: string): string {
 	const safe = (value ?? '')
@@ -11,33 +11,14 @@ function csvEscape(value: string): string {
 	return safe;
 }
 
-function parseOriginalDateFromComment(
-	comment: {
-		type?: string;
-		version?: number;
-		content?: any[];
-	} | null,
-): string | null {
-	if (!comment || !comment.content) {
+function parseOriginalDateFromComment(comment: string | undefined): string | null {
+	if (!comment) {
 		return null;
 	}
 
 	const pattern = /Original Worklog Date was: (\d{4}\/\d{2}\/\d{2})/;
-
-	for (const item of comment.content) {
-		if (item.type === 'paragraph' && item.content) {
-			for (const textItem of item.content) {
-				if (textItem.type === 'text' && textItem.text) {
-					const match = textItem.text.match(pattern);
-					if (match) {
-						return match[1];
-					}
-				}
-			}
-		}
-	}
-
-	return null;
+	const match = comment.match(pattern);
+	return match ? match[1] : null;
 }
 
 export function isRetroactiveWorklog(
@@ -45,13 +26,13 @@ export function isRetroactiveWorklog(
 	currentYear: number,
 	currentMonth: number,
 ): boolean {
-	const originalDate = parseOriginalDateFromComment(worklog.comment ?? null);
+	const originalDate = parseOriginalDateFromComment(worklog.comment);
 	if (!originalDate) {
 		return false; // No original date found, not retroactive
 	}
 
 	const originalDateObj = new Date(originalDate);
-	const loggedDateObj = new Date(worklog.started as string);
+	const loggedDateObj = new Date(worklog.started ?? '');
 
 	// Check if logged in current month but original date is in a previous month
 	const isLoggedInCurrentMonth =
@@ -80,7 +61,7 @@ export function buildCsvForUser(
 		'Is Retroactive',
 	].join(',');
 	const rows = data.map((entry) => {
-		const date = new Date(entry.started as string);
+		const date = new Date(entry.started ?? '');
 		const formattedDate = `${date.getFullYear()}/${String(
 			date.getMonth() + 1,
 		).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
@@ -88,12 +69,7 @@ export function buildCsvForUser(
 		const key = entry.issue.key;
 		const summary = issueSummaries[entry.issue.id] ?? '';
 
-		let commentText = '';
-		if (entry.comment && entry.comment.content) {
-			commentText = entry.comment.content
-				.map((p: any) => p.content.map((t: any) => t.text || '').join(' '))
-				.join(' ');
-		}
+		const commentText = entry.comment ?? '';
 
 		const isRetro = isRetroactiveWorklog(entry, year, month);
 
