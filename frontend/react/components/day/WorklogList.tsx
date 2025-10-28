@@ -4,9 +4,11 @@ import { WorklogItem } from './WorklogItem';
 
 type Props = {
 	worklogs: EnrichedJiraWorklog[];
+	onEdit?: (worklog: EnrichedJiraWorklog) => void;
+	onDelete?: (worklog: EnrichedJiraWorklog) => void;
 };
 
-export const WorklogList: React.FC<Props> = ({ worklogs }) => {
+export const WorklogList: React.FC<Props> = ({ worklogs, onEdit, onDelete }) => {
 	return (
 		<div
 			style={{
@@ -18,7 +20,7 @@ export const WorklogList: React.FC<Props> = ({ worklogs }) => {
 			}}
 		>
 			{worklogs.map((wl) => (
-				<WorklogItem key={wl.id} worklog={wl} />
+				<WorklogItem key={wl.id} worklog={wl} onEdit={onEdit} onDelete={onDelete} />
 			))}
 		</div>
 	);

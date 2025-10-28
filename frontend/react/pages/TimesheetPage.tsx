@@ -1,13 +1,16 @@
 import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
+import { useUIStore } from '../../stores/useUIStore';
 import { MonthNavigator } from '../components/MonthNavigator';
+import { TimesheetFilters } from '../components/TimesheetFilters';
 import { TimesheetGrid } from '../components/TimesheetGrid';
 import { UserSelector } from '../components/UserSelector';
 import { Button } from '../components/ui/Button';
 import { useDownload } from '../hooks/useDownload';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
-import { useTimesheetURLSync } from '../hooks/useTimesheetURLSync';
+import { useTimesheetURLSync} from '../hooks/useTimesheetURLSync';
 import { monthLabel } from '../utils/date';
 import * as styles from './TimesheetPage.module.css';
 

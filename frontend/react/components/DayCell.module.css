@@ -64,3 +64,29 @@
 	background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%);
 	border-color: #fde047;
 }
+
+.addButton {
+	background: #007bff;
+	color: white;
+	border: none;
+	border-radius: 50%;
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+	padding: 0;
+	transition: background-color 0.2s, transform 0.1s;
+}
+
+.addButton:hover {
+	background: #0056b3;
+	transform: scale(1.1);
+}
+
+.addButton:active {
+	transform: scale(0.95);
+}

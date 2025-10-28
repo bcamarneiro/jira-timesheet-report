@@ -13,12 +13,16 @@ interface UIState {
 	// User preferences
 	preferences: UIPreferences;
 
+	// Filters
+	selectedProject: string;
+
 	// Expanded state for collapsible sections (user: boolean)
 	expandedUsers: Record<string, boolean>;
 
 	// Actions
 	setSelectedTab: (tab: 'home' | 'timesheet' | 'settings') => void;
 	updatePreferences: (prefs: Partial<UIPreferences>) => void;
+	setSelectedProject: (project: string) => void;
 	toggleUserExpanded: (user: string) => void;
 	resetPreferences: () => void;
 }
@@ -33,6 +37,7 @@ export const useUIStore = create<UIState>()(
 		(set) => ({
 			selectedTab: 'home',
 			preferences: defaultPreferences,
+			selectedProject: '',
 			expandedUsers: {},
 
 			setSelectedTab: (tab: 'home' | 'timesheet' | 'settings') => {
@@ -46,6 +51,10 @@ export const useUIStore = create<UIState>()(
 						...prefs,
 					},
 				}));
+			},
+
+			setSelectedProject: (project: string) => {
+				set({ selectedProject: project });
 			},
 
 			toggleUserExpanded: (user: string) => {
