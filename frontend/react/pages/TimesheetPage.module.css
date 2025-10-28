@@ -1,9 +1,21 @@
 .container {
 	font-family: sans-serif;
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 2rem;
+}
+
+.container h1 {
+	font-size: 2.5rem;
+	margin-bottom: 1.5rem;
+	color: #333;
 }
 
 .header {
-	margin: 0.5em 0;
+	margin: 1.5rem 0;
+	display: flex;
+	justify-content: flex-end;
+	gap: 1rem;
 }
 
 .noUser {
@@ -12,8 +24,30 @@
 }
 
 .error {
-	color: red;
-	border: 1px solid red;
-	padding: 1em;
-	margin: 1em 0;
+	background-color: #fff5f5;
+	color: #c53030;
+	border: 1px solid #fc8181;
+	border-radius: 8px;
+	padding: 1.5rem;
+	margin: 1.5rem 0;
+}
+
+.error h2 {
+	margin-top: 0;
+	margin-bottom: 0.5rem;
+	color: #c53030;
+}
+
+.error p {
+	margin-bottom: 1rem;
+}
+
+.error a {
+	color: #0066cc;
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.error a:hover {
+	text-decoration: underline;
 }

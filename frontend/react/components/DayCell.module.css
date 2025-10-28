@@ -1,27 +1,35 @@
 .dayCell {
-	border: 1px solid #ddd;
+	border: 1px solid #dee2e6;
 	border-radius: 8px;
-	min-height: 100px;
-	padding: 0.5em;
+	min-height: 120px;
+	padding: 0.75rem;
 	display: flex;
 	flex-direction: column;
-	gap: 0.25em;
+	gap: 0.5rem;
+	transition: box-shadow 0.2s ease;
+}
+
+.dayCell:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 0.25em;
+	margin-bottom: 0.25rem;
 }
 
 .dayNumber {
-	font-weight: bold;
+	font-weight: 700;
+	font-size: 1.125rem;
+	color: #333;
 }
 
 .logInfo {
-	font-size: 11px;
-	color: #666;
+	font-size: 0.75rem;
+	color: #6c757d;
+	font-weight: 500;
 }
 
 .logsContainer {
@@ -32,22 +40,27 @@
 
 /* Weekend styles */
 .weekend {
-	background: #ffd6d6;
+	background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+	border-color: #ffb3b3;
 }
 
 .weekendEmpty {
-	background: transparent;
+	background: #fafbfc;
+	border-color: #e9ecef;
 }
 
 /* Weekday styles */
 .weekdayComplete {
-	background: #e6f6ea; /* Green for 8 hours */
+	background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+	border-color: #86efac;
 }
 
 .weekdayIncomplete {
-	background: #ffe9e3; /* Orange for less than 8 hours */
+	background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+	border-color: #fdba74;
 }
 
 .weekdayOvertime {
-	background: #fff6cc; /* Yellow for more than 8 hours */
+	background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%);
+	border-color: #fde047;
 }

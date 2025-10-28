@@ -8,6 +8,7 @@ import { isoDateFromYMD } from '../utils/date';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
 import { UserHeader } from './user/UserHeader';
+import * as styles from './TimesheetGrid.module.css';
 
 type Props = {
 	user: string;
@@ -70,7 +71,7 @@ export const TimesheetGrid: React.FC<Props> = ({
 	}
 
 	return (
-		<div key={user}>
+		<div key={user} className={styles.container}>
 			<UserHeader
 				user={user}
 				totalSeconds={totalSeconds}
@@ -82,8 +83,11 @@ export const TimesheetGrid: React.FC<Props> = ({
 				{cells}
 			</CalendarGrid>
 
-			<div style={{ fontWeight: 'bold', marginTop: '0.5em' }}>
-				Month total: {(totalSeconds / 3600).toFixed(2)} h
+			<div className={styles.monthTotal}>
+				<span className={styles.monthTotalLabel}>Month Total</span>
+				<span className={styles.monthTotalValue}>
+					{(totalSeconds / 3600).toFixed(2)} h
+				</span>
 			</div>
 		</div>
 	);

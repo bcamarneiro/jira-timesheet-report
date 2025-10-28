@@ -1,0 +1,42 @@
+.container {
+	background-color: #f8f9fa;
+	border-radius: 8px;
+	padding: 1.5rem;
+	margin-bottom: 1.5rem;
+	border: 1px solid #e9ecef;
+}
+
+.userTitle {
+	font-size: 1.75rem;
+	margin: 0 0 1rem 0;
+	color: #333;
+}
+
+.actions {
+	margin-bottom: 1rem;
+}
+
+.stats {
+	display: flex;
+	gap: 2rem;
+	flex-wrap: wrap;
+}
+
+.stat {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.statLabel {
+	font-size: 0.875rem;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.statValue {
+	font-size: 1.25rem;
+	font-weight: bold;
+	color: #333;
+}
