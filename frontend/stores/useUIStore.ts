@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 
 interface UIPreferences {
 	hideWeekends: boolean;
-	showKarmaOnly: boolean;
 	compactView: boolean;
 }
 
@@ -26,7 +25,6 @@ interface UIState {
 
 const defaultPreferences: UIPreferences = {
 	hideWeekends: false,
-	showKarmaOnly: false,
 	compactView: false,
 };
 

@@ -3,7 +3,7 @@ import type { JiraWorklog } from '../../../types/JiraWorklog';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useTimeOffStore } from '../../stores/useTimeOffStore';
 import { useCalendar } from '../hooks/useCalendar';
-import { useKarmaCalculation } from '../hooks/useKarmaCalculation';
+import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
 import { isoDateFromYMD } from '../utils/date';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
@@ -40,12 +40,7 @@ export const TimesheetGrid: React.FC<Props> = ({
 		return getTimeOffHours(user, iso);
 	};
 
-	const { totalSeconds, netKarmaSeconds } = useKarmaCalculation(
-		days,
-		year,
-		monthZeroIndexed,
-		getTimeOffHoursForUser,
-	);
+	const { totalSeconds } = useMonthTotalCalculation(days);
 
 	const cells: React.ReactNode[] = [];
 
@@ -75,7 +70,6 @@ export const TimesheetGrid: React.FC<Props> = ({
 			<UserHeader
 				user={user}
 				totalSeconds={totalSeconds}
-				netKarmaSeconds={netKarmaSeconds}
 				onDownloadUser={onDownloadUser}
 			/>
 
