@@ -5,5 +5,7 @@ build
 
 .vscode/settings.json
 bun.lock
+package-lock.json
+.npmrc
 frontend/public/mockServiceWorker.js
 .claude/
