@@ -36,12 +36,6 @@ const proxy = corsAnywhere.createServer({
         'sec-ch-ua-mobile',
         'sec-ch-ua-platform'
     ],
-    setHeaders: {
-        // Make the request look like it's from a server/API client, not a browser
-        'User-Agent': 'JiraTimesheetApp/1.0',
-        // Prevent Jira from trying to create a web session
-        'X-Atlassian-Token': 'no-check'
-    },
     httpProxyOptions: {
         // Increase timeout for large responses
         timeout: 30000,
@@ -52,9 +46,18 @@ const proxy = corsAnywhere.createServer({
     }
 });
 
-// Add request logging
-proxy.on('request', (req, res) => {
+// Modify request headers before sending to Jira
+proxy.on('proxyRequest', (proxyReq, req, res) => {
+    // Force these headers on every request
+    proxyReq.setHeader('User-Agent', 'JiraTimesheetApp/1.0');
+    proxyReq.setHeader('X-Atlassian-Token', 'no-check');
+
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log('  Headers:', {
+        'User-Agent': proxyReq.getHeader('User-Agent'),
+        'X-Atlassian-Token': proxyReq.getHeader('X-Atlassian-Token'),
+        'Authorization': proxyReq.getHeader('Authorization') ? 'Bearer ***' : 'none'
+    });
 });
 
 // Add error logging
