@@ -29,7 +29,6 @@ const proxy = corsAnywhere.createServer({
         'cookie2',
         'origin',
         'referer',
-        'user-agent',
         'sec-fetch-dest',
         'sec-fetch-mode',
         'sec-fetch-site',
@@ -37,11 +36,19 @@ const proxy = corsAnywhere.createServer({
         'sec-ch-ua-mobile',
         'sec-ch-ua-platform'
     ],
+    setHeaders: {
+        // Make the request look like it's from a server/API client, not a browser
+        'User-Agent': 'JiraTimesheetApp/1.0',
+        // Prevent Jira from trying to create a web session
+        'X-Atlassian-Token': 'no-check'
+    },
     httpProxyOptions: {
         // Increase timeout for large responses
         timeout: 30000,
         // Ignore SSL certificate errors for self-signed certificates
-        secure: false
+        secure: false,
+        // Don't follow redirects - let the client handle them
+        followRedirects: false
     }
 });
 

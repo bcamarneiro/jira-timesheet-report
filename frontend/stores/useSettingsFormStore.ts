@@ -1,6 +1,5 @@
-import type { AxiosInstance } from 'axios';
-import { Version3Client } from 'jira.js';
 import { create } from 'zustand';
+import { SimpleJiraClient } from '../services/jiraClient';
 import type { Config } from './useConfigStore';
 import { useConfigStore } from './useConfigStore';
 import { useJiraClientStore } from './useJiraClientStore';
@@ -63,52 +62,15 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 		try {
 			const { formData } = get();
 
-			// Always use the actual Jira host for the client configuration
-			const host = `https://${formData.jiraHost}`;
+			const client = new SimpleJiraClient(formData);
 
-			const client = new Version3Client({
-				host,
-				authentication: {
-					oauth2: {
-						accessToken: formData.apiToken,
-					},
+			const myself = await client.getCurrentUser();
+			set({
+				testResult: {
+					success: true,
+					message: `Connection successful! Hello, ${myself.displayName}.`,
 				},
 			});
-
-			// If CORS proxy is configured, add a request interceptor to modify the URL
-			if (formData.corsProxy) {
-				const corsProxyUrl = formData.corsProxy.replace(/\/$/, '');
-				const targetHost = `https://${formData.jiraHost}`;
-
-				// Access the internal axios instance and add an interceptor
-				const axiosInstance = (client as any).instance as AxiosInstance;
-
-				if (axiosInstance?.interceptors) {
-					axiosInstance.interceptors.request.use((requestConfig) => {
-						// Modify the URL to go through the CORS proxy
-						if (requestConfig.url) {
-							const originalUrl = requestConfig.url.startsWith('http')
-								? requestConfig.url
-								: `${targetHost}${requestConfig.url}`;
-							requestConfig.url = `${corsProxyUrl}/${originalUrl}`;
-							console.log('[CORS Proxy] Test connection rewriting URL to:', requestConfig.url);
-						}
-						return requestConfig;
-					});
-				}
-			}
-
-			const myself = await client.myself.getCurrentUser();
-			if (myself) {
-				set({
-					testResult: {
-						success: true,
-						message: `Connection successful! Hello, ${myself.displayName}.`,
-					},
-				});
-			} else {
-				throw new Error('Could not verify user.');
-			}
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : 'Connection failed.';
