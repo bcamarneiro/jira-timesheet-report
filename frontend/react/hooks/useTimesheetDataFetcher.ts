@@ -1,5 +1,5 @@
+import type { Version2Models } from 'jira.js';
 import { useEffect } from 'react';
-import type { JiraWorklog } from '../../services/jiraClient';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useJiraClient } from './useJiraClient';
@@ -36,12 +36,13 @@ export function useTimesheetDataFetcher() {
 					.toISOString()
 					.substring(0, 10)}"`;
 
-				const searchResult = await jiraClient.searchIssues(
-					jql,
-					['summary', 'issuetype', 'parent', 'project', 'status'],
-					['worklog'],
-					1000,
-				);
+				const searchResult =
+					await jiraClient.issueSearch.searchForIssuesUsingJql({
+						jql,
+						fields: ['summary', 'issuetype', 'parent', 'project', 'status'],
+						expand: ['worklog'],
+						maxResults: 1000,
+					});
 
 				const allWorklogs: EnrichedJiraWorklog[] = [];
 
@@ -49,7 +50,7 @@ export function useTimesheetDataFetcher() {
 					for (const issue of searchResult.issues ?? []) {
 						if (issue.fields.worklog?.worklogs) {
 							const worklogsWithIssue = issue.fields.worklog.worklogs.map(
-								(wl: JiraWorklog): EnrichedJiraWorklog => ({
+								(wl: Version2Models.Worklog): EnrichedJiraWorklog => ({
 									...wl,
 									issue: issue,
 								}),

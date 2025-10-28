@@ -1,5 +1,5 @@
+import { Version2Client } from 'jira.js';
 import { create } from 'zustand';
-import { SimpleJiraClient } from '../services/jiraClient';
 import type { Config } from './useConfigStore';
 import { useConfigStore } from './useConfigStore';
 import { useJiraClientStore } from './useJiraClientStore';
@@ -62,9 +62,20 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 		try {
 			const { formData } = get();
 
-			const client = new SimpleJiraClient(formData);
+			const host = formData.corsProxy
+				? `${formData.corsProxy.replace(/\/$/, '')}/https://${formData.jiraHost}`
+				: `https://${formData.jiraHost}`;
 
-			const myself = await client.getCurrentUser();
+			const client = new Version2Client({
+				host,
+				authentication: {
+					oauth2: {
+						accessToken: formData.apiToken,
+					},
+				},
+			});
+
+			const myself = await client.myself.getCurrentUser();
 			set({
 				testResult: {
 					success: true,

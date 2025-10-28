@@ -1,14 +1,14 @@
+import { Version2Client } from 'jira.js';
 import { create } from 'zustand';
-import { SimpleJiraClient } from '../services/jiraClient';
 import type { Config } from './useConfigStore';
 import { useConfigStore } from './useConfigStore';
 
 interface JiraClientState {
-	client: SimpleJiraClient | null;
+	client: Version2Client | null;
 	lastConfig: string | null; // JSON stringified config for comparison
 
 	// Get the current client (creates or returns cached)
-	getClient: () => SimpleJiraClient | null;
+	getClient: () => Version2Client | null;
 
 	// Force reinitialize the client
 	reinitialize: () => void;
@@ -17,17 +17,28 @@ interface JiraClientState {
 	clear: () => void;
 }
 
-const createClient = (config: Config): SimpleJiraClient | null => {
+const createClient = (config: Config): Version2Client | null => {
 	if (!config.jiraHost || !config.apiToken) {
 		return null;
 	}
 
-	console.log('[Jira Client] Creating simple client with config:', {
-		jiraHost: config.jiraHost,
+	const host = config.corsProxy
+		? `${config.corsProxy.replace(/\/$/, '')}/https://${config.jiraHost}`
+		: `https://${config.jiraHost}`;
+
+	console.log('[Jira Client] Creating V2 client with config:', {
+		host,
 		corsProxy: config.corsProxy,
 	});
 
-	return new SimpleJiraClient(config);
+	return new Version2Client({
+		host,
+		authentication: {
+			oauth2: {
+				accessToken: config.apiToken,
+			},
+		},
+	});
 };
 
 const configToKey = (config: Config): string => {
