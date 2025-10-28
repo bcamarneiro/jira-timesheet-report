@@ -1,15 +1,48 @@
 import { useState } from 'react';
 import { useJiraClient } from './useJiraClient';
+import { useConfigStore } from '../../stores/useConfigStore';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 
 export function useWorklogOperations() {
 	const jiraClient = useJiraClient();
+	const config = useConfigStore((state) => state.config);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const recomputeDerived = useTimesheetStore((state) => state.recomputeDerived);
 	const data = useTimesheetStore((state) => state.data);
 	const setData = useTimesheetStore((state) => state.setData);
+
+	// Helper to build the full URL
+	const buildUrl = (path: string): string => {
+		const baseUrl = config.corsProxy
+			? `${config.corsProxy.replace(/\/$/, '')}/https://${config.jiraHost}`
+			: `https://${config.jiraHost}`;
+		return `${baseUrl}${path}`;
+	};
+
+	// Helper to make authenticated requests
+	const makeRequest = async (url: string, options: RequestInit = {}) => {
+		const headers: HeadersInit = {
+			'Authorization': `Bearer ${config.apiToken}`,
+			'Accept': 'application/json',
+			'Content-Type': 'application/json',
+			'X-Atlassian-Token': 'no-check',
+			...options.headers,
+		};
+
+		const response = await fetch(url, {
+			...options,
+			headers,
+		});
+
+		if (!response.ok) {
+			const text = await response.text();
+			throw new Error(`Jira API error: ${response.status} - ${text}`);
+		}
+
+		return response.json();
+	};
 
 	const createWorklog = async (params: {
 		issueKey: string;
@@ -17,7 +50,7 @@ export function useWorklogOperations() {
 		comment: string;
 		started: string;
 	}) => {
-		if (!jiraClient) {
+		if (!config.jiraHost || !config.apiToken) {
 			throw new Error('Jira client not configured');
 		}
 
@@ -26,21 +59,22 @@ export function useWorklogOperations() {
 
 		try {
 			// First, validate that the issue exists
-			const issue = await jiraClient.issues.getIssue({
-				issueIdOrKey: params.issueKey,
-				fields: ['summary', 'issuetype', 'parent', 'project', 'status'],
-			});
+			const issueUrl = buildUrl(`/rest/api/2/issue/${params.issueKey}?fields=summary,issuetype,parent,project,status`);
+			const issue = await makeRequest(issueUrl);
 
 			if (!issue) {
 				throw new Error(`Issue ${params.issueKey} not found`);
 			}
 
 			// Create the worklog
-			const newWorklog = await jiraClient.issueWorklogs.addWorklog({
-				issueIdOrKey: params.issueKey,
-				timeSpent: params.timeSpent,
-				comment: params.comment,
-				started: new Date(params.started).toISOString(),
+			const worklogUrl = buildUrl(`/rest/api/2/issue/${params.issueKey}/worklog`);
+			const newWorklog = await makeRequest(worklogUrl, {
+				method: 'POST',
+				body: JSON.stringify({
+					timeSpent: params.timeSpent,
+					comment: params.comment,
+					started: new Date(params.started).toISOString(),
+				}),
 			});
 
 			// Add the new worklog to the store with issue info
@@ -72,7 +106,7 @@ export function useWorklogOperations() {
 			started: string;
 		},
 	) => {
-		if (!jiraClient) {
+		if (!config.jiraHost || !config.apiToken) {
 			throw new Error('Jira client not configured');
 		}
 
@@ -80,12 +114,14 @@ export function useWorklogOperations() {
 		setError(null);
 
 		try {
-			const updatedWorklog = await jiraClient.issueWorklogs.updateWorklog({
-				issueIdOrKey: issueKey,
-				id: worklogId,
-				timeSpent: params.timeSpent,
-				comment: params.comment,
-				started: new Date(params.started).toISOString(),
+			const worklogUrl = buildUrl(`/rest/api/2/issue/${issueKey}/worklog/${worklogId}`);
+			const updatedWorklog = await makeRequest(worklogUrl, {
+				method: 'PUT',
+				body: JSON.stringify({
+					timeSpent: params.timeSpent,
+					comment: params.comment,
+					started: new Date(params.started).toISOString(),
+				}),
 			});
 
 			// Update in the store
@@ -113,7 +149,7 @@ export function useWorklogOperations() {
 	};
 
 	const deleteWorklog = async (issueKey: string, worklogId: string) => {
-		if (!jiraClient) {
+		if (!config.jiraHost || !config.apiToken) {
 			throw new Error('Jira client not configured');
 		}
 
@@ -121,9 +157,9 @@ export function useWorklogOperations() {
 		setError(null);
 
 		try {
-			await jiraClient.issueWorklogs.deleteWorklog({
-				issueIdOrKey: issueKey,
-				id: worklogId,
+			const worklogUrl = buildUrl(`/rest/api/2/issue/${issueKey}/worklog/${worklogId}`);
+			await makeRequest(worklogUrl, {
+				method: 'DELETE',
 			});
 
 			// Remove from the store
