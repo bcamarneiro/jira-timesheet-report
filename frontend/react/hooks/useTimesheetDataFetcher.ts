@@ -32,6 +32,10 @@ export function useTimesheetDataFetcher() {
 				const startDate = new Date(currentYear, currentMonth, 1);
 				const endDate = new Date(currentYear, currentMonth + 1, 0);
 
+				// Get timestamps in milliseconds for the worklog API
+				const startMillis = startDate.getTime();
+				const endMillis = endDate.getTime();
+
 				let jql = `worklogDate >= "${startDate
 					.toISOString()
 					.substring(0, 10)}" AND worklogDate <= "${endDate
@@ -43,26 +47,42 @@ export function useTimesheetDataFetcher() {
 					jql += ` AND ${jqlFilter.trim()}`;
 				}
 
+				// Step 1: Search for issues that have worklogs in the date range
 				const searchResult =
 					await jiraClient.issueSearch.searchForIssuesUsingJql({
 						jql,
 						fields: ['summary', 'issuetype', 'parent', 'project', 'status'],
-						expand: ['worklog'],
 						maxResults: 1000,
 					});
 
 				const allWorklogs: EnrichedJiraWorklog[] = [];
 
+				// Step 2: Fetch worklogs for each issue
 				if (searchResult.total && searchResult.total > 0) {
 					for (const issue of searchResult.issues ?? []) {
-						if (issue.fields.worklog?.worklogs) {
-							const worklogsWithIssue = issue.fields.worklog.worklogs.map(
-								(wl: Version2Models.Worklog): EnrichedJiraWorklog => ({
-									...wl,
-									issue: issue,
-								}),
-							);
-							allWorklogs.push(...worklogsWithIssue);
+						if (!issue.key) continue;
+
+						try {
+							// Fetch worklogs for this issue with date filtering
+							const worklogResponse = await jiraClient.issueWorklogs.getIssueWorklog({
+								issueIdOrKey: issue.key,
+								startedAfter: startMillis,
+								startedBefore: endMillis,
+							});
+
+							if (worklogResponse.worklogs && worklogResponse.worklogs.length > 0) {
+								// Add issue reference to each worklog
+								const worklogsWithIssue = worklogResponse.worklogs.map(
+									(wl: Version2Models.Worklog): EnrichedJiraWorklog => ({
+										...wl,
+										issue: issue,
+									}),
+								);
+								allWorklogs.push(...worklogsWithIssue);
+							}
+						} catch (worklogError) {
+							console.error(`Failed to fetch worklogs for ${issue.key}:`, worklogError);
+							// Continue with other issues even if one fails
 						}
 					}
 				}
