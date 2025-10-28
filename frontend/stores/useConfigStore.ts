@@ -7,6 +7,7 @@ export interface Config {
 	apiToken: string;
 	corsProxy: string;
 	jqlFilter: string;
+	allowedUsers: string;
 }
 
 interface ConfigState {
@@ -23,6 +24,7 @@ export const useConfigStore = create<ConfigState>()(
 				apiToken: '',
 				corsProxy: '',
 				jqlFilter: '',
+				allowedUsers: '',
 			},
 			setConfig: (newConfig) => set({ config: newConfig }),
 		}),

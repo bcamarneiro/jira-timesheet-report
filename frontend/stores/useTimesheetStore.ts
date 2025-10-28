@@ -1,5 +1,6 @@
 import type { Version2Models } from 'jira.js';
 import { create } from 'zustand';
+import { useConfigStore } from './useConfigStore';
 
 // Create an enriched type that includes the parent issue
 export type EnrichedJiraWorklog = Version2Models.Worklog & {
@@ -46,7 +47,16 @@ interface TimesheetState {
 const computeDerivedState = (
 	data: EnrichedJiraWorklog[] | null,
 	selectedUser: string,
+	allowedUsersConfig: string,
 ) => {
+	// Parse allowed users from comma-separated emails
+	const allowedEmails = allowedUsersConfig
+		? allowedUsersConfig
+				.split(',')
+				.map((email) => email.trim().toLowerCase())
+				.filter(Boolean)
+		: [];
+
 	// Compute issueSummaries
 	const issueSummaries: Record<string, string> = {};
 	if (data) {
@@ -57,22 +67,29 @@ const computeDerivedState = (
 		}
 	}
 
-	// Compute users
+	// Helper to check if a user is allowed
+	const isUserAllowed = (worklog: EnrichedJiraWorklog): boolean => {
+		if (allowedEmails.length === 0) return true; // No filter, allow all
+		const emailAddress = worklog.author?.emailAddress?.toLowerCase();
+		return emailAddress ? allowedEmails.includes(emailAddress) : false;
+	};
+
+	// Compute users (filtered by allowed list)
 	const users: string[] = [];
 	if (data) {
 		const unique: Record<string, true> = {};
 		for (const wl of data) {
-			if (wl.author?.displayName) {
+			if (wl.author?.displayName && isUserAllowed(wl)) {
 				unique[wl.author.displayName] = true;
 			}
 		}
 		users.push(...Object.keys(unique).sort((a, b) => a.localeCompare(b)));
 	}
 
-	// Compute grouped
+	// Compute grouped (filtered by allowed list)
 	const grouped: GroupedWorklogs = {};
 	for (const wl of data || []) {
-		if (wl.author?.displayName) {
+		if (wl.author?.displayName && isUserAllowed(wl)) {
 			const user = wl.author.displayName;
 			const date = new Date(wl.started as string).toISOString().substring(0, 10);
 			if (!grouped[user]) grouped[user] = {};
@@ -132,14 +149,16 @@ export const useTimesheetStore = create<TimesheetState>((set, get) => {
 
 		setSelectedUser: (user: string) => {
 			const { data } = get();
-			const derived = computeDerivedState(data, user);
+			const allowedUsers = useConfigStore.getState().config.allowedUsers;
+			const derived = computeDerivedState(data, user, allowedUsers);
 			set({ selectedUser: user, ...derived });
 		},
 
 		// Data actions
 		setData: (data: EnrichedJiraWorklog[] | null) => {
 			const { selectedUser } = get();
-			const derived = computeDerivedState(data, selectedUser);
+			const allowedUsers = useConfigStore.getState().config.allowedUsers;
+			const derived = computeDerivedState(data, selectedUser, allowedUsers);
 			set({ data, ...derived });
 		},
 
@@ -154,7 +173,8 @@ export const useTimesheetStore = create<TimesheetState>((set, get) => {
 		// Recompute derived state (useful after manual data updates)
 		recomputeDerived: () => {
 			const { data, selectedUser } = get();
-			const derived = computeDerivedState(data, selectedUser);
+			const allowedUsers = useConfigStore.getState().config.allowedUsers;
+			const derived = computeDerivedState(data, selectedUser, allowedUsers);
 			set(derived);
 		},
 	};

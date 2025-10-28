@@ -19,6 +19,7 @@ export const SettingsForm: React.FC = () => {
 	const apiTokenId = useId();
 	const corsProxyId = useId();
 	const jqlFilterId = useId();
+	const allowedUsersId = useId();
 
 	// Load form data from config on mount
 	useEffect(() => {
@@ -99,6 +100,20 @@ export const SettingsForm: React.FC = () => {
 					placeholder="e.g., component = INV_III"
 				/>
 				<small>This filter will be applied to all timesheet queries</small>
+			</div>
+			<div className={styles.formGroup}>
+				<label htmlFor={allowedUsersId}>Allowed Users (Optional)</label>
+				<input
+					type="text"
+					id={allowedUsersId}
+					name="allowedUsers"
+					value={formData.allowedUsers}
+					onChange={handleChange}
+					placeholder="e.g., john@example.com, jane@example.com"
+				/>
+				<small>
+					Comma-separated list of user emails. Leave empty to show all users.
+				</small>
 			</div>
 			<div className={styles.buttonGroup}>
 				<Button type="submit">Save Settings</Button>

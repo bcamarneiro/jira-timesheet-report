@@ -53,7 +53,16 @@ export const TimesheetPage: React.FC = () => {
 		);
 	};
 
-	if (isLoading) return <p>Loading...</p>;
+	if (isLoading) {
+		return (
+			<div className={styles.container}>
+				<div className={styles.loading}>
+					<div className={styles.spinner}></div>
+					<p>Loading timesheet data...</p>
+				</div>
+			</div>
+		);
+	}
 
 	if (error) {
 		return (
