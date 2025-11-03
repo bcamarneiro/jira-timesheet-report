@@ -108,9 +108,7 @@ export const WorklogForm: React.FC<Props> = ({
 					className={styles.input}
 					required
 				/>
-				<small className={styles.hint}>
-					Format: 1h, 30m, 1h 30m, 2d, etc.
-				</small>
+				<small className={styles.hint}>Format: 1h, 30m, 1h 30m, 2d, etc.</small>
 			</div>
 
 			<div className={styles.formGroup}>
@@ -141,7 +139,12 @@ export const WorklogForm: React.FC<Props> = ({
 			{error && <div className={styles.error}>{error}</div>}
 
 			<div className={styles.actions}>
-				<Button type="button" onClick={onCancel} variant="secondary" disabled={isLoading}>
+				<Button
+					type="button"
+					onClick={onCancel}
+					variant="secondary"
+					disabled={isLoading}
+				>
 					Cancel
 				</Button>
 				<Button type="submit" disabled={isLoading}>

@@ -11,7 +11,9 @@ function csvEscape(value: string): string {
 	return safe;
 }
 
-function parseOriginalDateFromComment(comment: string | undefined): string | null {
+function parseOriginalDateFromComment(
+	comment: string | undefined,
+): string | null {
 	if (!comment) {
 		return null;
 	}
@@ -49,37 +51,40 @@ export function isRetroactiveWorklog(
 export function buildCsvForUser(
 	data: EnrichedJiraWorklog[],
 	issueSummaries: Record<string, string>,
-	year: number,
-	month: number,
 ): string {
 	const headers = [
-		'Date',
-		'Time (h)',
-		'Key',
-		'Summary',
-		'Comment',
-		'Is Retroactive',
+		'Name',
+		'TicketKey',
+		'TicketName',
+		'OriginalIntendedDate',
+		'ActualLoggedDate',
+		'BookedTime',
 	].join(',');
 	const rows = data.map((entry) => {
-		const date = new Date(entry.started ?? '');
-		const formattedDate = `${date.getFullYear()}/${String(
-			date.getMonth() + 1,
-		).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-		const time = (entry.timeSpentSeconds ?? 0) / 3600;
-		const key = entry.issue.key;
-		const summary = issueSummaries[entry.issue.id] ?? '';
+		const name = entry.author?.displayName ?? '';
+		const ticketKey = entry.issue.key;
+		const ticketName = issueSummaries[entry.issue.id] ?? '';
 
-		const commentText = entry.comment ?? '';
+		// Parse original intended date from comment if retroactive
+		const originalDate = parseOriginalDateFromComment(entry.comment);
+		const originalIntendedDate = originalDate || '';
 
-		const isRetro = isRetroactiveWorklog(entry, year, month);
+		// Actual logged date
+		const loggedDate = new Date(entry.started ?? '');
+		const actualLoggedDate = `${loggedDate.getFullYear()}/${String(
+			loggedDate.getMonth() + 1,
+		).padStart(2, '0')}/${String(loggedDate.getDate()).padStart(2, '0')}`;
+
+		// Booked time in hours
+		const bookedTime = (entry.timeSpentSeconds ?? 0) / 3600;
 
 		return [
-			formattedDate,
-			time.toFixed(2),
-			key,
-			csvEscape(summary),
-			csvEscape(commentText),
-			isRetro ? 'Yes' : 'No',
+			csvEscape(name),
+			ticketKey,
+			csvEscape(ticketName),
+			originalIntendedDate,
+			actualLoggedDate,
+			bookedTime.toFixed(2),
 		].join(',');
 	});
 

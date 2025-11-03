@@ -1,14 +1,14 @@
 import type React from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
-import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useTimeOffStore } from '../../stores/useTimeOffStore';
+import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useCalendar } from '../hooks/useCalendar';
 import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
 import { isoDateFromYMD } from '../utils/date';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
-import { UserHeader } from './user/UserHeader';
 import * as styles from './TimesheetGrid.module.css';
+import { UserHeader } from './user/UserHeader';
 
 type Props = {
 	user: string;
@@ -25,7 +25,9 @@ export const TimesheetGrid: React.FC<Props> = ({
 	const year = useTimesheetStore((state) => state.currentYear);
 	const monthZeroIndexed = useTimesheetStore((state) => state.currentMonth);
 	const getTimeOffHours = useTimeOffStore((state) => state.getTimeOffHours);
-	const setTimeOffHoursStore = useTimeOffStore((state) => state.setTimeOffHours);
+	const setTimeOffHoursStore = useTimeOffStore(
+		(state) => state.setTimeOffHours,
+	);
 
 	const { firstWeekday, numDays, weekdayLabels } = useCalendar(
 		year,

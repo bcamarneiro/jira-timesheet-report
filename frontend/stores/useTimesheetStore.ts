@@ -91,7 +91,9 @@ const computeDerivedState = (
 	for (const wl of data || []) {
 		if (wl.author?.displayName && isUserAllowed(wl)) {
 			const user = wl.author.displayName;
-			const date = new Date(wl.started as string).toISOString().substring(0, 10);
+			const date = new Date(wl.started as string)
+				.toISOString()
+				.substring(0, 10);
 			if (!grouped[user]) grouped[user] = {};
 			if (!grouped[user][date]) grouped[user][date] = [];
 			grouped[user][date].push(wl);

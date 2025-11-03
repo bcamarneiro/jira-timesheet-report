@@ -9,7 +9,9 @@ export const SettingsForm: React.FC = () => {
 	const formData = useSettingsFormStore((state) => state.formData);
 	const isTesting = useSettingsFormStore((state) => state.isTesting);
 	const testResult = useSettingsFormStore((state) => state.testResult);
-	const updateFormField = useSettingsFormStore((state) => state.updateFormField);
+	const updateFormField = useSettingsFormStore(
+		(state) => state.updateFormField,
+	);
 	const saveSettings = useSettingsFormStore((state) => state.saveSettings);
 	const testConnection = useSettingsFormStore((state) => state.testConnection);
 	const loadFromConfig = useSettingsFormStore((state) => state.loadFromConfig);

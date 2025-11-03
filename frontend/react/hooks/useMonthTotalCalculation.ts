@@ -1,9 +1,7 @@
 import { useMemo } from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
 
-export function useMonthTotalCalculation(
-	days: Record<string, JiraWorklog[]>,
-) {
+export function useMonthTotalCalculation(days: Record<string, JiraWorklog[]>) {
 	const totalSeconds = useMemo(() => {
 		let userTotalSeconds = 0;
 

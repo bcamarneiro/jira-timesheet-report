@@ -1,6 +1,6 @@
 import type React from 'react';
-import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
 import { useConfigStore } from '../../../stores/useConfigStore';
+import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../../stores/useTimesheetStore';
 import { isRetroactiveWorklog } from '../../utils/csv';
 import { formatHours } from '../../utils/format';

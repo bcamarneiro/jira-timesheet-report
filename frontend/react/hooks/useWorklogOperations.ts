@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useJiraClient } from './useJiraClient';
 import { useConfigStore } from '../../stores/useConfigStore';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
+import { useJiraClient } from './useJiraClient';
 
 export function useWorklogOperations() {
 	const jiraClient = useJiraClient();
@@ -24,8 +24,8 @@ export function useWorklogOperations() {
 	// Helper to make authenticated requests
 	const makeRequest = async (url: string, options: RequestInit = {}) => {
 		const headers: HeadersInit = {
-			'Authorization': `Bearer ${config.apiToken}`,
-			'Accept': 'application/json',
+			Authorization: `Bearer ${config.apiToken}`,
+			Accept: 'application/json',
 			'Content-Type': 'application/json',
 			'X-Atlassian-Token': 'no-check',
 			...options.headers,
@@ -59,7 +59,9 @@ export function useWorklogOperations() {
 
 		try {
 			// First, validate that the issue exists
-			const issueUrl = buildUrl(`/rest/api/2/issue/${params.issueKey}?fields=summary,issuetype,parent,project,status`);
+			const issueUrl = buildUrl(
+				`/rest/api/2/issue/${params.issueKey}?fields=summary,issuetype,parent,project,status`,
+			);
 			const issue = await makeRequest(issueUrl);
 
 			if (!issue) {
@@ -67,7 +69,9 @@ export function useWorklogOperations() {
 			}
 
 			// Create the worklog
-			const worklogUrl = buildUrl(`/rest/api/2/issue/${params.issueKey}/worklog`);
+			const worklogUrl = buildUrl(
+				`/rest/api/2/issue/${params.issueKey}/worklog`,
+			);
 			const newWorklog = await makeRequest(worklogUrl, {
 				method: 'POST',
 				body: JSON.stringify({
@@ -114,7 +118,9 @@ export function useWorklogOperations() {
 		setError(null);
 
 		try {
-			const worklogUrl = buildUrl(`/rest/api/2/issue/${issueKey}/worklog/${worklogId}`);
+			const worklogUrl = buildUrl(
+				`/rest/api/2/issue/${issueKey}/worklog/${worklogId}`,
+			);
 			const updatedWorklog = await makeRequest(worklogUrl, {
 				method: 'PUT',
 				body: JSON.stringify({
@@ -157,7 +163,9 @@ export function useWorklogOperations() {
 		setError(null);
 
 		try {
-			const worklogUrl = buildUrl(`/rest/api/2/issue/${issueKey}/worklog/${worklogId}`);
+			const worklogUrl = buildUrl(
+				`/rest/api/2/issue/${issueKey}/worklog/${worklogId}`,
+			);
 			await makeRequest(worklogUrl, {
 				method: 'DELETE',
 			});

@@ -64,13 +64,17 @@ export function useTimesheetDataFetcher() {
 
 						try {
 							// Fetch worklogs for this issue with date filtering
-							const worklogResponse = await jiraClient.issueWorklogs.getIssueWorklog({
-								issueIdOrKey: issue.key,
-								startedAfter: startMillis,
-								startedBefore: endMillis,
-							});
+							const worklogResponse =
+								await jiraClient.issueWorklogs.getIssueWorklog({
+									issueIdOrKey: issue.key,
+									startedAfter: startMillis,
+									startedBefore: endMillis,
+								});
 
-							if (worklogResponse.worklogs && worklogResponse.worklogs.length > 0) {
+							if (
+								worklogResponse.worklogs &&
+								worklogResponse.worklogs.length > 0
+							) {
 								// Add issue reference to each worklog
 								const worklogsWithIssue = worklogResponse.worklogs.map(
 									(wl: Version2Models.Worklog): EnrichedJiraWorklog => ({
@@ -81,7 +85,10 @@ export function useTimesheetDataFetcher() {
 								allWorklogs.push(...worklogsWithIssue);
 							}
 						} catch (worklogError) {
-							console.error(`Failed to fetch worklogs for ${issue.key}:`, worklogError);
+							console.error(
+								`Failed to fetch worklogs for ${issue.key}:`,
+								worklogError,
+							);
 							// Continue with other issues even if one fails
 						}
 					}
@@ -100,5 +107,13 @@ export function useTimesheetDataFetcher() {
 		};
 
 		fetchTimesheetData();
-	}, [currentYear, currentMonth, jiraClient, jqlFilter, setData, setLoading, setError]);
+	}, [
+		currentYear,
+		currentMonth,
+		jiraClient,
+		jqlFilter,
+		setData,
+		setLoading,
+		setError,
+	]);
 }

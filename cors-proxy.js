@@ -21,58 +21,58 @@ const host = process.env.CORS_PROXY_HOST || 'localhost';
 const port = process.env.CORS_PROXY_PORT || 8081;
 
 const proxy = corsAnywhere.createServer({
-    originWhitelist: [], // Allow all origins
-    requireHeader: [], // Don't require any special headers
-    // Remove browser-specific headers that trigger SAML/SSO
-    removeHeaders: [
-        'cookie',
-        'cookie2',
-        'origin',
-        'referer',
-        'sec-fetch-dest',
-        'sec-fetch-mode',
-        'sec-fetch-site',
-        'sec-ch-ua',
-        'sec-ch-ua-mobile',
-        'sec-ch-ua-platform'
-    ],
-    httpProxyOptions: {
-        // Increase timeout for large responses
-        timeout: 30000,
-        // Ignore SSL certificate errors for self-signed certificates
-        secure: false,
-        // Don't follow redirects - let the client handle them
-        followRedirects: false
-    }
+	originWhitelist: [], // Allow all origins
+	requireHeader: [], // Don't require any special headers
+	// Remove browser-specific headers that trigger SAML/SSO
+	removeHeaders: [
+		'cookie',
+		'cookie2',
+		'origin',
+		'referer',
+		'sec-fetch-dest',
+		'sec-fetch-mode',
+		'sec-fetch-site',
+		'sec-ch-ua',
+		'sec-ch-ua-mobile',
+		'sec-ch-ua-platform',
+	],
+	httpProxyOptions: {
+		// Increase timeout for large responses
+		timeout: 30000,
+		// Ignore SSL certificate errors for self-signed certificates
+		secure: false,
+		// Don't follow redirects - let the client handle them
+		followRedirects: false,
+	},
 });
 
 // Modify request headers before sending to Jira
 proxy.on('proxyRequest', (proxyReq, req, res) => {
-    // Force these headers on every request
-    proxyReq.setHeader('User-Agent', 'JiraTimesheetApp/1.0');
-    proxyReq.setHeader('X-Atlassian-Token', 'no-check');
+	// Force these headers on every request
+	proxyReq.setHeader('User-Agent', 'JiraTimesheetApp/1.0');
+	proxyReq.setHeader('X-Atlassian-Token', 'no-check');
 
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    console.log('  Headers:', {
-        'User-Agent': proxyReq.getHeader('User-Agent'),
-        'X-Atlassian-Token': proxyReq.getHeader('X-Atlassian-Token'),
-        'Authorization': proxyReq.getHeader('Authorization') ? 'Bearer ***' : 'none'
-    });
+	console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+	console.log('  Headers:', {
+		'User-Agent': proxyReq.getHeader('User-Agent'),
+		'X-Atlassian-Token': proxyReq.getHeader('X-Atlassian-Token'),
+		Authorization: proxyReq.getHeader('Authorization') ? 'Bearer ***' : 'none',
+	});
 });
 
 // Add error logging
 proxy.on('proxyError', (err, req, res) => {
-    console.error(`[${new Date().toISOString()}] Proxy Error:`, err.message);
-    console.error('Request URL:', req.url);
+	console.error(`[${new Date().toISOString()}] Proxy Error:`, err.message);
+	console.error('Request URL:', req.url);
 });
 
 proxy.listen(port, host, () => {
-    console.log('\n========================================');
-    console.log('🚀 CORS Proxy Server Started');
-    console.log('========================================');
-    console.log(`\n✓ Running on: http://${host}:${port}`);
-    console.log('\n📝 Configuration:');
-    console.log(`   - Set CORS Proxy in app settings to: http://${host}:${port}`);
-    console.log(`   - Press Ctrl+C to stop the server\n`);
-    console.log('========================================\n');
+	console.log('\n========================================');
+	console.log('🚀 CORS Proxy Server Started');
+	console.log('========================================');
+	console.log(`\n✓ Running on: http://${host}:${port}`);
+	console.log('\n📝 Configuration:');
+	console.log(`   - Set CORS Proxy in app settings to: http://${host}:${port}`);
+	console.log(`   - Press Ctrl+C to stop the server\n`);
+	console.log('========================================\n');
 });

@@ -16,8 +16,6 @@ export function useDownload() {
 		const csvContent = buildCsvForUser(
 			Object.values(userWorklogs).flat(),
 			issueSummaries,
-			year,
-			month,
 		);
 		download(`${user}-${year}-${month + 1}.csv`, csvContent);
 	};
@@ -35,8 +33,6 @@ export function useDownload() {
 			const csvContent = buildCsvForUser(
 				Object.values(userWorklogs).flat(),
 				issueSummaries,
-				year,
-				month,
 			);
 			download(`${user}-${year}-${month + 1}.csv`, csvContent);
 		}

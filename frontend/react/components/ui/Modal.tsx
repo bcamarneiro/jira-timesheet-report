@@ -9,7 +9,12 @@ type Props = {
 	children: React.ReactNode;
 };
 
-export const Modal: React.FC<Props> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<Props> = ({
+	isOpen,
+	onClose,
+	title,
+	children,
+}) => {
 	useEffect(() => {
 		const handleEscape = (e: KeyboardEvent) => {
 			if (e.key === 'Escape' && isOpen) {

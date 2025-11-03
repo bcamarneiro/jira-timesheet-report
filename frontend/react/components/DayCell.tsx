@@ -33,9 +33,8 @@ export const DayCell: React.FC<Props> = ({
 }) => {
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-	const [worklogToEdit, setWorklogToEdit] = useState<EnrichedJiraWorklog | null>(
-		null,
-	);
+	const [worklogToEdit, setWorklogToEdit] =
+		useState<EnrichedJiraWorklog | null>(null);
 
 	const { createWorklog, updateWorklog, deleteWorklog, isLoading } =
 		useWorklogOperations();
@@ -75,7 +74,8 @@ export const DayCell: React.FC<Props> = ({
 		comment: string;
 		started: string;
 	}) => {
-		if (!worklogToEdit || !worklogToEdit.id || !worklogToEdit.issue?.key) return;
+		if (!worklogToEdit || !worklogToEdit.id || !worklogToEdit.issue?.key)
+			return;
 
 		await updateWorklog(worklogToEdit.issue.key, worklogToEdit.id, {
 			timeSpent: data.timeSpent,
@@ -158,7 +158,12 @@ export const DayCell: React.FC<Props> = ({
 				title="Create Worklog"
 			>
 				<WorklogForm
-					initialData={{ issueKey: '', timeSpent: '', comment: '', started: defaultStarted }}
+					initialData={{
+						issueKey: '',
+						timeSpent: '',
+						comment: '',
+						started: defaultStarted,
+					}}
 					onSubmit={handleCreateWorklog}
 					onCancel={() => setIsCreateModalOpen(false)}
 					isLoading={isLoading}
