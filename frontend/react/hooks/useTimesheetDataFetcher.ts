@@ -66,43 +66,59 @@ export function useTimesheetDataFetcher() {
 						maxResults: 1000,
 					});
 
-				const allWorklogs: EnrichedJiraWorklog[] = [];
+				// Step 2: Fetch worklogs for each issue IN PARALLEL
+				let allWorklogs: EnrichedJiraWorklog[] = [];
 
-				// Step 2: Fetch worklogs for each issue
 				if (searchResult.total && searchResult.total > 0) {
-					for (const issue of searchResult.issues ?? []) {
-						if (!issue.key) continue;
+					const issues = searchResult.issues ?? [];
+					const startTime = performance.now();
 
-						try {
-							// Fetch worklogs for this issue with date filtering
-							const worklogResponse =
-								await jiraClient.issueWorklogs.getIssueWorklog({
-									issueIdOrKey: issue.key,
-									startedAfter: startMillis,
-									startedBefore: endMillis,
-								});
+					// Create array of promises to fetch worklogs in parallel
+					const worklogPromises = issues
+						.filter((issue) => issue.key)
+						.map(async (issue) => {
+							try {
+								// Fetch worklogs for this issue with date filtering
+								const worklogResponse =
+									await jiraClient.issueWorklogs.getIssueWorklog({
+										issueIdOrKey: issue.key!,
+										startedAfter: startMillis,
+										startedBefore: endMillis,
+									});
 
-							if (
-								worklogResponse.worklogs &&
-								worklogResponse.worklogs.length > 0
-							) {
-								// Add issue reference to each worklog
-								const worklogsWithIssue = worklogResponse.worklogs.map(
-									(wl: Version2Models.Worklog): EnrichedJiraWorklog => ({
-										...wl,
-										issue: issue,
-									}),
+								if (
+									worklogResponse.worklogs &&
+									worklogResponse.worklogs.length > 0
+								) {
+									// Add issue reference to each worklog
+									return worklogResponse.worklogs.map(
+										(wl: Version2Models.Worklog): EnrichedJiraWorklog => ({
+											...wl,
+											issue: issue,
+										}),
+									);
+								}
+								return [];
+							} catch (worklogError) {
+								console.error(
+									`Failed to fetch worklogs for ${issue.key}:`,
+									worklogError,
 								);
-								allWorklogs.push(...worklogsWithIssue);
+								// Return empty array on error, continue with other issues
+								return [];
 							}
-						} catch (worklogError) {
-							console.error(
-								`Failed to fetch worklogs for ${issue.key}:`,
-								worklogError,
-							);
-							// Continue with other issues even if one fails
-						}
-					}
+						});
+
+					// Wait for all worklog fetches to complete
+					const worklogResults = await Promise.all(worklogPromises);
+
+					// Flatten the array of arrays into a single array
+					allWorklogs = worklogResults.flat();
+
+					const endTime = performance.now();
+					console.log(
+						`[Performance] Fetched ${allWorklogs.length} worklogs from ${issues.length} issues in ${Math.round(endTime - startTime)}ms (parallel)`,
+					);
 				}
 
 				setData(allWorklogs);

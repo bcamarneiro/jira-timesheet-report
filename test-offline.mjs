@@ -17,7 +17,8 @@ async function testOfflineMode() {
 			text.includes('[DEBUG]') ||
 			text.includes('[MSW]') ||
 			text.includes('[OFFLINE MODE]') ||
-			text.includes('[MOCK DATA]')
+			text.includes('[MOCK DATA]') ||
+			text.includes('[Performance]')
 		) {
 			console.log(`📝 ${text}`);
 		}
