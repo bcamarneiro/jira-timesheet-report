@@ -33,8 +33,19 @@ export function useTimesheetDataFetcher() {
 				const endDate = new Date(currentYear, currentMonth + 1, 0);
 
 				// Get timestamps in milliseconds for the worklog API
+				// startedAfter: beginning of first day (00:00:00)
 				const startMillis = startDate.getTime();
-				const endMillis = endDate.getTime();
+				// startedBefore: END of last day (set to 23:59:59.999)
+				// This ensures worklogs on the last day of the month are included
+				const endMillis = new Date(
+					endDate.getFullYear(),
+					endDate.getMonth(),
+					endDate.getDate(),
+					23,
+					59,
+					59,
+					999,
+				).getTime();
 
 				let jql = `worklogDate >= "${startDate
 					.toISOString()

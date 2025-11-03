@@ -42,7 +42,11 @@ export const TimesheetGrid: React.FC<Props> = ({
 		return getTimeOffHours(user, iso);
 	};
 
-	const { totalSeconds } = useMonthTotalCalculation(days);
+	const { totalSeconds } = useMonthTotalCalculation(
+		days,
+		year,
+		monthZeroIndexed,
+	);
 
 	const cells: React.ReactNode[] = [];
 

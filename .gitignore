@@ -10,3 +10,7 @@ package-lock.json
 .npmrc
 frontend/public/mockServiceWorker.js
 .claude/
+
+# Test artifacts
+test-output.log
+test-screenshots/
