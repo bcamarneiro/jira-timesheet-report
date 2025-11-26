@@ -60,12 +60,8 @@ export const handlers = [
 
 		console.log('[MSW] Intercepted Jira issue search:', { jql, fields });
 
-		// Parse JQL to extract date range (simplified for offline mode)
-		// In real scenario, JQL would be: worklogDate >= "2025-10-01" AND worklogDate <= "2025-10-31"
-		let filteredIssues = mockIssues;
-
 		// For offline mode, just return all issues that have worklogs
-		filteredIssues = mockIssues.filter(
+		const filteredIssues = mockIssues.filter(
 			(issue) => worklogsByIssue[issue.key]?.length > 0,
 		);
 
