@@ -1,8 +1,6 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
-import { useUIStore } from '../../stores/useUIStore';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { TimesheetFilters } from '../components/TimesheetFilters';
 import { TimesheetGrid } from '../components/TimesheetGrid';
