@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { buildCsvForUser, download } from '../utils/csv';
 import { groupWorklogsByUserAndDate } from '../utils/groupWorklogs';
 import type { EnrichedJiraWorklog } from './useTimesheetData';
