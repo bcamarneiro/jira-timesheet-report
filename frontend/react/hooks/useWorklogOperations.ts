@@ -2,14 +2,11 @@ import { useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
-import { useJiraClient } from './useJiraClient';
 
 export function useWorklogOperations() {
-	const jiraClient = useJiraClient();
 	const config = useConfigStore((state) => state.config);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const recomputeDerived = useTimesheetStore((state) => state.recomputeDerived);
 	const data = useTimesheetStore((state) => state.data);
 	const setData = useTimesheetStore((state) => state.setData);
 
