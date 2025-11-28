@@ -1,10 +1,12 @@
 import path from 'node:path';
 import type { Configuration } from '@rspack/core';
-import { DefinePlugin } from '@rspack/core';
-import dotenv from 'dotenv';
+import { DefinePlugin, ProvidePlugin } from '@rspack/core';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
+import stdLibBrowser from 'node-stdlib-browser';
 
-dotenv.config(); // Load .env variables
+const {
+	NodeProtocolUrlPlugin,
+} = require('node-stdlib-browser/helpers/webpack/plugin');
 
 const isOfflineMode =
 	process.env.NODE_ENV === 'development' && process.env.OFFLINE_MODE === 'true';
@@ -38,6 +40,10 @@ const config: Configuration = {
 			'process.env.OFFLINE_MODE': JSON.stringify(
 				process.env.OFFLINE_MODE || 'false',
 			),
+		}),
+		new NodeProtocolUrlPlugin(),
+		new ProvidePlugin({
+			stream: stdLibBrowser.stream,
 		}),
 	],
 
@@ -123,11 +129,20 @@ const config: Configuration = {
 				exclude: /\.module\.css$/,
 				type: 'css',
 			},
+			{
+				test: /\.m?js$/,
+				resolve: {
+					fullySpecified: false,
+				},
+			},
 		],
 	},
 
 	resolve: {
-		extensions: ['.ts', '.tsx', '.js', '.jsx'],
+		extensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs'],
+		alias: {
+			...stdLibBrowser,
+		},
 	},
 };
 

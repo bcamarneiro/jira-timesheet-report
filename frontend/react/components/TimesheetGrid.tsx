@@ -1,42 +1,51 @@
 import type React from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { useTimeOffStore } from '../../stores/useTimeOffStore';
+import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useCalendar } from '../hooks/useCalendar';
-import { useKarmaCalculation } from '../hooks/useKarmaCalculation';
-import { useTimeOff } from '../hooks/useTimeOff';
+import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
 import { isoDateFromYMD } from '../utils/date';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
+import * as styles from './TimesheetGrid.module.css';
 import { UserHeader } from './user/UserHeader';
 
 type Props = {
 	user: string;
 	days: Record<string, JiraWorklog[]>;
-	year: number;
-	monthZeroIndexed: number;
-	jiraDomain: string;
-	issueSummaries: Record<string, string>;
 	onDownloadUser: (user: string) => void;
 };
 
 export const TimesheetGrid: React.FC<Props> = ({
 	user,
 	days,
-	year,
-	monthZeroIndexed,
-	jiraDomain,
-	issueSummaries,
 	onDownloadUser,
 }) => {
+	// Read from stores
+	const year = useTimesheetStore((state) => state.currentYear);
+	const monthZeroIndexed = useTimesheetStore((state) => state.currentMonth);
+	const getTimeOffHours = useTimeOffStore((state) => state.getTimeOffHours);
+	const setTimeOffHoursStore = useTimeOffStore(
+		(state) => state.setTimeOffHours,
+	);
+
 	const { firstWeekday, numDays, weekdayLabels } = useCalendar(
 		year,
 		monthZeroIndexed,
 	);
-	const { getTimeOffHours, setTimeOffHours } = useTimeOff(user);
-	const { totalSeconds, netKarmaSeconds } = useKarmaCalculation(
+
+	const setTimeOffHours = (iso: string, hours: number) => {
+		setTimeOffHoursStore(user, iso, hours);
+	};
+
+	const getTimeOffHoursForUser = (iso: string) => {
+		return getTimeOffHours(user, iso);
+	};
+
+	const { totalSeconds } = useMonthTotalCalculation(
 		days,
 		year,
 		monthZeroIndexed,
-		getTimeOffHours,
 	);
 
 	const cells: React.ReactNode[] = [];
@@ -53,24 +62,20 @@ export const TimesheetGrid: React.FC<Props> = ({
 				key={iso}
 				iso={iso}
 				dayNumber={d}
-				jiraDomain={jiraDomain}
+				user={user}
 				worklogs={worklogs}
 				isWeekend={isWeekend}
-				timeOffHours={!isWeekend ? getTimeOffHours(iso) : 0}
+				timeOffHours={!isWeekend ? getTimeOffHoursForUser(iso) : 0}
 				onTimeOffChange={(hours) => setTimeOffHours(iso, hours)}
-				issueSummaries={issueSummaries}
-				currentYear={year}
-				currentMonth={monthZeroIndexed}
 			/>,
 		);
 	}
 
 	return (
-		<div key={user}>
+		<div key={user} className={styles.container}>
 			<UserHeader
 				user={user}
 				totalSeconds={totalSeconds}
-				netKarmaSeconds={netKarmaSeconds}
 				onDownloadUser={onDownloadUser}
 			/>
 
@@ -78,8 +83,11 @@ export const TimesheetGrid: React.FC<Props> = ({
 				{cells}
 			</CalendarGrid>
 
-			<div style={{ fontWeight: 'bold', marginTop: '0.5em' }}>
-				Month total: {(totalSeconds / 3600).toFixed(2)} h
+			<div className={styles.monthTotal}>
+				<span className={styles.monthTotalLabel}>Month Total</span>
+				<span className={styles.monthTotalValue}>
+					{(totalSeconds / 3600).toFixed(2)} h
+				</span>
 			</div>
 		</div>
 	);

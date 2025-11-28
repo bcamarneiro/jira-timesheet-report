@@ -13,20 +13,20 @@ export const UserSelector: React.FC<Props> = ({ users, value, onChange }) => {
 
 	return (
 		<div className={styles.container}>
-			<label htmlFor={id}>Select User:</label>
-			<input
+			<label htmlFor={id}>Filter by User:</label>
+			<select
 				id={id}
-				type="text"
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
-				placeholder="Enter user name"
-				list={id}
-			/>
-			<datalist id={id}>
+				className={styles.select}
+			>
+				<option value="">All Users ({users.length})</option>
 				{users.map((u) => (
-					<option key={u} value={u} />
+					<option key={u} value={u}>
+						{u}
+					</option>
 				))}
-			</datalist>
+			</select>
 		</div>
 	);
 };

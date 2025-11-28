@@ -1,47 +1,51 @@
-import type React from 'react';
+import { Link } from 'react-router-dom';
+import { useConfigStore } from '../../stores/useConfigStore';
+import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { TimesheetGrid } from '../components/TimesheetGrid';
 import { UserSelector } from '../components/UserSelector';
 import { Button } from '../components/ui/Button';
 import { useDownload } from '../hooks/useDownload';
-import { useTimesheetData } from '../hooks/useTimesheetData';
-import { useTimesheetQueryParams } from '../hooks/useTimesheetQueryParams';
+import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
+import { useTimesheetURLSync } from '../hooks/useTimesheetURLSync';
 import { monthLabel } from '../utils/date';
 import * as styles from './TimesheetPage.module.css';
 
 export const TimesheetPage: React.FC = () => {
-	const {
-		selectedUser,
-		setSelectedUser,
-		currentYear,
-		currentMonth,
-		goPrevMonth,
-		goNextMonth,
-	} = useTimesheetQueryParams();
+	// Fetch data into store
+	useTimesheetDataFetcher();
 
-	const {
-		data,
-		jiraDomain,
-		issueSummaries,
-		teamDevelopers,
-		users,
-		grouped,
-		visibleEntries,
-	} = useTimesheetData(currentYear, currentMonth, selectedUser);
+	// Sync URL with store
+	const { handleSetSelectedUser } = useTimesheetURLSync();
+
+	// Read from stores
+	const currentYear = useTimesheetStore((state) => state.currentYear);
+	const currentMonth = useTimesheetStore((state) => state.currentMonth);
+	const selectedUser = useTimesheetStore((state) => state.selectedUser);
+	const data = useTimesheetStore((state) => state.data);
+	const isLoading = useTimesheetStore((state) => state.isLoading);
+	const error = useTimesheetStore((state) => state.error);
+	const issueSummaries = useTimesheetStore((state) => state.issueSummaries);
+	const users = useTimesheetStore((state) => state.users);
+	const visibleEntries = useTimesheetStore((state) => state.visibleEntries);
+	const goPrevMonth = useTimesheetStore((state) => state.goPrevMonth);
+	const goNextMonth = useTimesheetStore((state) => state.goNextMonth);
+
+	const jiraDomain = useConfigStore((state) => state.config.jiraHost);
 
 	const { downloadUser, downloadAll } = useDownload();
 
 	const handleUserChange = (value: string) => {
-		setSelectedUser(value);
+		handleSetSelectedUser(value);
 	};
 
 	const handleDownloadUser = (user: string) => {
 		downloadUser(user, data || [], issueSummaries, currentYear, currentMonth);
 	};
 
-	const handleDownloadAll = (visibleUsers: string[]) => {
+	const handleDownloadAll = () => {
 		downloadAll(
-			visibleUsers,
+			visibleEntries.map(([user]) => user),
 			data || [],
 			issueSummaries,
 			currentYear,
@@ -49,7 +53,32 @@ export const TimesheetPage: React.FC = () => {
 		);
 	};
 
-	if (!data) return <p>Loading...</p>;
+	if (isLoading) {
+		return (
+			<div className={styles.container}>
+				<div className={styles.loading}>
+					<div className={styles.spinner}></div>
+					<p>Loading timesheet data...</p>
+				</div>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className={styles.container}>
+				<div className={styles.error}>
+					<h2>Error</h2>
+					<p>{error}</p>
+					{error.includes('configured') && (
+						<Link to="/settings">Go to Settings</Link>
+					)}
+				</div>
+			</div>
+		);
+	}
+
+	if (!data) return null;
 
 	const isValidUser = selectedUser !== '' && users.includes(selectedUser);
 	const selectedEntry = visibleEntries.find(([user]) => user === selectedUser);
@@ -64,19 +93,7 @@ export const TimesheetPage: React.FC = () => {
 			/>
 
 			<div className={styles.header}>
-				<Button
-					onClick={() =>
-						handleDownloadAll(
-							Object.keys(grouped)
-								.filter((user) => selectedUser === '' || user === selectedUser)
-								.filter(
-									(user) => !teamDevelopers || teamDevelopers.includes(user),
-								),
-						)
-					}
-				>
-					Download CSV for all
-				</Button>
+				<Button onClick={handleDownloadAll}>Download CSV for all</Button>
 			</div>
 
 			<MonthNavigator
@@ -110,7 +127,18 @@ export const TimesheetPage: React.FC = () => {
 					/>
 				)
 			) : (
-				<div className={styles.noUser}>please select a dev</div>
+				visibleEntries.map(([user, days]) => (
+					<TimesheetGrid
+						key={user}
+						user={user}
+						days={days}
+						year={currentYear}
+						monthZeroIndexed={currentMonth}
+						jiraDomain={jiraDomain}
+						issueSummaries={issueSummaries}
+						onDownloadUser={handleDownloadUser}
+					/>
+				))
 			)}
 		</div>
 	);

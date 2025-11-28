@@ -1,4 +1,4 @@
-import type { JiraWorklog } from '../../../types/JiraWorklog';
+import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 
 function csvEscape(value: string): string {
 	const safe = (value ?? '')
@@ -11,17 +11,20 @@ function csvEscape(value: string): string {
 	return safe;
 }
 
-function parseOriginalDateFromComment(comment: string): string | null {
+function parseOriginalDateFromComment(
+	comment: string | undefined,
+): string | null {
+	if (!comment) {
+		return null;
+	}
+
 	const pattern = /Original Worklog Date was: (\d{4}\/\d{2}\/\d{2})/;
 	const match = comment.match(pattern);
-	if (match) {
-		return match[1];
-	}
-	return null;
+	return match ? match[1] : null;
 }
 
 export function isRetroactiveWorklog(
-	worklog: JiraWorklog,
+	worklog: EnrichedJiraWorklog,
 	currentYear: number,
 	currentMonth: number,
 ): boolean {
@@ -31,7 +34,7 @@ export function isRetroactiveWorklog(
 	}
 
 	const originalDateObj = new Date(originalDate);
-	const loggedDateObj = new Date(worklog.started);
+	const loggedDateObj = new Date(worklog.started ?? '');
 
 	// Check if logged in current month but original date is in a previous month
 	const isLoggedInCurrentMonth =
@@ -46,100 +49,57 @@ export function isRetroactiveWorklog(
 }
 
 export function buildCsvForUser(
-	data: JiraWorklog[],
+	data: EnrichedJiraWorklog[],
 	issueSummaries: Record<string, string>,
-	user: string,
-	year: number,
-	month: number,
 ): string {
-	if (!data) return '';
-	const rows: string[] = [];
-	rows.push(
-		[
-			'Name',
-			'TicketKey',
-			'TicketName',
-			'OriginalIntendedDate',
-			'ActualLoggedDate',
-			'BookedTime',
-		].join(','),
-	);
+	const headers = [
+		'Name',
+		'TicketKey',
+		'TicketName',
+		'OriginalIntendedDate',
+		'ActualLoggedDate',
+		'BookedTime',
+	].join(',');
+	const rows = data.map((entry) => {
+		const name = entry.author?.displayName ?? '';
+		const ticketKey = entry.issue.key;
+		const ticketName = issueSummaries[entry.issue.id] ?? '';
 
-	// Filter worklogs by user and by actual logged date within the selected month
-	const filteredData = data
-		.filter((wl) => wl.author.displayName === user)
-		.filter((wl) => {
-			const actualLoggedDate = new Date(wl.started);
-			return (
-				actualLoggedDate.getFullYear() === year &&
-				actualLoggedDate.getMonth() === month
-			);
-		});
+		// Parse original intended date from comment if retroactive
+		const originalDate = parseOriginalDateFromComment(entry.comment);
+		const originalIntendedDate = originalDate || '';
 
-	let totalHours = 0;
+		// Actual logged date
+		const loggedDate = new Date(entry.started ?? '');
+		const actualLoggedDate = `${loggedDate.getFullYear()}/${String(
+			loggedDate.getMonth() + 1,
+		).padStart(2, '0')}/${String(loggedDate.getDate()).padStart(2, '0')}`;
 
-	filteredData
-		.sort((a, b) => {
-			// Sort by OriginalIntendedDate
-			const originalDateA =
-				parseOriginalDateFromComment(a.comment) || a.started;
-			const originalDateB =
-				parseOriginalDateFromComment(b.comment) || b.started;
-			return (
-				new Date(originalDateA).getTime() - new Date(originalDateB).getTime()
-			);
-		})
-		.forEach((wl) => {
-			const key = wl.issueKey ?? String(wl.issueId);
-			const ticketName = issueSummaries[key] || '';
-			const actualLoggedDate = new Date(wl.started)
-				.toISOString()
-				.substring(0, 10);
-			const originalIntendedDate = new Date(
-				parseOriginalDateFromComment(wl.comment) || actualLoggedDate,
-			)
-				.toISOString()
-				.substring(0, 10);
-			const bookedHours = (wl.timeSpentSeconds / 3600).toFixed(2);
-			totalHours += wl.timeSpentSeconds / 3600;
+		// Booked time in hours
+		const bookedTime = (entry.timeSpentSeconds ?? 0) / 3600;
 
-			rows.push(
-				[
-					csvEscape(user),
-					csvEscape(key),
-					csvEscape(ticketName),
-					csvEscape(originalIntendedDate),
-					csvEscape(actualLoggedDate),
-					csvEscape(bookedHours),
-				].join(','),
-			);
-		});
+		return [
+			csvEscape(name),
+			ticketKey,
+			csvEscape(ticketName),
+			originalIntendedDate,
+			actualLoggedDate,
+			bookedTime.toFixed(2),
+		].join(',');
+	});
 
-	// Add summary row with total hours
-	if (filteredData.length > 0) {
-		rows.push(
-			[
-				csvEscape('TOTAL'),
-				csvEscape(''),
-				csvEscape(''),
-				csvEscape(''),
-				csvEscape(''),
-				csvEscape(totalHours.toFixed(2)),
-			].join(','),
-		);
-	}
-
-	return rows.join('\n');
+	return [headers, ...rows].join('\n');
 }
 
 export function download(filename: string, content: string) {
-	const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-	const url = URL.createObjectURL(blob);
-	const link = document.createElement('a');
-	link.href = url;
-	link.download = filename;
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
-	URL.revokeObjectURL(url);
+	const element = document.createElement('a');
+	element.setAttribute(
+		'href',
+		`data:text/csv;charset=utf-8,${encodeURIComponent(content)}`,
+	);
+	element.setAttribute('download', filename);
+	element.style.display = 'none';
+	document.body.appendChild(element);
+	element.click();
+	document.body.removeChild(element);
 }

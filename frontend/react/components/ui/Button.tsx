@@ -8,6 +8,7 @@ type Props = {
 	variant?: 'primary' | 'secondary';
 	style?: React.CSSProperties;
 	className?: string;
+	disabled?: boolean;
 };
 
 export const Button: React.FC<Props> = ({
@@ -17,6 +18,7 @@ export const Button: React.FC<Props> = ({
 	variant = 'primary',
 	style = {},
 	className = '',
+	disabled = false,
 }) => {
 	const baseStyle: React.CSSProperties = {
 		padding: '0.5em 1em',
@@ -34,6 +36,7 @@ export const Button: React.FC<Props> = ({
 			onClick={onClick}
 			className={`${styles.button} ${variant === 'primary' ? styles.primary : styles.secondary} ${className}`}
 			style={baseStyle}
+			disabled={disabled}
 		>
 			{children}
 		</button>

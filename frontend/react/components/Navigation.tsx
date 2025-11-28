@@ -22,6 +22,9 @@ export const Navigation: React.FC = () => {
 					<Link to="/timesheet" className={getLinkStyle('/timesheet')}>
 						Timesheet
 					</Link>
+					<Link to="/settings" className={getLinkStyle('/settings')}>
+						Settings
+					</Link>
 				</div>
 			</div>
 		</nav>

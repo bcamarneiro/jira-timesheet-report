@@ -18,7 +18,7 @@ export const TimeOffSelector: React.FC<Props> = ({
 		<select
 			value={value}
 			onChange={(e) => onChange(Number(e.target.value) || 0)}
-			title="Time off (counts only for karma)"
+			title="Time off hours"
 			style={{
 				fontSize: 11,
 				padding: '2px 4px',

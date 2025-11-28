@@ -20,7 +20,7 @@ export const DaySummary: React.FC<Props> = ({
 			<div className={styles.total}>Total: {formatHours(dayTotalSeconds)}</div>
 			<div className={styles.timeOffContainer}>
 				{!isWeekend && timeOffHours > 0 && (
-					<span title="Time off (counts for karma)">TO: {timeOffHours}h</span>
+					<span title="Time off hours">TO: {timeOffHours}h</span>
 				)}
 				{missingSeconds > 0 && (
 					<div className={styles.missing}>

@@ -1,21 +1,17 @@
 import type React from 'react';
-import type { JiraWorklog } from '../../../../types/JiraWorklog';
+import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
 import { WorklogItem } from './WorklogItem';
 
 type Props = {
-	worklogs: JiraWorklog[];
-	jiraDomain: string;
-	issueSummaries: Record<string, string>;
-	currentYear: number;
-	currentMonth: number;
+	worklogs: EnrichedJiraWorklog[];
+	onEdit?: (worklog: EnrichedJiraWorklog) => void;
+	onDelete?: (worklog: EnrichedJiraWorklog) => void;
 };
 
 export const WorklogList: React.FC<Props> = ({
 	worklogs,
-	jiraDomain,
-	issueSummaries,
-	currentYear,
-	currentMonth,
+	onEdit,
+	onDelete,
 }) => {
 	return (
 		<div
@@ -31,10 +27,8 @@ export const WorklogList: React.FC<Props> = ({
 				<WorklogItem
 					key={wl.id}
 					worklog={wl}
-					jiraDomain={jiraDomain}
-					issueSummaries={issueSummaries}
-					currentYear={currentYear}
-					currentMonth={currentMonth}
+					onEdit={onEdit}
+					onDelete={onDelete}
 				/>
 			))}
 		</div>

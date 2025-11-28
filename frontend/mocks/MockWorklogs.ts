@@ -243,8 +243,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/1769494',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -261,8 +261,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1683,8 +1683,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/1774285',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1701,8 +1701,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1731,8 +1731,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/1774291',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1749,8 +1749,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1780,8 +1780,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/1774297',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1798,8 +1798,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1828,8 +1828,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/1774401',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1846,8 +1846,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1876,8 +1876,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/1774404',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1894,8 +1894,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1924,8 +1924,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/1774408',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1942,8 +1942,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1972,8 +1972,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/1774412',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -1990,8 +1990,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3508,8 +3508,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774281',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3526,8 +3526,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3556,8 +3556,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774286',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3574,8 +3574,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3604,8 +3604,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774288',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3622,8 +3622,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3652,8 +3652,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774289',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3670,8 +3670,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3701,8 +3701,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774295',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3719,8 +3719,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3749,8 +3749,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774400',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3767,8 +3767,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3798,8 +3798,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774402',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3816,8 +3816,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3846,8 +3846,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774403',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3864,8 +3864,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3894,8 +3894,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774405',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3912,8 +3912,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3942,8 +3942,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774406',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3960,8 +3960,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -3991,8 +3991,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774410',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4009,8 +4009,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4040,8 +4040,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774411',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4058,8 +4058,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4088,8 +4088,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774413',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4106,8 +4106,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4136,8 +4136,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774414',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4154,8 +4154,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4184,8 +4184,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716690/worklog/1774419',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -4202,8 +4202,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -5915,8 +5915,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/711809/worklog/1774407',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -5933,8 +5933,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -6827,8 +6827,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/695798/worklog/1774284',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -6845,8 +6845,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -6875,8 +6875,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/695798/worklog/1774287',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -6893,8 +6893,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -6923,8 +6923,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/695796/worklog/1766363',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=AYDIN_SE',
-			name: 'AYDIN_SE',
+			self: 'https://jira.example.com/rest/api/2/user?username=ADAMS_S',
+			name: 'ADAMS_S',
 			key: 'JIRAUSER38514',
 			emailAddress: 'sarah.adams@example.com',
 			avatarUrls: {
@@ -6936,13 +6936,13 @@ const MockWorklogs = [
 				'32x32':
 					'https://jira.example.com/secure/useravatar?size=medium&avatarId=10122',
 			},
-			displayName: 'Sena Aydin',
+			displayName: 'Sarah Adams',
 			active: true,
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=AYDIN_SE',
-			name: 'AYDIN_SE',
+			self: 'https://jira.example.com/rest/api/2/user?username=ADAMS_S',
+			name: 'ADAMS_S',
 			key: 'JIRAUSER38514',
 			emailAddress: 'sarah.adams@example.com',
 			avatarUrls: {
@@ -6954,7 +6954,7 @@ const MockWorklogs = [
 				'32x32':
 					'https://jira.example.com/secure/useravatar?size=medium&avatarId=10122',
 			},
-			displayName: 'Sena Aydin',
+			displayName: 'Sarah Adams',
 			active: true,
 			timeZone: 'Europe/Berlin',
 		},
@@ -7115,8 +7115,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/695796/worklog/1770165',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=AYDIN_SE',
-			name: 'AYDIN_SE',
+			self: 'https://jira.example.com/rest/api/2/user?username=ADAMS_S',
+			name: 'ADAMS_S',
 			key: 'JIRAUSER38514',
 			emailAddress: 'sarah.adams@example.com',
 			avatarUrls: {
@@ -7128,13 +7128,13 @@ const MockWorklogs = [
 				'32x32':
 					'https://jira.example.com/secure/useravatar?size=medium&avatarId=10122',
 			},
-			displayName: 'Sena Aydin',
+			displayName: 'Sarah Adams',
 			active: true,
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=AYDIN_SE',
-			name: 'AYDIN_SE',
+			self: 'https://jira.example.com/rest/api/2/user?username=ADAMS_S',
+			name: 'ADAMS_S',
 			key: 'JIRAUSER38514',
 			emailAddress: 'sarah.adams@example.com',
 			avatarUrls: {
@@ -7146,7 +7146,7 @@ const MockWorklogs = [
 				'32x32':
 					'https://jira.example.com/secure/useravatar?size=medium&avatarId=10122',
 			},
-			displayName: 'Sena Aydin',
+			displayName: 'Sarah Adams',
 			active: true,
 			timeZone: 'Europe/Berlin',
 		},
@@ -7163,8 +7163,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/695796/worklog/1770166',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=AYDIN_SE',
-			name: 'AYDIN_SE',
+			self: 'https://jira.example.com/rest/api/2/user?username=ADAMS_S',
+			name: 'ADAMS_S',
 			key: 'JIRAUSER38514',
 			emailAddress: 'sarah.adams@example.com',
 			avatarUrls: {
@@ -7176,13 +7176,13 @@ const MockWorklogs = [
 				'32x32':
 					'https://jira.example.com/secure/useravatar?size=medium&avatarId=10122',
 			},
-			displayName: 'Sena Aydin',
+			displayName: 'Sarah Adams',
 			active: true,
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=AYDIN_SE',
-			name: 'AYDIN_SE',
+			self: 'https://jira.example.com/rest/api/2/user?username=ADAMS_S',
+			name: 'ADAMS_S',
 			key: 'JIRAUSER38514',
 			emailAddress: 'sarah.adams@example.com',
 			avatarUrls: {
@@ -7194,7 +7194,7 @@ const MockWorklogs = [
 				'32x32':
 					'https://jira.example.com/secure/useravatar?size=medium&avatarId=10122',
 			},
-			displayName: 'Sena Aydin',
+			displayName: 'Sarah Adams',
 			active: true,
 			timeZone: 'Europe/Berlin',
 		},
@@ -7259,8 +7259,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/695796/worklog/1771226',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=AYDIN_SE',
-			name: 'AYDIN_SE',
+			self: 'https://jira.example.com/rest/api/2/user?username=ADAMS_S',
+			name: 'ADAMS_S',
 			key: 'JIRAUSER38514',
 			emailAddress: 'sarah.adams@example.com',
 			avatarUrls: {
@@ -7272,13 +7272,13 @@ const MockWorklogs = [
 				'32x32':
 					'https://jira.example.com/secure/useravatar?size=medium&avatarId=10122',
 			},
-			displayName: 'Sena Aydin',
+			displayName: 'Sarah Adams',
 			active: true,
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=AYDIN_SE',
-			name: 'AYDIN_SE',
+			self: 'https://jira.example.com/rest/api/2/user?username=ADAMS_S',
+			name: 'ADAMS_S',
 			key: 'JIRAUSER38514',
 			emailAddress: 'sarah.adams@example.com',
 			avatarUrls: {
@@ -7290,7 +7290,7 @@ const MockWorklogs = [
 				'32x32':
 					'https://jira.example.com/secure/useravatar?size=medium&avatarId=10122',
 			},
-			displayName: 'Sena Aydin',
+			displayName: 'Sarah Adams',
 			active: true,
 			timeZone: 'Europe/Berlin',
 		},
@@ -7451,8 +7451,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/695796/worklog/1774292',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -7469,8 +7469,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -7643,8 +7643,8 @@ const MockWorklogs = [
 	{
 		self: 'https://jira.example.com/rest/api/2/issue/716809/worklog/9998004',
 		author: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
@@ -7661,8 +7661,8 @@ const MockWorklogs = [
 			timeZone: 'Europe/Berlin',
 		},
 		updateAuthor: {
-			self: 'https://jira.example.com/rest/api/2/user?username=CAMARNEI',
-			name: 'CAMARNEI',
+			self: 'https://jira.example.com/rest/api/2/user?username=COOPER_B',
+			name: 'COOPER_B',
 			key: 'JIRAUSER40307',
 			emailAddress: 'brian.cooper@example.com',
 			avatarUrls: {
