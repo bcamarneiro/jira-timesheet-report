@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+coverage
+.env
+
+.vscode/settings.json
+bun.lock
+package-lock.json
+.npmrc
+frontend/public/mockServiceWorker.js
+.claude/
+
+# Test artifacts
+test-output.log
+test-screenshots/

@@ -1,0 +1,4 @@
+echo "🎨 Running formatter..."
+npm run format
+
+echo "✅ Code formatted!"

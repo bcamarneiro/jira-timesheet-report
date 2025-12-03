@@ -1,0 +1,94 @@
+.dayCell {
+	border: 1px solid #dee2e6;
+	border-radius: 8px;
+	min-height: 120px;
+	padding: 0.75rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	transition: box-shadow 0.2s ease;
+}
+
+.dayCell:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.25rem;
+}
+
+.dayNumber {
+	font-weight: 700;
+	font-size: 1.125rem;
+	color: #333;
+}
+
+.logInfo {
+	font-size: 0.75rem;
+	color: #6c757d;
+	font-weight: 500;
+}
+
+.logsContainer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Weekend styles */
+.weekend {
+	background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+	border-color: #ffb3b3;
+}
+
+.weekendEmpty {
+	background: #fafbfc;
+	border-color: #e9ecef;
+}
+
+/* Weekday styles */
+.weekdayComplete {
+	background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+	border-color: #86efac;
+}
+
+.weekdayIncomplete {
+	background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+	border-color: #fdba74;
+}
+
+.weekdayOvertime {
+	background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%);
+	border-color: #fde047;
+}
+
+.addButton {
+	background: #007bff;
+	color: white;
+	border: none;
+	border-radius: 50%;
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+	padding: 0;
+	transition:
+		background-color 0.2s,
+		transform 0.1s;
+}
+
+.addButton:hover {
+	background: #0056b3;
+	transform: scale(1.1);
+}
+
+.addButton:active {
+	transform: scale(0.95);
+}

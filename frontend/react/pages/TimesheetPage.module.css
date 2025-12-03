@@ -1,0 +1,86 @@
+.container {
+	font-family: sans-serif;
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 2rem;
+}
+
+.container h1 {
+	font-size: 2.5rem;
+	margin-bottom: 1.5rem;
+	color: #333;
+}
+
+.header {
+	margin: 1.5rem 0;
+	display: flex;
+	justify-content: flex-end;
+	gap: 1rem;
+}
+
+.noUser {
+	margin-top: 1em;
+	font-weight: bold;
+}
+
+.error {
+	background-color: #fff5f5;
+	color: #c53030;
+	border: 1px solid #fc8181;
+	border-radius: 8px;
+	padding: 1.5rem;
+	margin: 1.5rem 0;
+}
+
+.error h2 {
+	margin-top: 0;
+	margin-bottom: 0.5rem;
+	color: #c53030;
+}
+
+.error p {
+	margin-bottom: 1rem;
+}
+
+.error a {
+	color: #0066cc;
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.error a:hover {
+	text-decoration: underline;
+}
+
+.loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 400px;
+	gap: 1.5rem;
+}
+
+.loading p {
+	font-size: 1.125rem;
+	color: #666;
+	font-weight: 500;
+}
+
+.spinner {
+	width: 50px;
+	height: 50px;
+	border: 4px solid #f3f4f6;
+	border-top: 4px solid #007bff;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}

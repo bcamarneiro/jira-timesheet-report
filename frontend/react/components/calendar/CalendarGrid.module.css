@@ -1,0 +1,35 @@
+.container {
+	position: relative;
+	margin-bottom: 2rem;
+}
+
+.weekdayHeader {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.weekdayLabel {
+	text-align: center;
+	font-weight: 700;
+	font-size: 0.875rem;
+	padding: 0.5rem;
+	color: #555;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 8px;
+}
+
+.emptyCell {
+	border: 1px solid #e9ecef;
+	border-radius: 8px;
+	min-height: 100px;
+	padding: 0.5rem;
+	background: #f8f9fa;
+}
