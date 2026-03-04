@@ -26,10 +26,9 @@ const createClient = (config: Config): Version2Client | null => {
 		? `${config.corsProxy.replace(/\/$/, '')}/https://${config.jiraHost}`
 		: `https://${config.jiraHost}`;
 
-	console.log('[Jira Client] Creating V2 client with config:', {
-		host,
-		corsProxy: config.corsProxy,
-	});
+	console.log(
+		`[Jira Client] Creating V2 client | host: ${config.jiraHost} | proxy: ${config.corsProxy || 'none'} | target: ${host}`,
+	);
 
 	return new Version2Client({
 		host,

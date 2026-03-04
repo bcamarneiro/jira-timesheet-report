@@ -28,6 +28,9 @@ export function useTimesheetDataFetcher() {
 			setLoading(true);
 			setError(null);
 
+			const config = useConfigStore.getState().config;
+			const viaProxy = config.corsProxy ? ` via proxy ${config.corsProxy}` : ' (direct)';
+
 			try {
 				const startDate = new Date(currentYear, currentMonth, 1);
 				const endDate = new Date(currentYear, currentMonth + 1, 0);
@@ -59,6 +62,9 @@ export function useTimesheetDataFetcher() {
 				}
 
 				// Step 1: Search for issues that have worklogs in the date range
+				console.log(`[Fetch] Searching issues${viaProxy} | JQL: ${jql}`);
+				const searchStart = performance.now();
+
 				const searchResult =
 					await jiraClient.issueSearch.searchForIssuesUsingJql({
 						jql,
@@ -66,12 +72,18 @@ export function useTimesheetDataFetcher() {
 						maxResults: 1000,
 					});
 
+				console.log(
+					`[Fetch] Search returned ${searchResult.total ?? 0} issues in ${Math.round(performance.now() - searchStart)}ms`,
+				);
+
 				// Step 2: Fetch worklogs for each issue IN PARALLEL
 				let allWorklogs: EnrichedJiraWorklog[] = [];
 
 				if (searchResult.total && searchResult.total > 0) {
 					const issues = searchResult.issues ?? [];
-					const startTime = performance.now();
+					const worklogStart = performance.now();
+
+					console.log(`[Fetch] Fetching worklogs for ${issues.length} issues${viaProxy}`);
 
 					// Create array of promises to fetch worklogs in parallel
 					const worklogPromises = issues
@@ -103,7 +115,7 @@ export function useTimesheetDataFetcher() {
 								return [];
 							} catch (worklogError) {
 								console.error(
-									`Failed to fetch worklogs for ${issue.key}:`,
+									`[Fetch] Failed to fetch worklogs for ${issue.key}:`,
 									worklogError,
 								);
 								// Return empty array on error, continue with other issues
@@ -117,14 +129,16 @@ export function useTimesheetDataFetcher() {
 					// Flatten the array of arrays into a single array
 					allWorklogs = worklogResults.flat();
 
-					const endTime = performance.now();
+					const worklogDuration = Math.round(performance.now() - worklogStart);
+					const totalDuration = Math.round(performance.now() - searchStart);
 					console.log(
-						`[Performance] Fetched ${allWorklogs.length} worklogs from ${issues.length} issues in ${Math.round(endTime - startTime)}ms (parallel)`,
+						`[Fetch] Done: ${allWorklogs.length} worklogs from ${issues.length} issues | worklogs: ${worklogDuration}ms | total: ${totalDuration}ms`,
 					);
 				}
 
 				setData(allWorklogs);
 			} catch (e) {
+				console.error(`[Fetch] Error fetching data${viaProxy}:`, e);
 				if (e instanceof Error) {
 					setError(`Failed to fetch data from Jira: ${e.message}`);
 				} else {
