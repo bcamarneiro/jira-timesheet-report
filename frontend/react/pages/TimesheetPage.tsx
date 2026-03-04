@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { MonthNavigator } from '../components/MonthNavigator';
+import { OverviewTable } from '../components/OverviewTable';
 import { TimesheetGrid } from '../components/TimesheetGrid';
 import { UserSelector } from '../components/UserSelector';
 import { Button } from '../components/ui/Button';
@@ -128,18 +129,27 @@ export const TimesheetPage: React.FC = () => {
 					/>
 				)
 			) : (
-				visibleEntries.map(([user, days]) => (
-					<TimesheetGrid
-						key={user}
-						user={user}
-						days={days}
-						year={currentYear}
-						monthZeroIndexed={currentMonth}
-						jiraDomain={jiraDomain}
-						issueSummaries={issueSummaries}
-						onDownloadUser={handleDownloadUser}
-					/>
-				))
+				<>
+					{visibleEntries.length > 1 && (
+						<OverviewTable
+							entries={visibleEntries}
+							year={currentYear}
+							monthZeroIndexed={currentMonth}
+						/>
+					)}
+					{visibleEntries.map(([user, days]) => (
+						<TimesheetGrid
+							key={user}
+							user={user}
+							days={days}
+							year={currentYear}
+							monthZeroIndexed={currentMonth}
+							jiraDomain={jiraDomain}
+							issueSummaries={issueSummaries}
+							onDownloadUser={handleDownloadUser}
+						/>
+					))}
+				</>
 			)}
 		</div>
 	);

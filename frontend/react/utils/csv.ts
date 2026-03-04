@@ -1,5 +1,7 @@
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 
+const SEP = ';';
+
 function csvEscape(value: string): string {
 	const safe = (value ?? '')
 		.replace(/\r?\n|\r/g, ' ')
@@ -59,7 +61,7 @@ export function buildCsvForUser(
 		'OriginalIntendedDate',
 		'ActualLoggedDate',
 		'BookedTime',
-	].join(',');
+	].join(SEP);
 	const rows = data.map((entry) => {
 		const name = entry.author?.displayName ?? '';
 		const ticketKey = entry.issue.key;
@@ -85,7 +87,7 @@ export function buildCsvForUser(
 			originalIntendedDate,
 			actualLoggedDate,
 			bookedTime.toFixed(2),
-		].join(',');
+		].join(SEP);
 	});
 
 	// Calculate total hours
@@ -96,9 +98,59 @@ export function buildCsvForUser(
 	const totalHours = (totalSeconds / 3600).toFixed(2);
 
 	// Add total row at the bottom
-	const totalRow = ['', '', '', '', 'Total', totalHours].join(',');
+	const totalRow = ['', '', '', '', 'Total', totalHours].join(SEP);
 
 	return [headers, ...rows, totalRow].join('\n');
+}
+
+export type UserSummary = {
+	user: string;
+	totalHours: number;
+	worklogCount: number;
+	daysWorked: number;
+};
+
+export function buildSummaryCsv(
+	summaries: UserSummary[],
+	year: number,
+	month: number,
+): string {
+	const monthName = new Date(Date.UTC(year, month, 1)).toLocaleString(
+		undefined,
+		{ month: 'long', year: 'numeric', timeZone: 'UTC' },
+	);
+
+	const headers = ['User', 'Days Worked', 'Entries', 'Total Hours'].join(SEP);
+	const rows = summaries.map((s) =>
+		[
+			csvEscape(s.user),
+			s.daysWorked.toFixed(1),
+			s.worklogCount,
+			s.totalHours.toFixed(2),
+		].join(SEP),
+	);
+
+	const grandTotalHours = summaries.reduce((sum, s) => sum + s.totalHours, 0);
+	const grandTotalEntries = summaries.reduce(
+		(sum, s) => sum + s.worklogCount,
+		0,
+	);
+	const grandTotalDays = grandTotalHours / 8;
+
+	const totalRow = [
+		csvEscape(`Total (${summaries.length} users)`),
+		grandTotalDays.toFixed(1),
+		grandTotalEntries,
+		grandTotalHours.toFixed(2),
+	].join(SEP);
+
+	return [
+		csvEscape(`Timesheet Summary - ${monthName}`),
+		'',
+		headers,
+		...rows,
+		totalRow,
+	].join('\n');
 }
 
 export function download(filename: string, content: string) {
