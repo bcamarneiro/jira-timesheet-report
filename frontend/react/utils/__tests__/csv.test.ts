@@ -28,9 +28,9 @@ describe('buildCsvForUser', () => {
 
 		expect(lines).toHaveLength(2); // header + total row
 		expect(lines[0]).toBe(
-			'Name,TicketKey,TicketName,OriginalIntendedDate,ActualLoggedDate,BookedTime',
+			'Name;TicketKey;TicketName;OriginalIntendedDate;ActualLoggedDate;BookedTime',
 		);
-		expect(lines[1]).toBe(',,,,Total,0.00');
+		expect(lines[1]).toBe(';;;;Total;0.00');
 	});
 
 	it('should export a simple worklog correctly', () => {
@@ -54,12 +54,12 @@ describe('buildCsvForUser', () => {
 
 		expect(lines).toHaveLength(3); // header + 1 row + total row
 		expect(lines[0]).toBe(
-			'Name,TicketKey,TicketName,OriginalIntendedDate,ActualLoggedDate,BookedTime',
+			'Name;TicketKey;TicketName;OriginalIntendedDate;ActualLoggedDate;BookedTime',
 		);
 		expect(lines[1]).toBe(
-			'John Doe,PROJ-123,Test Issue Summary,,2025/01/15,2.00',
+			'John Doe;PROJ-123;Test Issue Summary;;2025/01/15;2.00',
 		);
-		expect(lines[2]).toBe(',,,,Total,2.00');
+		expect(lines[2]).toBe(';;;;Total;2.00');
 	});
 
 	it('should extract OriginalIntendedDate from retroactive worklog comment', () => {
@@ -82,7 +82,7 @@ describe('buildCsvForUser', () => {
 		const lines = result.split('\n');
 
 		expect(lines[1]).toBe(
-			'John Doe,PROJ-123,Test Issue,2025/01/20,2025/02/05,1.00',
+			'John Doe;PROJ-123;Test Issue;2025/01/20;2025/02/05;1.00',
 		);
 	});
 
@@ -108,7 +108,7 @@ describe('buildCsvForUser', () => {
 		const lines = result.split('\n');
 
 		expect(lines[1]).toBe(
-			'"Jane, Doe",PROJ-123,"Issue with ""quotes"" and, commas",,2025/01/15,0.50',
+			'"Jane, Doe";PROJ-123;"Issue with ""quotes"" and, commas";;2025/01/15;0.50',
 		);
 	});
 
@@ -143,9 +143,9 @@ describe('buildCsvForUser', () => {
 		const lines = result.split('\n');
 
 		expect(lines).toHaveLength(4); // header + 2 rows + total row
-		expect(lines[1]).toBe('John Doe,PROJ-123,First Issue,,2025/01/15,1.00');
-		expect(lines[2]).toBe('John Doe,PROJ-124,Second Issue,,2025/01/16,2.00');
-		expect(lines[3]).toBe(',,,,Total,3.00'); // 1 + 2 = 3 hours
+		expect(lines[1]).toBe('John Doe;PROJ-123;First Issue;;2025/01/15;1.00');
+		expect(lines[2]).toBe('John Doe;PROJ-124;Second Issue;;2025/01/16;2.00');
+		expect(lines[3]).toBe(';;;;Total;3.00'); // 1 + 2 = 3 hours
 	});
 
 	it('should handle missing issue summary', () => {
@@ -164,7 +164,7 @@ describe('buildCsvForUser', () => {
 		const result = buildCsvForUser(data, issueSummaries);
 		const lines = result.split('\n');
 
-		expect(lines[1]).toBe('John Doe,PROJ-123,,,2025/01/15,1.00');
+		expect(lines[1]).toBe('John Doe;PROJ-123;;;2025/01/15;1.00');
 	});
 
 	it('should format time with 2 decimal places', () => {
@@ -188,7 +188,7 @@ describe('buildCsvForUser', () => {
 
 			const result = buildCsvForUser(data, {});
 			const lines = result.split('\n');
-			const time = lines[1].split(',')[5];
+			const time = lines[1].split(';')[5];
 
 			expect(time).toBe(testCase.expected);
 		}
