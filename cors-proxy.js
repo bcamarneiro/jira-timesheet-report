@@ -64,9 +64,18 @@ function formatDuration(ms) {
  */
 function setCorsHeaders(res, req) {
 	res.setHeader('access-control-allow-origin', req.headers.origin || '*');
-	res.setHeader('access-control-allow-methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-	res.setHeader('access-control-allow-headers', 'Authorization, Content-Type, X-Atlassian-Token, Accept');
-	res.setHeader('access-control-expose-headers', 'Content-Type, Content-Length');
+	res.setHeader(
+		'access-control-allow-methods',
+		'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+	);
+	res.setHeader(
+		'access-control-allow-headers',
+		'Authorization, Content-Type, X-Atlassian-Token, Accept',
+	);
+	res.setHeader(
+		'access-control-expose-headers',
+		'Content-Type, Content-Length',
+	);
 	res.setHeader('access-control-max-age', '86400');
 }
 
@@ -111,7 +120,9 @@ const server = http.createServer((req, res) => {
 		setCorsHeaders(res, req);
 		res.writeHead(204);
 		res.end();
-		console.log(`[${timestamp()}] #${reqId} OPTIONS preflight → 204 (${formatDuration(Date.now() - start)})`);
+		console.log(
+			`[${timestamp()}] #${reqId} OPTIONS preflight → 204 (${formatDuration(Date.now() - start)})`,
+		);
 		return;
 	}
 
@@ -138,11 +149,16 @@ const server = http.createServer((req, res) => {
 
 	const outboundHeaders = buildOutboundHeaders(req.headers, targetUrl.host);
 
-	const authHeader = outboundHeaders.authorization || outboundHeaders.Authorization || '';
-	const authPreview = authHeader ? `${String(authHeader).substring(0, 15)}...` : 'none';
+	const authHeader =
+		outboundHeaders.authorization || outboundHeaders.Authorization || '';
+	const authPreview = authHeader
+		? `${String(authHeader).substring(0, 15)}...`
+		: 'none';
 
 	console.log(`[${timestamp()}] #${reqId} --> ${req.method} ${targetUrlStr}`);
-	console.log(`  Auth: ${authPreview} | Agent: ${socksAgent ? 'SocksProxyAgent' : 'default'}`);
+	console.log(
+		`  Auth: ${authPreview} | Agent: ${socksAgent ? 'SocksProxyAgent' : 'default'}`,
+	);
 
 	const isHttps = targetUrl.protocol === 'https:';
 	const transport = isHttps ? https : http;
@@ -165,10 +181,18 @@ const server = http.createServer((req, res) => {
 		const status = proxyRes.statusCode;
 		const statusTag = status >= 400 ? 'ERR' : 'OK';
 
-		console.log(`[${timestamp()}] #${reqId} <-- ${status} ${statusTag} (${duration})`);
+		console.log(
+			`[${timestamp()}] #${reqId} <-- ${status} ${statusTag} (${duration})`,
+		);
 
 		const logHeaders = {};
-		for (const key of ['content-type', 'server', 'x-seraph-loginreason', 'www-authenticate', 'location']) {
+		for (const key of [
+			'content-type',
+			'server',
+			'x-seraph-loginreason',
+			'www-authenticate',
+			'location',
+		]) {
 			if (proxyRes.headers[key]) logHeaders[key] = proxyRes.headers[key];
 		}
 		if (Object.keys(logHeaders).length > 0) {
@@ -180,7 +204,11 @@ const server = http.createServer((req, res) => {
 		// Forward content-type and other relevant response headers
 		for (const [key, value] of Object.entries(proxyRes.headers)) {
 			// Don't forward hop-by-hop headers
-			if (!['connection', 'keep-alive', 'transfer-encoding'].includes(key.toLowerCase())) {
+			if (
+				!['connection', 'keep-alive', 'transfer-encoding'].includes(
+					key.toLowerCase(),
+				)
+			) {
 				try {
 					res.setHeader(key, value);
 				} catch (_) {
@@ -235,7 +263,9 @@ server.listen(port, host, () => {
 	console.log('\n  Configuration:');
 	console.log(`   - Set CORS Proxy in app settings to: http://${host}:${port}`);
 	if (!socksProxy) {
-		console.log('   - Set SOCKS_PROXY=socks5h://127.0.0.1:8080 to route through SOCKS5');
+		console.log(
+			'   - Set SOCKS_PROXY=socks5h://127.0.0.1:8080 to route through SOCKS5',
+		);
 	}
 	console.log(`   - Press Ctrl+C to stop the server\n`);
 	console.log('========================================\n');

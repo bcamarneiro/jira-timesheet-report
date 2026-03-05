@@ -29,7 +29,9 @@ export function useTimesheetDataFetcher() {
 			setError(null);
 
 			const config = useConfigStore.getState().config;
-			const viaProxy = config.corsProxy ? ` via proxy ${config.corsProxy}` : ' (direct)';
+			const viaProxy = config.corsProxy
+				? ` via proxy ${config.corsProxy}`
+				: ' (direct)';
 
 			try {
 				const startDate = new Date(currentYear, currentMonth, 1);
@@ -83,7 +85,9 @@ export function useTimesheetDataFetcher() {
 					const issues = searchResult.issues ?? [];
 					const worklogStart = performance.now();
 
-					console.log(`[Fetch] Fetching worklogs for ${issues.length} issues${viaProxy}`);
+					console.log(
+						`[Fetch] Fetching worklogs for ${issues.length} issues${viaProxy}`,
+					);
 
 					// Create array of promises to fetch worklogs in parallel
 					const worklogPromises = issues

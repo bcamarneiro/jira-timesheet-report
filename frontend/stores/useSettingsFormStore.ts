@@ -67,8 +67,12 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				: `https://${formData.jiraHost}`;
 
 			console.log(`[Test] Connecting to ${host}`);
-			console.log(`[Test] Jira host: ${formData.jiraHost} | Proxy: ${formData.corsProxy || 'none'}`);
-			const tokenPreview = formData.apiToken ? `${formData.apiToken.substring(0, 8)}...` : 'empty';
+			console.log(
+				`[Test] Jira host: ${formData.jiraHost} | Proxy: ${formData.corsProxy || 'none'}`,
+			);
+			const tokenPreview = formData.apiToken
+				? `${formData.apiToken.substring(0, 8)}...`
+				: 'empty';
 			console.log(`[Test] Token: ${tokenPreview}`);
 
 			const client = new Version2Client({
@@ -95,9 +99,16 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			console.error('[Test] Connection failed:', error);
 			if (error instanceof Error) {
 				console.error(`[Test] Name: ${error.name} | Message: ${error.message}`);
-				if ('status' in error) console.error(`[Test] HTTP Status: ${(error as { status: number }).status}`);
+				if ('status' in error)
+					console.error(
+						`[Test] HTTP Status: ${(error as { status: number }).status}`,
+					);
 				if ('response' in error) {
-					const resp = (error as { response: { data?: unknown; status?: number; headers?: unknown } }).response;
+					const resp = (
+						error as {
+							response: { data?: unknown; status?: number; headers?: unknown };
+						}
+					).response;
 					console.error(`[Test] Response status: ${resp?.status}`);
 					console.error(`[Test] Response body:`, resp?.data);
 					console.error(`[Test] Response headers:`, resp?.headers);
