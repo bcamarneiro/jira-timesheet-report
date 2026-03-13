@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import {
-	groupWorklogsByUserAndDate,
-	type GroupedWorklogs,
-} from '../groupWorklogs';
+import { describe, expect, it } from 'vitest';
 import type { JiraWorklog } from '../../../../types/JiraWorklog';
+import {
+	type GroupedWorklogs,
+	groupWorklogsByUserAndDate,
+} from '../groupWorklogs';
 
 const createMockWorklog = (
 	displayName: string,

@@ -1,6 +1,6 @@
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
 import type { Configuration } from '@rspack/core';
 import { DefinePlugin, ProvidePlugin } from '@rspack/core';
 import HtmlWebpackPlugin from 'html-webpack-plugin';

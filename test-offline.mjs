@@ -1,5 +1,5 @@
-import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
+import { chromium } from '@playwright/test';
 
 // Create screenshots directory (ignore if already exists)
 mkdirSync('test-screenshots', { recursive: true });

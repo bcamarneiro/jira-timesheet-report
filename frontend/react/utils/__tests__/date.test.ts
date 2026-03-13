@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-	getMonthStartWeekday,
 	getDaysInMonth,
+	getMonthStartWeekday,
+	isDateInMonth,
 	isoDateFromYMD,
 	monthLabel,
-	isDateInMonth,
 	toLocalDateString,
 } from '../date';
 
