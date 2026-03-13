@@ -14,7 +14,7 @@ export const SourceStatusBar: React.FC = () => {
 	const gitlabError = useDashboardStore((s) => s.gitlabSuggestionsError);
 	const rescueTimeError = useDashboardStore((s) => s.rescueTimeError);
 
-	const hasGitlab = !!(config.gitlabToken && config.gitlabUsername);
+	const hasGitlab = !!(config.gitlabToken && config.gitlabHost);
 	const hasRescueTime = !!config.rescueTimeApiKey;
 
 	return (
