@@ -70,7 +70,7 @@ function setCorsHeaders(res, req) {
 	);
 	res.setHeader(
 		'access-control-allow-headers',
-		'Authorization, Content-Type, X-Atlassian-Token, Accept',
+		'Authorization, Content-Type, X-Atlassian-Token, PRIVATE-TOKEN, Accept',
 	);
 	res.setHeader(
 		'access-control-expose-headers',
