@@ -1,6 +1,5 @@
 import type React from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
-import { useTimeOffStore } from '../../stores/useTimeOffStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useCalendar } from '../hooks/useCalendar';
 import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
@@ -21,26 +20,13 @@ export const TimesheetGrid: React.FC<Props> = ({
 	days,
 	onDownloadUser,
 }) => {
-	// Read from stores
 	const year = useTimesheetStore((state) => state.currentYear);
 	const monthZeroIndexed = useTimesheetStore((state) => state.currentMonth);
-	const getTimeOffHours = useTimeOffStore((state) => state.getTimeOffHours);
-	const setTimeOffHoursStore = useTimeOffStore(
-		(state) => state.setTimeOffHours,
-	);
 
 	const { firstWeekday, numDays, weekdayLabels } = useCalendar(
 		year,
 		monthZeroIndexed,
 	);
-
-	const setTimeOffHours = (iso: string, hours: number) => {
-		setTimeOffHoursStore(user, iso, hours);
-	};
-
-	const getTimeOffHoursForUser = (iso: string) => {
-		return getTimeOffHours(user, iso);
-	};
 
 	const { totalSeconds } = useMonthTotalCalculation(
 		days,
@@ -48,13 +34,19 @@ export const TimesheetGrid: React.FC<Props> = ({
 		monthZeroIndexed,
 	);
 
+	const now = new Date();
+	const todayIso =
+		now.getFullYear() === year && now.getMonth() === monthZeroIndexed
+			? isoDateFromYMD(year, monthZeroIndexed, now.getDate())
+			: null;
+
 	const cells: React.ReactNode[] = [];
 
 	for (let d = 1; d <= numDays; d++) {
 		const iso = isoDateFromYMD(year, monthZeroIndexed, d);
 		const worklogs = days[iso] || [];
 		const jsDate = new Date(Date.UTC(year, monthZeroIndexed, d));
-		const weekday = jsDate.getUTCDay(); // 0=Sun,6=Sat
+		const weekday = jsDate.getUTCDay();
 		const isWeekend = weekday === 0 || weekday === 6;
 
 		cells.push(
@@ -62,11 +54,9 @@ export const TimesheetGrid: React.FC<Props> = ({
 				key={iso}
 				iso={iso}
 				dayNumber={d}
-				user={user}
 				worklogs={worklogs}
 				isWeekend={isWeekend}
-				timeOffHours={!isWeekend ? getTimeOffHoursForUser(iso) : 0}
-				onTimeOffChange={(hours) => setTimeOffHours(iso, hours)}
+				isToday={iso === todayIso}
 			/>,
 		);
 	}
