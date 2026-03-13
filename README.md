@@ -26,7 +26,7 @@ Jira's built-in time reporting is limited. This tool gives you a **calendar-base
 - **User filtering** — View a specific team member or the full team at once
 - **CSV export** — Download individual or bulk timesheet reports (per-user and summary)
 - **Retroactive detection** — Spot worklogs that were logged for past dates after the fact
-- **Time-off tracking** — Record time-off hours alongside work entries
+- **Worklog management** — Create, edit, and delete worklogs directly from the calendar
 - **Offline mode** — Develop and test with mock data, no Jira credentials needed
 - **URL-synced filters** — Selected user and month are reflected in the URL for easy bookmarking
 - **CORS proxy included** — Local proxy with optional SOCKS5 support for corporate networks
@@ -102,7 +102,7 @@ This uses [MSW (Mock Service Worker)](https://mswjs.io/) to intercept API calls 
 | `npm run test` | Run tests in watch mode |
 | `npm run test:run` | Run tests once |
 | `npm run test:coverage` | Tests with coverage report |
-| `npm run test:e2e` | Run Playwright E2E tests |
+| `npm run test:e2e` | Playwright E2E tests (run `dev:offline` first) |
 | `npm run lint` | Check code with Biome |
 | `npm run format` | Auto-format with Biome |
 | `npm run cors-proxy` | Start CORS proxy (port 8081) |
@@ -119,8 +119,7 @@ This uses [MSW (Mock Service Worker)](https://mswjs.io/) to intercept API calls 
        ▼
   localStorage
   (credentials,
-   preferences,
-   time-off data)
+   preferences)
 ```
 
 1. **Settings** — You configure your Jira host, email, and API token. These are saved in `localStorage`.
@@ -138,7 +137,7 @@ This uses [MSW (Mock Service Worker)](https://mswjs.io/) to intercept API calls 
 │   │   ├── hooks/            # Data fetching, calculations, URL sync
 │   │   ├── pages/            # Home, Timesheet, Settings pages
 │   │   └── utils/            # CSV builder, date helpers, formatting
-│   ├── stores/               # Zustand state (config, timesheet, UI, time-off)
+│   ├── stores/               # Zustand state (config, timesheet, UI)
 │   └── mocks/                # MSW handlers + mock data for offline mode
 ├── types/                    # TypeScript interfaces (worklogs, issues)
 ├── cors-proxy.js             # Node.js CORS proxy with SOCKS5 support
@@ -166,17 +165,27 @@ This uses [MSW (Mock Service Worker)](https://mswjs.io/) to intercept API calls 
 - All Jira communication uses HTTPS
 - No analytics, tracking, or external services
 
+## Troubleshooting
+
+**CORS errors when connecting to Jira**
+Start the included CORS proxy (`npm run cors-proxy`) and set the proxy URL in Settings. This is required for most browser environments.
+
+**"401 Unauthorized" or "403 Forbidden"**
+Your API token may be expired or lack permissions. [Generate a new one](https://id.atlassian.com/manage-profile/security/api-tokens) and update it in Settings.
+
+**E2E tests fail locally**
+Playwright E2E tests require the offline dev server running in a separate terminal:
+```bash
+npm run dev:offline   # terminal 1
+npm run test:e2e      # terminal 2
+```
+
+**Worklog create/edit/delete buttons missing**
+Worklog permissions are auto-detected during "Test Connection". If your Jira admin has restricted these operations, the buttons are hidden. You can manually toggle them in Settings under "Worklog Permissions".
+
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
-
-```bash
-# Fork & clone, then:
-npm install
-npm run dev:offline    # develop without Jira
-npm run test           # run tests
-npm run lint           # check code quality
-```
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code conventions, and PR guidelines.
 
 ## Roadmap
 
