@@ -16,6 +16,9 @@ export const Navigation: React.FC = () => {
 					<span className={styles.brand}>Jira Timesheet</span>
 				</Link>
 				<div className={styles.navLinks}>
+					<Link to="/dashboard" className={getLinkStyle('/dashboard')}>
+						Dashboard
+					</Link>
 					<Link to="/timesheet" className={getLinkStyle('/timesheet')}>
 						Timesheet
 					</Link>

@@ -4,6 +4,12 @@ import * as styles from './Toast.module.css';
 
 type ToastType = 'success' | 'error' | 'info';
 
+const TYPE_STYLES: Record<ToastType, string> = {
+	success: styles.success,
+	error: styles.error,
+	info: styles.info,
+};
+
 interface ToastItem {
 	id: number;
 	message: string;
@@ -42,7 +48,7 @@ export const ToastContainer: React.FC = () => {
 	return createPortal(
 		<div className={styles.container}>
 			{toasts.map((t) => (
-				<div key={t.id} className={`${styles.toast} ${styles[t.type]}`}>
+				<div key={t.id} className={`${styles.toast} ${TYPE_STYLES[t.type]}`}>
 					<span className={styles.icon}>
 						{t.type === 'success' && '\u2713'}
 						{t.type === 'error' && '\u2717'}

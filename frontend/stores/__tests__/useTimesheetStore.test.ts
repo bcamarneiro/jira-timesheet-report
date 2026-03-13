@@ -75,6 +75,9 @@ describe('useTimesheetStore', () => {
 					canAddWorklogs: true,
 					canEditWorklogs: true,
 					canDeleteWorklogs: true,
+					gitlabToken: '',
+					gitlabHost: '',
+					rescueTimeApiKey: '',
 				},
 			});
 		});
@@ -291,6 +294,9 @@ describe('useTimesheetStore', () => {
 					canAddWorklogs: true,
 					canEditWorklogs: true,
 					canDeleteWorklogs: true,
+					gitlabToken: '',
+					gitlabHost: '',
+					rescueTimeApiKey: '',
 				});
 			});
 

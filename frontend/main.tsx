@@ -28,6 +28,9 @@ async function startApp() {
 				canAddWorklogs: true,
 				canEditWorklogs: true,
 				canDeleteWorklogs: true,
+				gitlabToken: '',
+				gitlabHost: '',
+				rescueTimeApiKey: '',
 			});
 			console.log('[OFFLINE MODE] Default configuration set');
 

@@ -17,15 +17,20 @@ export const HomePage: React.FC = () => {
 				</p>
 				<div className={styles.buttonContainer}>
 					<Link
-						to={isConfigured ? '/timesheet' : '/settings'}
+						to={isConfigured ? '/dashboard' : '/settings'}
 						className={styles.primaryButton}
 					>
-						{isConfigured ? 'View Timesheet' : 'Get Started'}
+						{isConfigured ? 'My Dashboard' : 'Get Started'}
 					</Link>
 					{isConfigured && (
-						<Link to="/settings" className={styles.secondaryButton}>
-							Settings
-						</Link>
+						<>
+							<Link to="/timesheet" className={styles.secondaryButton}>
+								Team Timesheet
+							</Link>
+							<Link to="/settings" className={styles.secondaryButton}>
+								Settings
+							</Link>
+						</>
 					)}
 				</div>
 			</div>

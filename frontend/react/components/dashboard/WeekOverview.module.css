@@ -1,0 +1,99 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: var(--space-2);
+}
+
+.day {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+	padding: var(--space-3);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--color-border);
+	background: var(--color-surface);
+}
+
+.dayName {
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	color: var(--color-text-secondary);
+	text-transform: uppercase;
+}
+
+.dayDate {
+	font-size: var(--text-lg);
+	font-weight: var(--font-semibold);
+	color: var(--color-text);
+}
+
+.barTrack {
+	width: 24px;
+	height: 48px;
+	background: var(--color-surface-sunken);
+	border-radius: var(--radius-sm);
+	position: relative;
+	overflow: hidden;
+}
+
+.barFill {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: var(--color-primary);
+	border-radius: var(--radius-sm);
+	transition: height var(--transition-normal);
+}
+
+.dayHours {
+	font-size: var(--text-xs);
+	font-weight: var(--font-medium);
+	color: var(--color-text-secondary);
+}
+
+/* Status variants */
+.complete {
+	border-color: var(--color-success);
+}
+
+.complete .barFill {
+	background: var(--color-success);
+}
+
+.partial {
+	border-color: var(--color-warning);
+}
+
+.partial .barFill {
+	background: var(--color-warning);
+}
+
+.empty {
+	border-color: var(--color-error);
+	opacity: 0.7;
+}
+
+.weekend {
+	opacity: 0.4;
+}
+
+.totals {
+	display: flex;
+	justify-content: center;
+	gap: var(--space-3);
+	font-size: var(--text-sm);
+	font-weight: var(--font-semibold);
+	color: var(--color-text);
+}
+
+.pct {
+	color: var(--color-text-secondary);
+}

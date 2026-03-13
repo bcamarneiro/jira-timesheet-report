@@ -22,6 +22,9 @@ export const SettingsForm: React.FC = () => {
 	const corsProxyId = useId();
 	const jqlFilterId = useId();
 	const allowedUsersId = useId();
+	const gitlabTokenId = useId();
+	const gitlabHostId = useId();
+	const rescueTimeKeyId = useId();
 
 	useEffect(() => {
 		loadFromConfig();
@@ -169,6 +172,50 @@ export const SettingsForm: React.FC = () => {
 					/>
 					Allow deleting worklogs
 				</label>
+			</fieldset>
+
+			<fieldset className={styles.section}>
+				<legend className={styles.sectionTitle}>
+					Integrations <span className={styles.optional}>optional</span>
+				</legend>
+				<small className={styles.permissionsHint}>
+					Power the Dashboard suggestions. Leave blank to disable.
+				</small>
+				<div className={styles.formGroup}>
+					<label htmlFor={gitlabHostId}>GitLab Host</label>
+					<input
+						type="text"
+						id={gitlabHostId}
+						name="gitlabHost"
+						value={formData.gitlabHost}
+						onChange={handleChange}
+						placeholder="gitlab.com"
+					/>
+				</div>
+				<div className={styles.formGroup}>
+					<label htmlFor={gitlabTokenId}>GitLab Token</label>
+					<input
+						type="password"
+						id={gitlabTokenId}
+						name="gitlabToken"
+						value={formData.gitlabToken}
+						onChange={handleChange}
+					/>
+					<small>
+						Personal access token with <code>read_user</code> scope
+					</small>
+				</div>
+				<div className={styles.formGroup}>
+					<label htmlFor={rescueTimeKeyId}>RescueTime API Key</label>
+					<input
+						type="password"
+						id={rescueTimeKeyId}
+						name="rescueTimeApiKey"
+						value={formData.rescueTimeApiKey}
+						onChange={handleChange}
+					/>
+					<small>Requires CORS proxy to be running</small>
+				</div>
 			</fieldset>
 
 			<div className={styles.buttonGroup}>

@@ -11,6 +11,9 @@ export interface Config {
 	canAddWorklogs: boolean;
 	canEditWorklogs: boolean;
 	canDeleteWorklogs: boolean;
+	gitlabToken: string;
+	gitlabHost: string;
+	rescueTimeApiKey: string;
 }
 
 interface ConfigState {
@@ -31,6 +34,9 @@ export const useConfigStore = create<ConfigState>()(
 				canAddWorklogs: true,
 				canEditWorklogs: true,
 				canDeleteWorklogs: true,
+				gitlabToken: '',
+				gitlabHost: '',
+				rescueTimeApiKey: '',
 			},
 			setConfig: (newConfig) => set({ config: newConfig }),
 		}),

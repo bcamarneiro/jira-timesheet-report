@@ -4,6 +4,7 @@ import * as styles from './App.module.css';
 
 import { Navigation } from './components/Navigation';
 import { ToastContainer } from './components/ui/Toast';
+import { DashboardPage } from './pages/DashboardPage';
 import { HomePage } from './pages/HomePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TimesheetPage } from './pages/TimesheetPage';
@@ -15,6 +16,7 @@ export const App: React.FC = () => {
 				<Navigation />
 				<Routes>
 					<Route path="/" element={<HomePage />} />
+					<Route path="/dashboard" element={<DashboardPage />} />
 					<Route path="/timesheet" element={<TimesheetPage />} />
 					<Route path="/settings" element={<SettingsPage />} />
 				</Routes>
