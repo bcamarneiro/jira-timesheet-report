@@ -76,6 +76,26 @@
 	border-radius: var(--radius-sm);
 }
 
+.activities {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-1);
+}
+
+.activityPill {
+	font-size: 11px;
+	color: var(--color-text-secondary);
+	background: var(--color-surface-sunken);
+	padding: 2px var(--space-2);
+	border-radius: var(--radius-sm);
+	white-space: nowrap;
+}
+
+.activityTime {
+	font-weight: var(--font-semibold);
+	color: var(--color-text-tertiary);
+}
+
 .suggestions {
 	display: flex;
 	flex-direction: column;

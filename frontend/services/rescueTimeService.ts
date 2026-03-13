@@ -1,20 +1,14 @@
-interface RescueTimeRow {
-	// [rank, seconds, n_people, productivity]
-	0: number;
-	1: number;
-	2: number;
-	3: number;
-}
-
-interface RescueTimeResponse {
-	rows: RescueTimeRow[];
-	row_headers: string[];
-}
+import type {
+	RescueTimeActivity,
+	RescueTimeDaySummary,
+} from '../../types/Suggestion';
 
 /**
- * Fetch daily productive hours from RescueTime for the given week.
- * Returns a map of date -> productive hours.
+ * Fetch daily activity breakdown from RescueTime for the given week.
+ * Returns a map of date -> RescueTimeDaySummary with productive hours
+ * and top activities per day.
  *
+ * Uses restrict_kind=activity to get per-app/site data grouped by day.
  * Requires the CORS proxy since RescueTime doesn't send CORS headers.
  */
 export async function fetchRescueTimeData(
@@ -23,14 +17,14 @@ export async function fetchRescueTimeData(
 	weekStart: string,
 	weekEnd: string,
 	signal?: AbortSignal,
-): Promise<Map<string, number>> {
+): Promise<Map<string, RescueTimeDaySummary>> {
 	if (!apiKey) return new Map();
 
 	const params = new URLSearchParams({
 		key: apiKey,
 		perspective: 'interval',
-		restrict_kind: 'productivity',
-		interval: 'day',
+		restrict_kind: 'activity',
+		resolution_time: 'day',
 		restrict_begin: weekStart,
 		restrict_end: weekEnd,
 		format: 'json',
@@ -47,31 +41,57 @@ export async function fetchRescueTimeData(
 		throw new Error(`RescueTime API error: ${res.status}`);
 	}
 
-	const data = (await res.json()) as RescueTimeResponse;
-	const dailyHours = new Map<string, number>();
+	const data = (await res.json()) as {
+		row_headers: string[];
+		rows: (string | number)[][];
+	};
 
-	// The response with interval=day groups data by date
-	// row_headers should include 'Date' as the first column
-	// rows format depends on the API response, but typically:
-	// [rank, time_spent_seconds, number_of_people, productivity]
-	// With restrict_kind=productivity, we get productivity scores
+	// Row format with restrict_kind=activity, perspective=interval:
+	// [Date, Time Spent (seconds), Number of People, Activity, Category, Productivity]
+	const dateIdx = data.row_headers.indexOf('Date');
+	const secondsIdx = data.row_headers.indexOf('Time Spent (seconds)');
+	const activityIdx = data.row_headers.indexOf('Activity');
+	const categoryIdx = data.row_headers.indexOf('Category');
+	const productivityIdx = data.row_headers.indexOf('Productivity');
 
-	// Parse date from row_headers
-	const dateIndex = data.row_headers?.indexOf('Date') ?? 0;
+	// Group activities by date
+	const byDay = new Map<string, RescueTimeActivity[]>();
 
 	for (const row of data.rows || []) {
-		// Productivity >= 1 means "productive" or "very productive"
-		const productivity = row[3] ?? 0;
-		if (productivity >= 1) {
-			const seconds = row[1] ?? 0;
-			const hours = seconds / 3600;
-			// Group by date - we'll accumulate productive hours
-			const dateStr = String(row[dateIndex] ?? '').slice(0, 10);
-			if (dateStr) {
-				dailyHours.set(dateStr, (dailyHours.get(dateStr) || 0) + hours);
-			}
-		}
+		const dateStr = String(row[dateIdx] ?? '').slice(0, 10);
+		if (!dateStr) continue;
+
+		const seconds = Number(row[secondsIdx] ?? 0);
+		const productivity = Number(row[productivityIdx] ?? 0);
+
+		const activity: RescueTimeActivity = {
+			name: String(row[activityIdx] ?? ''),
+			category: String(row[categoryIdx] ?? ''),
+			seconds,
+			productivity,
+		};
+
+		const existing = byDay.get(dateStr) || [];
+		existing.push(activity);
+		byDay.set(dateStr, existing);
 	}
 
-	return dailyHours;
+	// Build summaries: aggregate productive time, keep top activities
+	const result = new Map<string, RescueTimeDaySummary>();
+
+	for (const [date, activities] of byDay) {
+		const productiveSeconds = activities
+			.filter((a) => a.productivity >= 1)
+			.reduce((sum, a) => sum + a.seconds, 0);
+
+		// Top 5 productive activities by time spent
+		const topActivities = activities
+			.filter((a) => a.productivity >= 1)
+			.sort((a, b) => b.seconds - a.seconds)
+			.slice(0, 5);
+
+		result.set(date, { productiveSeconds, topActivities });
+	}
+
+	return result;
 }

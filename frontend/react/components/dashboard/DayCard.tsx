@@ -23,10 +23,17 @@ function formatDate(dateStr: string): string {
 	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function formatActivityTime(seconds: number): string {
+	const h = seconds / 3600;
+	if (h >= 1) return `${h.toFixed(1)}h`;
+	return `${Math.round(seconds / 60)}m`;
+}
+
 export const DayCard: React.FC<Props> = ({ day }) => {
 	const activeSuggestions = day.suggestions.filter((s) => !s.logged);
 	const loggedSuggestions = day.suggestions.filter((s) => s.logged);
 	const isToday = day.date === new Date().toISOString().slice(0, 10);
+	const rt = day.rescueTime;
 
 	return (
 		<div
@@ -45,16 +52,33 @@ export const DayCard: React.FC<Props> = ({ day }) => {
 					{day.gapSeconds > 0 && (
 						<span className={styles.gap}>-{formatHours(day.gapSeconds)}</span>
 					)}
-					{day.rescueTimeProductiveHours != null && (
+					{rt && (
 						<span
 							className={styles.rescueTime}
 							title="RescueTime productive hours"
 						>
-							RT: {day.rescueTimeProductiveHours.toFixed(1)}h
+							RT: {(rt.productiveSeconds / 3600).toFixed(1)}h
 						</span>
 					)}
 				</div>
 			</div>
+
+			{rt && rt.topActivities.length > 0 && (
+				<div className={styles.activities}>
+					{rt.topActivities.map((a) => (
+						<span
+							key={a.name}
+							className={styles.activityPill}
+							title={`${a.category} — ${formatActivityTime(a.seconds)}`}
+						>
+							{a.name}{' '}
+							<span className={styles.activityTime}>
+								{formatActivityTime(a.seconds)}
+							</span>
+						</span>
+					))}
+				</div>
+			)}
 
 			{activeSuggestions.length > 0 && (
 				<div className={styles.suggestions}>

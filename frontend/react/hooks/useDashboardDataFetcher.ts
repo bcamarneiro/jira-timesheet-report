@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { RescueTimeDaySummary } from '../../../types/Suggestion';
 import { fetchGitlabSuggestions } from '../../services/gitlabService';
 import { fetchJiraActivitySuggestions } from '../../services/jiraActivityService';
 import { fetchRescueTimeData } from '../../services/rescueTimeService';
@@ -151,10 +152,10 @@ export function useDashboardDataFetcher() {
 							)
 								.catch((e) => {
 									if (!signal.aborted) setError('rescuetime', e.message);
-									return new Map<string, number>();
+									return new Map<string, RescueTimeDaySummary>();
 								})
 								.finally(() => setLoading('rescuetime', false))
-						: Promise.resolve(new Map<string, number>()),
+						: Promise.resolve(new Map<string, RescueTimeDaySummary>()),
 				]);
 
 			if (signal.aborted) return;

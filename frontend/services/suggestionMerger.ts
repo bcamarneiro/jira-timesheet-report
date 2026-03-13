@@ -1,4 +1,8 @@
-import type { DaySummary, WorklogSuggestion } from '../../types/Suggestion';
+import type {
+	DaySummary,
+	RescueTimeDaySummary,
+	WorklogSuggestion,
+} from '../../types/Suggestion';
 
 const BASELINE_SECONDS = 8 * 3600;
 
@@ -22,15 +26,84 @@ function getWeekDates(weekStart: string): string[] {
 	return dates;
 }
 
+function formatTimeSpent(seconds: number): string {
+	const hours = seconds / 3600;
+	if (hours >= 1) {
+		const h = Math.floor(hours);
+		const remaining = seconds % 3600;
+		return remaining > 0 ? `${h}h ${Math.round(remaining / 60)}m` : `${h}h`;
+	}
+	return `${Math.round(seconds / 60)}m`;
+}
+
+/**
+ * Scale suggestion durations using RescueTime data.
+ *
+ * If RT says the user worked 6h productive but Jira/GitLab only account
+ * for 2h of traceable activity, we scale suggestion times up so the total
+ * better reflects actual work done.
+ */
+function scaleSuggestionsWithRT(
+	suggestions: WorklogSuggestion[],
+	rtData: RescueTimeDaySummary | undefined,
+	gapSeconds: number,
+): WorklogSuggestion[] {
+	if (!rtData || suggestions.length === 0 || gapSeconds <= 0)
+		return suggestions;
+
+	const rtProductiveSeconds = rtData.productiveSeconds;
+	if (rtProductiveSeconds <= 0) return suggestions;
+
+	const totalSuggested = suggestions.reduce(
+		(sum, s) => sum + s.suggestedSeconds,
+		0,
+	);
+	if (totalSuggested <= 0) return suggestions;
+
+	// RT productive time is our best estimate of actual work done.
+	// Scale suggestions so their total approaches RT productive time,
+	// but never exceed the gap.
+	const targetTotal = Math.min(rtProductiveSeconds, gapSeconds);
+	const scaleFactor = targetTotal / totalSuggested;
+
+	// Only scale up, not down. If suggestions already exceed RT, leave them.
+	if (scaleFactor <= 1) return suggestions;
+
+	// Cap scale factor at 3x to avoid absurd estimates
+	const cappedFactor = Math.min(scaleFactor, 3);
+
+	return suggestions.map((s) => {
+		const newSeconds = Math.round(s.suggestedSeconds * cappedFactor);
+		const cappedSeconds = Math.min(newSeconds, gapSeconds);
+		return {
+			...s,
+			suggestedSeconds: cappedSeconds,
+			suggestedTimeSpent: formatTimeSpent(cappedSeconds),
+			// Boost confidence when RT backs up the suggestion
+			confidence:
+				s.confidence === 'low' && cappedFactor > 1.5
+					? 'medium'
+					: s.confidence === 'medium' && cappedFactor > 2
+						? 'high'
+						: s.confidence,
+		};
+	});
+}
+
 /**
  * Merge suggestions from all sources, dedup, filter already-logged issues,
  * and produce a full week of DaySummary objects.
+ *
+ * Uses RescueTime data to:
+ * 1. Scale suggestion durations to match actual productive hours
+ * 2. Boost confidence when RT confirms heavy work
+ * 3. Show activity breakdown per day
  */
 export function mergeSuggestions(
 	weekStart: string,
 	jiraSuggestions: WorklogSuggestion[],
 	gitlabSuggestions: WorklogSuggestion[],
-	rescueTimeData: Map<string, number>,
+	rescueTimeData: Map<string, RescueTimeDaySummary>,
 	existingWorklogs: WorklogEntry[],
 ): DaySummary[] {
 	const dates = getWeekDates(weekStart);
@@ -77,31 +150,32 @@ export function mergeSuggestions(
 		const loggedSeconds = loggedByDay.get(date) || 0;
 		const targetSeconds = isWeekend ? 0 : BASELINE_SECONDS;
 		const gapSeconds = Math.max(0, targetSeconds - loggedSeconds);
+		const rtDay = rescueTimeData.get(date);
 
-		// Get suggestions for this day, cap total at gap
-		const daySuggestions: WorklogSuggestion[] = [];
-		let suggestedTotal = 0;
-
-		const sorted = [...deduped.values()]
+		// Get suggestions for this day
+		const daySuggestionsRaw = [...deduped.values()]
 			.filter((s) => s.date === date)
 			.sort(
 				(a, b) => confidenceOrder[b.confidence] - confidenceOrder[a.confidence],
 			);
 
-		for (const s of sorted) {
+		// Scale suggestions using RescueTime productive hours
+		const scaled = scaleSuggestionsWithRT(daySuggestionsRaw, rtDay, gapSeconds);
+
+		// Cap total at gap
+		const daySuggestions: WorklogSuggestion[] = [];
+		let suggestedTotal = 0;
+
+		for (const s of scaled) {
 			if (suggestedTotal >= gapSeconds) break;
 			const cappedSeconds = Math.min(
 				s.suggestedSeconds,
 				gapSeconds - suggestedTotal,
 			);
-			const hours = cappedSeconds / 3600;
 			daySuggestions.push({
 				...s,
 				suggestedSeconds: cappedSeconds,
-				suggestedTimeSpent:
-					hours >= 1
-						? `${Math.floor(hours)}h${cappedSeconds % 3600 > 0 ? ` ${Math.round((cappedSeconds % 3600) / 60)}m` : ''}`
-						: `${Math.round(cappedSeconds / 60)}m`,
+				suggestedTimeSpent: formatTimeSpent(cappedSeconds),
 			});
 			suggestedTotal += cappedSeconds;
 		}
@@ -114,7 +188,7 @@ export function mergeSuggestions(
 			targetSeconds,
 			gapSeconds,
 			suggestions: daySuggestions,
-			rescueTimeProductiveHours: rescueTimeData.get(date),
+			rescueTime: rtDay,
 		};
 	});
 }

@@ -11,6 +11,18 @@ export interface WorklogSuggestion {
 	logged: boolean;
 }
 
+export interface RescueTimeActivity {
+	name: string;
+	category: string;
+	seconds: number;
+	productivity: number;
+}
+
+export interface RescueTimeDaySummary {
+	productiveSeconds: number;
+	topActivities: RescueTimeActivity[];
+}
+
 export interface DaySummary {
 	date: string;
 	dayOfWeek: number;
@@ -19,7 +31,7 @@ export interface DaySummary {
 	targetSeconds: number;
 	gapSeconds: number;
 	suggestions: WorklogSuggestion[];
-	rescueTimeProductiveHours?: number;
+	rescueTime?: RescueTimeDaySummary;
 }
 
 export interface WeekRange {
