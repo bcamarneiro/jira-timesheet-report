@@ -36,7 +36,8 @@ export async function fetchGitlabSuggestions(
 	if (!gitlabToken || !gitlabHost) return [];
 
 	const suggestions: WorklogSuggestion[] = [];
-	const gitlabOrigin = `https://${gitlabHost.replace(/\/$/, '')}`;
+	const cleanHost = gitlabHost.replace(/^https?:\/\//, '').replace(/\/$/, '');
+	const gitlabOrigin = `https://${cleanHost}`;
 	const baseUrl = corsProxy
 		? `${corsProxy.replace(/\/$/, '')}/${gitlabOrigin}`
 		: gitlabOrigin;

@@ -189,8 +189,9 @@ export const SettingsForm: React.FC = () => {
 						name="gitlabHost"
 						value={formData.gitlabHost}
 						onChange={handleChange}
-						placeholder="gitlab.com"
+						placeholder="gitlab.com or vcs.company.net"
 					/>
+					<small>Hostname only, without https://</small>
 				</div>
 				<div className={styles.formGroup}>
 					<label htmlFor={gitlabTokenId}>GitLab Token</label>
