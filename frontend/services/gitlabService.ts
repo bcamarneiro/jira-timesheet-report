@@ -28,6 +28,7 @@ function dateOnly(iso: string): string {
 export async function fetchGitlabSuggestions(
 	gitlabToken: string,
 	gitlabHost: string,
+	corsProxy: string,
 	weekStart: string,
 	weekEnd: string,
 	signal?: AbortSignal,
@@ -35,7 +36,10 @@ export async function fetchGitlabSuggestions(
 	if (!gitlabToken || !gitlabHost) return [];
 
 	const suggestions: WorklogSuggestion[] = [];
-	const baseUrl = `https://${gitlabHost.replace(/\/$/, '')}`;
+	const gitlabOrigin = `https://${gitlabHost.replace(/\/$/, '')}`;
+	const baseUrl = corsProxy
+		? `${corsProxy.replace(/\/$/, '')}/${gitlabOrigin}`
+		: gitlabOrigin;
 
 	// Fetch up to 3 pages of events (60 events)
 	const allEvents: GitLabEvent[] = [];

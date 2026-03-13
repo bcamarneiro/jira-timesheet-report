@@ -42,6 +42,16 @@ export const useConfigStore = create<ConfigState>()(
 		}),
 		{
 			name: 'jira-timesheet-config',
+			merge: (persisted, current) => {
+				const persistedState = persisted as Partial<ConfigState> | undefined;
+				return {
+					...current,
+					config: {
+						...(current as ConfigState).config,
+						...persistedState?.config,
+					},
+				};
+			},
 		},
 	),
 );

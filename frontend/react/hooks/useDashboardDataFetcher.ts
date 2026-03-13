@@ -129,6 +129,7 @@ export function useDashboardDataFetcher() {
 						? fetchGitlabSuggestions(
 								config.gitlabToken,
 								config.gitlabHost,
+								config.corsProxy,
 								weekStart,
 								weekEnd,
 								signal,
