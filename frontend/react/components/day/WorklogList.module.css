@@ -1,0 +1,7 @@
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: var(--text-xs);
+	line-height: 1.3;
+}

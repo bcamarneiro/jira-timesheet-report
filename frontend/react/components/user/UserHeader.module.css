@@ -1,42 +1,39 @@
 .container {
-	background-color: #f8f9fa;
-	border-radius: 8px;
-	padding: 1.5rem;
-	margin-bottom: 1.5rem;
-	border: 1px solid #e9ecef;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--space-4) var(--space-5);
+	margin-bottom: var(--space-4);
+	background-color: var(--color-surface);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--color-border);
 }
 
 .userTitle {
-	font-size: 1.75rem;
-	margin: 0 0 1rem 0;
-	color: #333;
+	font-size: var(--text-xl);
+	margin: 0;
+	color: var(--color-text);
+	font-weight: var(--font-semibold);
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+}
+
+.avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: var(--radius-full);
+	background-color: var(--color-primary);
+	color: var(--color-text-inverse);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--text-sm);
+	font-weight: var(--font-bold);
+	flex-shrink: 0;
 }
 
 .actions {
-	margin-bottom: 1rem;
-}
-
-.stats {
 	display: flex;
-	gap: 2rem;
-	flex-wrap: wrap;
-}
-
-.stat {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-}
-
-.statLabel {
-	font-size: 0.875rem;
-	color: #666;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.statValue {
-	font-size: 1.25rem;
-	font-weight: bold;
-	color: #333;
+	gap: var(--space-2);
 }

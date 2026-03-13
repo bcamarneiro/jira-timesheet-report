@@ -1,9 +1,6 @@
 import type React from 'react';
 import { useMemo } from 'react';
-import type {
-	EnrichedJiraWorklog,
-	GroupedWorklogs,
-} from '../../stores/useTimesheetStore';
+import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { isDateInMonth } from '../utils/date';
 import * as styles from './OverviewTable.module.css';
 
@@ -11,12 +8,14 @@ type Props = {
 	entries: [string, Record<string, EnrichedJiraWorklog[]>][];
 	year: number;
 	monthZeroIndexed: number;
+	onUserClick?: (user: string) => void;
 };
 
 export const OverviewTable: React.FC<Props> = ({
 	entries,
 	year,
 	monthZeroIndexed,
+	onUserClick,
 }) => {
 	const rows = useMemo(() => {
 		return entries.map(([user, days]) => {
@@ -47,32 +46,35 @@ export const OverviewTable: React.FC<Props> = ({
 
 	return (
 		<div className={styles.container}>
-			<h2 className={styles.heading}>Overview</h2>
 			<table className={styles.table}>
 				<thead>
 					<tr>
 						<th className={styles.userCell}>User</th>
-						<th className={styles.hoursCell}>Days Worked</th>
+						<th className={styles.hoursCell}>Days</th>
 						<th className={styles.hoursCell}>Entries</th>
-						<th className={styles.hoursCell}>Total Hours</th>
+						<th className={styles.hoursCell}>Hours</th>
 					</tr>
 				</thead>
 				<tbody>
 					{rows.map((row) => (
-						<tr key={row.user}>
+						<tr
+							key={row.user}
+							className={onUserClick ? styles.clickableRow : undefined}
+							onClick={() => onUserClick?.(row.user)}
+						>
 							<td>{row.user}</td>
 							<td className={styles.hoursCell}>{row.daysWorked.toFixed(1)}</td>
 							<td className={styles.hoursCell}>{row.worklogCount}</td>
-							<td className={styles.hoursCell}>{row.totalHours.toFixed(2)}h</td>
+							<td className={styles.hoursCell}>{row.totalHours.toFixed(1)}h</td>
 						</tr>
 					))}
 					{rows.length > 1 && (
 						<tr className={styles.totalRow}>
-							<td>Total ({rows.length} users)</td>
+							<td>Total ({rows.length})</td>
 							<td className={styles.hoursCell}>{grandTotalDays.toFixed(1)}</td>
 							<td className={styles.hoursCell}>{grandTotalWorklogs}</td>
 							<td className={styles.hoursCell}>
-								{grandTotalHours.toFixed(2)}h
+								{grandTotalHours.toFixed(1)}h
 							</td>
 						</tr>
 					)}

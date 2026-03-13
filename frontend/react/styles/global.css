@@ -1,0 +1,53 @@
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	font-size: 16px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	font-family: var(--font-sans);
+	font-size: var(--text-base);
+	line-height: var(--leading-normal);
+	color: var(--color-text);
+	background-color: var(--color-bg);
+}
+
+a {
+	color: var(--color-text-link);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+::selection {
+	background-color: var(--color-primary-light);
+	color: var(--color-primary);
+}
+
+/* Toast container */
+.toast-container {
+	position: fixed;
+	bottom: var(--space-6);
+	right: var(--space-6);
+	z-index: var(--z-toast);
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	pointer-events: none;
+}
+
+.toast-container > * {
+	pointer-events: auto;
+}

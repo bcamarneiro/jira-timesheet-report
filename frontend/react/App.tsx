@@ -3,6 +3,7 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import * as styles from './App.module.css';
 
 import { Navigation } from './components/Navigation';
+import { ToastContainer } from './components/ui/Toast';
 import { HomePage } from './pages/HomePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TimesheetPage } from './pages/TimesheetPage';
@@ -17,6 +18,7 @@ export const App: React.FC = () => {
 					<Route path="/timesheet" element={<TimesheetPage />} />
 					<Route path="/settings" element={<SettingsPage />} />
 				</Routes>
+				<ToastContainer />
 			</div>
 		</Router>
 	);

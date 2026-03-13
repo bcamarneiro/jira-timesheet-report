@@ -2,42 +2,50 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 8px;
+	gap: var(--space-2);
 }
 
 .info {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: var(--space-1);
 	flex: 1;
+	min-width: 0;
 }
 
 .hours {
-	color: #444;
+	color: var(--color-text);
 	white-space: nowrap;
+	font-weight: var(--font-semibold);
 }
 
 .issueLink {
-	color: #0b5cff;
+	color: var(--color-text-link);
 	text-decoration: none;
+	font-weight: var(--font-medium);
+}
+
+.issueLink:hover {
+	text-decoration: underline;
 }
 
 .retroactiveIcon {
-	color: #ff6b35;
-	font-size: 14px;
-	margin-left: 2px;
+	color: var(--color-warning);
+	font-size: 12px;
+	margin-left: 1px;
 }
 
 .tooltipIcon {
 	cursor: help;
-	margin-left: 4px;
+	margin-left: 2px;
+	opacity: 0.5;
 }
 
 .actions {
 	display: flex;
-	gap: 4px;
+	gap: 2px;
 	opacity: 0;
-	transition: opacity 0.2s;
+	transition: opacity var(--transition-fast);
 }
 
 .container:hover .actions {
@@ -49,11 +57,11 @@
 	border: none;
 	cursor: pointer;
 	padding: 2px 4px;
-	font-size: 14px;
-	border-radius: 3px;
-	transition: background-color 0.2s;
+	font-size: 12px;
+	border-radius: var(--radius-sm);
+	transition: background-color var(--transition-fast);
 }
 
 .actionButton:hover {
-	background-color: #f0f0f0;
+	background-color: var(--color-surface-hover);
 }

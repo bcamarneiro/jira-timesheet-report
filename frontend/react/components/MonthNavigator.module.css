@@ -1,19 +1,38 @@
 .container {
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	gap: 1.5rem;
-	margin: 2rem 0;
-	padding: 1rem;
-	background-color: #f8f9fa;
-	border-radius: 8px;
-	border: 1px solid #e9ecef;
+	gap: var(--space-1);
+	user-select: none;
 }
 
 .label {
-	font-weight: 700;
-	font-size: 1.5rem;
-	color: #333;
-	min-width: 200px;
+	font-weight: var(--font-semibold);
+	font-size: var(--text-sm);
+	color: var(--color-text);
+	min-width: 140px;
 	text-align: center;
+	padding: 0 var(--space-2);
+}
+
+.navButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background-color: var(--color-surface);
+	color: var(--color-text-secondary);
+	cursor: pointer;
+	font-size: var(--text-lg);
+	line-height: 1;
+	padding: 0;
+	transition: all var(--transition-fast);
+}
+
+.navButton:hover {
+	background-color: var(--color-surface-hover);
+	border-color: var(--color-border-strong);
+	color: var(--color-text);
 }

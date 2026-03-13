@@ -1,35 +1,35 @@
 .container {
 	position: relative;
-	margin-bottom: 2rem;
+	margin-bottom: var(--space-8);
 }
 
 .weekdayHeader {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
-	gap: 8px;
-	margin-bottom: 8px;
+	gap: 6px;
+	margin-bottom: 6px;
 }
 
 .weekdayLabel {
 	text-align: center;
-	font-weight: 700;
-	font-size: 0.875rem;
-	padding: 0.5rem;
-	color: #555;
+	font-weight: var(--font-semibold);
+	font-size: var(--text-xs);
+	padding: var(--space-2);
+	color: var(--color-text-tertiary);
 	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	letter-spacing: 0.05em;
 }
 
 .grid {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
-	gap: 8px;
+	gap: 6px;
 }
 
 .emptyCell {
-	border: 1px solid #e9ecef;
-	border-radius: 8px;
+	border: 1px dashed var(--color-border);
+	border-radius: var(--radius-lg);
 	min-height: 100px;
-	padding: 0.5rem;
-	background: #f8f9fa;
+	padding: var(--space-2);
+	background: var(--color-surface-sunken);
 }

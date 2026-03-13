@@ -12,21 +12,19 @@ export const UserSelector: React.FC<Props> = ({ users, value, onChange }) => {
 	const id = useId();
 
 	return (
-		<div className={styles.container}>
-			<label htmlFor={id}>Filter by User:</label>
-			<select
-				id={id}
-				value={value}
-				onChange={(e) => onChange(e.target.value)}
-				className={styles.select}
-			>
-				<option value="">All Users ({users.length})</option>
-				{users.map((u) => (
-					<option key={u} value={u}>
-						{u}
-					</option>
-				))}
-			</select>
-		</div>
+		<select
+			id={id}
+			value={value}
+			onChange={(e) => onChange(e.target.value)}
+			className={styles.select}
+			aria-label="Filter by user"
+		>
+			<option value="">All Users ({users.length})</option>
+			{users.map((u) => (
+				<option key={u} value={u}>
+					{u}
+				</option>
+			))}
+		</select>
 	);
 };

@@ -1,5 +1,19 @@
 .container {
-	padding: 2rem;
-	max-width: 800px;
+	padding: var(--space-6);
+	max-width: var(--max-width-narrow);
 	margin: 0 auto;
+}
+
+.container h1 {
+	font-size: var(--text-2xl);
+	font-weight: var(--font-bold);
+	color: var(--color-text);
+	letter-spacing: -0.02em;
+	margin-bottom: var(--space-2);
+}
+
+.container p {
+	color: var(--color-text-secondary);
+	font-size: var(--text-sm);
+	margin-bottom: var(--space-8);
 }

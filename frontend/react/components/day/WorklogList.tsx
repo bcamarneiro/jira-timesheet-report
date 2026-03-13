@@ -1,6 +1,7 @@
 import type React from 'react';
 import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
 import { WorklogItem } from './WorklogItem';
+import * as styles from './WorklogList.module.css';
 
 type Props = {
 	worklogs: EnrichedJiraWorklog[];
@@ -14,15 +15,7 @@ export const WorklogList: React.FC<Props> = ({
 	onDelete,
 }) => {
 	return (
-		<div
-			style={{
-				display: 'flex',
-				flexDirection: 'column',
-				gap: 4,
-				fontSize: 12,
-				lineHeight: 1.3,
-			}}
-		>
+		<div className={styles.list}>
 			{worklogs.map((wl) => (
 				<WorklogItem
 					key={wl.id}

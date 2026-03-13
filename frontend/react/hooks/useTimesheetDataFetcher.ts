@@ -1,13 +1,16 @@
 import type { Version2Models } from 'jira.js';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useJiraClient } from './useJiraClient';
 
+// Simple in-memory cache keyed by year-month-jqlFilter
+const cache = new Map<string, EnrichedJiraWorklog[]>();
+
 /**
  * Hook that fetches timesheet data and populates the Zustand store.
- * This replaces the old useTimesheetData hook which returned local state.
+ * Includes AbortController for request cancellation and month-level caching.
  */
 export function useTimesheetDataFetcher() {
 	const jiraClient = useJiraClient();
@@ -17,11 +20,28 @@ export function useTimesheetDataFetcher() {
 	const setLoading = useTimesheetStore((state) => state.setLoading);
 	const setError = useTimesheetStore((state) => state.setError);
 	const jqlFilter = useConfigStore((state) => state.config.jqlFilter);
+	const abortControllerRef = useRef<AbortController | null>(null);
 
 	useEffect(() => {
+		// Abort any in-flight request
+		if (abortControllerRef.current) {
+			abortControllerRef.current.abort();
+		}
+
+		const abortController = new AbortController();
+		abortControllerRef.current = abortController;
+
 		const fetchTimesheetData = async () => {
 			if (!jiraClient) {
 				setError('Jira client is not configured. Please check your settings.');
+				return;
+			}
+
+			// Check cache
+			const cacheKey = `${currentYear}-${currentMonth}-${jqlFilter || ''}`;
+			const cached = cache.get(cacheKey);
+			if (cached) {
+				setData(cached);
 				return;
 			}
 
@@ -37,11 +57,7 @@ export function useTimesheetDataFetcher() {
 				const startDate = new Date(currentYear, currentMonth, 1);
 				const endDate = new Date(currentYear, currentMonth + 1, 0);
 
-				// Get timestamps in milliseconds for the worklog API
-				// startedAfter: beginning of first day (00:00:00)
 				const startMillis = startDate.getTime();
-				// startedBefore: END of last day (set to 23:59:59.999)
-				// This ensures worklogs on the last day of the month are included
 				const endMillis = new Date(
 					endDate.getFullYear(),
 					endDate.getMonth(),
@@ -58,12 +74,10 @@ export function useTimesheetDataFetcher() {
 					.toISOString()
 					.substring(0, 10)}"`;
 
-				// Apply additional JQL filter if configured
 				if (jqlFilter?.trim()) {
 					jql += ` AND ${jqlFilter.trim()}`;
 				}
 
-				// Step 1: Search for issues that have worklogs in the date range
 				console.log(`[Fetch] Searching issues${viaProxy} | JQL: ${jql}`);
 				const searchStart = performance.now();
 
@@ -74,11 +88,12 @@ export function useTimesheetDataFetcher() {
 						maxResults: 1000,
 					});
 
+				if (abortController.signal.aborted) return;
+
 				console.log(
 					`[Fetch] Search returned ${searchResult.total ?? 0} issues in ${Math.round(performance.now() - searchStart)}ms`,
 				);
 
-				// Step 2: Fetch worklogs for each issue IN PARALLEL
 				let allWorklogs: EnrichedJiraWorklog[] = [];
 
 				if (searchResult.total && searchResult.total > 0) {
@@ -89,14 +104,12 @@ export function useTimesheetDataFetcher() {
 						`[Fetch] Fetching worklogs for ${issues.length} issues${viaProxy}`,
 					);
 
-					// Create array of promises to fetch worklogs in parallel
 					const worklogPromises = issues
 						.filter(
 							(issue): issue is typeof issue & { key: string } => !!issue.key,
 						)
 						.map(async (issue) => {
 							try {
-								// Fetch worklogs for this issue with date filtering
 								const worklogResponse =
 									await jiraClient.issueWorklogs.getIssueWorklog({
 										issueIdOrKey: issue.key,
@@ -108,7 +121,6 @@ export function useTimesheetDataFetcher() {
 									worklogResponse.worklogs &&
 									worklogResponse.worklogs.length > 0
 								) {
-									// Add issue reference to each worklog
 									return worklogResponse.worklogs.map(
 										(wl: Version2Models.Worklog): EnrichedJiraWorklog => ({
 											...wl,
@@ -122,15 +134,14 @@ export function useTimesheetDataFetcher() {
 									`[Fetch] Failed to fetch worklogs for ${issue.key}:`,
 									worklogError,
 								);
-								// Return empty array on error, continue with other issues
 								return [];
 							}
 						});
 
-					// Wait for all worklog fetches to complete
 					const worklogResults = await Promise.all(worklogPromises);
 
-					// Flatten the array of arrays into a single array
+					if (abortController.signal.aborted) return;
+
 					allWorklogs = worklogResults.flat();
 
 					const worklogDuration = Math.round(performance.now() - worklogStart);
@@ -140,8 +151,11 @@ export function useTimesheetDataFetcher() {
 					);
 				}
 
+				// Store in cache
+				cache.set(cacheKey, allWorklogs);
 				setData(allWorklogs);
 			} catch (e) {
+				if (abortController.signal.aborted) return;
 				console.error(`[Fetch] Error fetching data${viaProxy}:`, e);
 				if (e instanceof Error) {
 					setError(`Failed to fetch data from Jira: ${e.message}`);
@@ -149,11 +163,17 @@ export function useTimesheetDataFetcher() {
 					setError('An unknown error occurred.');
 				}
 			} finally {
-				setLoading(false);
+				if (!abortController.signal.aborted) {
+					setLoading(false);
+				}
 			}
 		};
 
 		fetchTimesheetData();
+
+		return () => {
+			abortController.abort();
+		};
 	}, [
 		currentYear,
 		currentMonth,
@@ -163,4 +183,9 @@ export function useTimesheetDataFetcher() {
 		setLoading,
 		setError,
 	]);
+}
+
+/** Clear the month cache (call after creating/updating/deleting worklogs) */
+export function invalidateTimesheetCache() {
+	cache.clear();
 }

@@ -1,45 +1,47 @@
 .form {
 	display: flex;
 	flex-direction: column;
-	gap: 1.25rem;
+	gap: var(--space-5);
 }
 
 .formGroup {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
+	gap: var(--space-2);
 }
 
 .formGroup label {
-	font-weight: 600;
-	color: #333;
-	font-size: 0.875rem;
+	font-weight: var(--font-semibold);
+	color: var(--color-text);
+	font-size: var(--text-sm);
 }
 
 .required {
-	color: #c53030;
+	color: var(--color-error);
 }
 
 .input,
 .textarea {
-	padding: 0.75rem;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-	font-size: 1rem;
-	font-family: inherit;
-	transition: border-color 0.2s;
+	padding: var(--space-3);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	font-size: var(--text-base);
+	font-family: var(--font-sans);
+	color: var(--color-text);
+	background-color: var(--color-surface);
+	transition: all var(--transition-fast);
 }
 
 .input:focus,
 .textarea:focus {
 	outline: none;
-	border-color: #007bff;
-	box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 3px var(--color-primary-focus);
 }
 
 .input:disabled,
 .textarea:disabled {
-	background-color: #f5f5f5;
+	background-color: var(--color-surface-sunken);
 	cursor: not-allowed;
 	opacity: 0.6;
 }
@@ -50,22 +52,22 @@
 }
 
 .hint {
-	color: #666;
-	font-size: 0.75rem;
+	color: var(--color-text-tertiary);
+	font-size: var(--text-xs);
 }
 
 .error {
-	background-color: #fff5f5;
-	color: #c53030;
-	border: 1px solid #fc8181;
-	border-radius: 4px;
-	padding: 0.75rem;
-	font-size: 0.875rem;
+	background-color: var(--color-error-bg);
+	color: var(--color-error);
+	border: 1px solid var(--color-error-border);
+	border-radius: var(--radius-md);
+	padding: var(--space-3);
+	font-size: var(--text-sm);
 }
 
 .actions {
 	display: flex;
-	gap: 0.75rem;
+	gap: var(--space-3);
 	justify-content: flex-end;
-	margin-top: 0.5rem;
+	margin-top: var(--space-2);
 }
