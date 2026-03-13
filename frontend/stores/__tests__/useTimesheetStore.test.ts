@@ -1,10 +1,10 @@
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-	useTimesheetStore,
-	type EnrichedJiraWorklog,
-} from '../useTimesheetStore';
 import { useConfigStore } from '../useConfigStore';
+import {
+	type EnrichedJiraWorklog,
+	useTimesheetStore,
+} from '../useTimesheetStore';
 
 const createMockWorklog = (
 	displayName: string,
@@ -72,6 +72,9 @@ describe('useTimesheetStore', () => {
 					corsProxy: '',
 					jqlFilter: '',
 					allowedUsers: '',
+					canAddWorklogs: true,
+					canEditWorklogs: true,
+					canDeleteWorklogs: true,
 				},
 			});
 		});
@@ -285,6 +288,9 @@ describe('useTimesheetStore', () => {
 					corsProxy: '',
 					jqlFilter: '',
 					allowedUsers: 'alex.thompson@example.com',
+					canAddWorklogs: true,
+					canEditWorklogs: true,
+					canDeleteWorklogs: true,
 				});
 			});
 

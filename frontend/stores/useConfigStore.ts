@@ -8,6 +8,9 @@ export interface Config {
 	corsProxy: string;
 	jqlFilter: string;
 	allowedUsers: string;
+	canAddWorklogs: boolean;
+	canEditWorklogs: boolean;
+	canDeleteWorklogs: boolean;
 }
 
 interface ConfigState {
@@ -25,6 +28,9 @@ export const useConfigStore = create<ConfigState>()(
 				corsProxy: '',
 				jqlFilter: '',
 				allowedUsers: '',
+				canAddWorklogs: true,
+				canEditWorklogs: true,
+				canDeleteWorklogs: true,
 			},
 			setConfig: (newConfig) => set({ config: newConfig }),
 		}),

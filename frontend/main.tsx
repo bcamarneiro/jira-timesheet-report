@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+import './react/styles/global.css';
 import { App } from './react/App';
 import { useConfigStore } from './stores/useConfigStore';
 
@@ -22,8 +23,11 @@ async function startApp() {
 				email: 'dev@example.com',
 				apiToken: 'mock-token',
 				corsProxy: '',
-				allowedUsers: '', // No filtering in offline mode
+				allowedUsers: '',
 				jqlFilter: '',
+				canAddWorklogs: true,
+				canEditWorklogs: true,
+				canDeleteWorklogs: true,
 			});
 			console.log('[OFFLINE MODE] Default configuration set');
 

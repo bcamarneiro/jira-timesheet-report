@@ -16,7 +16,7 @@ interface SettingsFormState {
 	} | null;
 
 	// Actions
-	updateFormField: (field: keyof Config, value: string) => void;
+	updateFormField: <K extends keyof Config>(field: K, value: Config[K]) => void;
 	loadFromConfig: () => void;
 	saveSettings: () => void;
 	resetForm: () => void;
@@ -30,7 +30,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 	isTesting: false,
 	testResult: null,
 
-	updateFormField: (field: keyof Config, value: string) => {
+	updateFormField: <K extends keyof Config>(field: K, value: Config[K]) => {
 		set((state) => ({
 			formData: {
 				...state.formData,
@@ -89,6 +89,45 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			const duration = Math.round(performance.now() - startTime);
 
 			console.log(`[Test] Success in ${duration}ms: ${myself.displayName}`);
+
+			// Try to auto-detect worklog permissions
+			try {
+				const perms = await client.permissions.getMyPermissions({
+					permissions:
+						'WORK_ON_ISSUES,EDIT_ALL_WORKLOGS,EDIT_OWN_WORKLOGS,DELETE_ALL_WORKLOGS,DELETE_OWN_WORKLOGS',
+				});
+				const p = (
+					perms as { permissions?: Record<string, { havePermission: boolean }> }
+				).permissions;
+				if (p) {
+					const canAdd = p.WORK_ON_ISSUES?.havePermission ?? true;
+					const canEdit =
+						(p.EDIT_ALL_WORKLOGS?.havePermission ||
+							p.EDIT_OWN_WORKLOGS?.havePermission) ??
+						true;
+					const canDelete =
+						(p.DELETE_ALL_WORKLOGS?.havePermission ||
+							p.DELETE_OWN_WORKLOGS?.havePermission) ??
+						true;
+					console.log(
+						`[Test] Permissions detected — add: ${canAdd}, edit: ${canEdit}, delete: ${canDelete}`,
+					);
+					set((state) => ({
+						formData: {
+							...state.formData,
+							canAddWorklogs: canAdd,
+							canEditWorklogs: canEdit,
+							canDeleteWorklogs: canDelete,
+						},
+					}));
+				}
+			} catch (permError) {
+				console.warn(
+					'[Test] Could not detect worklog permissions, using defaults',
+					permError,
+				);
+			}
+
 			set({
 				testResult: {
 					success: true,

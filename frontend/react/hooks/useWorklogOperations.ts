@@ -2,6 +2,20 @@ import { useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
+import { invalidateTimesheetCache } from './useTimesheetDataFetcher';
+
+/** Format a date string to Jira's expected format: 2026-03-02T09:00:00.000+0000 */
+function toJiraDatetime(dateStr: string): string {
+	const d = new Date(dateStr);
+	const offset = -d.getTimezoneOffset();
+	const sign = offset >= 0 ? '+' : '-';
+	const absOffset = Math.abs(offset);
+	const hh = String(Math.floor(absOffset / 60)).padStart(2, '0');
+	const mm = String(absOffset % 60).padStart(2, '0');
+
+	const pad = (n: number, len = 2) => String(n).padStart(len, '0');
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}${sign}${hh}${mm}`;
+}
 
 export function useWorklogOperations() {
 	const config = useConfigStore((state) => state.config);
@@ -38,6 +52,8 @@ export function useWorklogOperations() {
 			throw new Error(`Jira API error: ${response.status} - ${text}`);
 		}
 
+		// 204 No Content (e.g. DELETE) returns no body
+		if (response.status === 204) return null;
 		return response.json();
 	};
 
@@ -74,7 +90,7 @@ export function useWorklogOperations() {
 				body: JSON.stringify({
 					timeSpent: params.timeSpent,
 					comment: params.comment,
-					started: new Date(params.started).toISOString(),
+					started: toJiraDatetime(params.started),
 				}),
 			});
 
@@ -85,6 +101,7 @@ export function useWorklogOperations() {
 			};
 
 			const updatedData = [...(data || []), enrichedWorklog];
+			invalidateTimesheetCache();
 			setData(updatedData);
 
 			return enrichedWorklog;
@@ -123,7 +140,7 @@ export function useWorklogOperations() {
 				body: JSON.stringify({
 					timeSpent: params.timeSpent,
 					comment: params.comment,
-					started: new Date(params.started).toISOString(),
+					started: toJiraDatetime(params.started),
 				}),
 			});
 
@@ -138,6 +155,7 @@ export function useWorklogOperations() {
 				return wl;
 			});
 
+			invalidateTimesheetCache();
 			setData(updatedData || null);
 
 			return updatedWorklog;
@@ -169,6 +187,7 @@ export function useWorklogOperations() {
 
 			// Remove from the store
 			const updatedData = data?.filter((wl) => wl.id !== worklogId);
+			invalidateTimesheetCache();
 			setData(updatedData || null);
 		} catch (err) {
 			const errorMessage =
