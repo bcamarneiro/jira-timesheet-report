@@ -52,6 +52,8 @@ export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
 	const [isEditOpen, setIsEditOpen] = useState(false);
 	const [isMappingOpen, setIsMappingOpen] = useState(false);
 	const [mappingIssueKey, setMappingIssueKey] = useState('');
+	const [isReasonExpanded, setIsReasonExpanded] = useState(false);
+	const isLongReason = suggestion.reason.length > 80;
 
 	const isUnmapped =
 		suggestion.source === 'calendar' &&
@@ -144,7 +146,15 @@ export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
 						<span className={styles.unmappedLabel}>Unmapped</span>
 					</div>
 				</div>
-				<div className={styles.reason}>{suggestion.reason}</div>
+								<div
+					className={`${styles.reason} ${isLongReason && !isReasonExpanded ? styles.reasonTruncated : ''}`}
+					onClick={isLongReason ? () => setIsReasonExpanded(!isReasonExpanded) : undefined}
+					role={isLongReason ? 'button' : undefined}
+					tabIndex={isLongReason ? 0 : undefined}
+					onKeyDown={isLongReason ? (e) => { if (e.key === 'Enter' || e.key === ' ') setIsReasonExpanded(!isReasonExpanded); } : undefined}
+				>
+					{suggestion.reason}
+				</div>
 				{isMappingOpen ? (
 					<div className={styles.mappingRow}>
 						<input
@@ -229,7 +239,15 @@ export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
 						</span>
 					</div>
 				</div>
-				<div className={styles.reason}>{suggestion.reason}</div>
+								<div
+					className={`${styles.reason} ${isLongReason && !isReasonExpanded ? styles.reasonTruncated : ''}`}
+					onClick={isLongReason ? () => setIsReasonExpanded(!isReasonExpanded) : undefined}
+					role={isLongReason ? 'button' : undefined}
+					tabIndex={isLongReason ? 0 : undefined}
+					onKeyDown={isLongReason ? (e) => { if (e.key === 'Enter' || e.key === ' ') setIsReasonExpanded(!isReasonExpanded); } : undefined}
+				>
+					{suggestion.reason}
+				</div>
 				<div className={styles.actions}>
 					<div className={styles.timeAdjust}>
 						<button

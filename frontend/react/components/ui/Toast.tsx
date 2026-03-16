@@ -96,7 +96,7 @@ export const ToastContainer: React.FC = () => {
 							setToasts((prev) => prev.filter((x) => x.id !== t.id))
 						}
 					>
-						\u00d7
+						&times;
 					</button>
 				</div>
 			))}

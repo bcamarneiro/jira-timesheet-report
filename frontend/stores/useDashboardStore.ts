@@ -150,34 +150,54 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
 	markSuggestionLogged: (suggestionId) =>
 		set((state) => ({
-			daySummaries: state.daySummaries.map((day) => ({
-				...day,
-				suggestions: day.suggestions.map((s) =>
-					s.id === suggestionId ? { ...s, logged: true } : s,
-				),
-			})),
+			daySummaries: state.daySummaries.map((day) => {
+				const s = day.suggestions.find((s) => s.id === suggestionId);
+				const added = s && !s.logged ? s.suggestedSeconds : 0;
+				return {
+					...day,
+					loggedSeconds: day.loggedSeconds + added,
+					gapSeconds: Math.max(0, day.gapSeconds - added),
+					suggestions: day.suggestions.map((s) =>
+						s.id === suggestionId ? { ...s, logged: true } : s,
+					),
+				};
+			}),
 		})),
 
 	unmarkSuggestionLogged: (suggestionId) =>
 		set((state) => ({
-			daySummaries: state.daySummaries.map((day) => ({
-				...day,
-				suggestions: day.suggestions.map((s) =>
-					s.id === suggestionId ? { ...s, logged: false } : s,
-				),
-			})),
+			daySummaries: state.daySummaries.map((day) => {
+				const s = day.suggestions.find((s) => s.id === suggestionId);
+				const removed = s?.logged ? s.suggestedSeconds : 0;
+				return {
+					...day,
+					loggedSeconds: Math.max(0, day.loggedSeconds - removed),
+					gapSeconds: day.gapSeconds + removed,
+					suggestions: day.suggestions.map((s) =>
+						s.id === suggestionId ? { ...s, logged: false } : s,
+					),
+				};
+			}),
 		})),
 
 	markMultipleSuggestionsLogged: (ids) =>
 		set((state) => {
 			const idSet = new Set(ids);
 			return {
-				daySummaries: state.daySummaries.map((day) => ({
-					...day,
-					suggestions: day.suggestions.map((s) =>
-						idSet.has(s.id) ? { ...s, logged: true } : s,
-					),
-				})),
+				daySummaries: state.daySummaries.map((day) => {
+					let added = 0;
+					for (const s of day.suggestions) {
+						if (idSet.has(s.id) && !s.logged) added += s.suggestedSeconds;
+					}
+					return {
+						...day,
+						loggedSeconds: day.loggedSeconds + added,
+						gapSeconds: Math.max(0, day.gapSeconds - added),
+						suggestions: day.suggestions.map((s) =>
+							idSet.has(s.id) ? { ...s, logged: true } : s,
+						),
+					};
+				}),
 			};
 		}),
 
@@ -185,12 +205,20 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 		set((state) => {
 			const idSet = new Set(ids);
 			return {
-				daySummaries: state.daySummaries.map((day) => ({
-					...day,
-					suggestions: day.suggestions.map((s) =>
-						idSet.has(s.id) ? { ...s, logged: false } : s,
-					),
-				})),
+				daySummaries: state.daySummaries.map((day) => {
+					let removed = 0;
+					for (const s of day.suggestions) {
+						if (idSet.has(s.id) && s.logged) removed += s.suggestedSeconds;
+					}
+					return {
+						...day,
+						loggedSeconds: Math.max(0, day.loggedSeconds - removed),
+						gapSeconds: day.gapSeconds + removed,
+						suggestions: day.suggestions.map((s) =>
+							idSet.has(s.id) ? { ...s, logged: false } : s,
+						),
+					};
+				}),
 			};
 		}),
 

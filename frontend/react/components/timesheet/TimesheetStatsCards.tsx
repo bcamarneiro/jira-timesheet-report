@@ -41,16 +41,10 @@ export const TimesheetStatsCards: React.FC<Props> = ({
 
 	return (
 		<div className={styles.grid}>
-			<StatCard
-				label="Total Hours"
-				value={`${stats.totalHours.toFixed(1)}h`}
-			/>
+			<StatCard label="Total Hours" value={`${stats.totalHours.toFixed(1)}h`} />
 			<StatCard label="Entries" value={stats.totalEntries} />
 			<StatCard label="Team Size" value={stats.teamSize} />
-			<StatCard
-				label="Avg / User"
-				value={`${stats.avgHours.toFixed(1)}h`}
-			/>
+			<StatCard label="Avg / User" value={`${stats.avgHours.toFixed(1)}h`} />
 		</div>
 	);
 };

@@ -11,7 +11,10 @@ export const StatCard: React.FC<Props> = ({ label, value, valueColor }) => {
 	return (
 		<div className={styles.card}>
 			<div className={styles.label}>{label}</div>
-			<div className={styles.value} style={valueColor ? { color: valueColor } : undefined}>
+			<div
+				className={styles.value}
+				style={valueColor ? { color: valueColor } : undefined}
+			>
 				{value}
 			</div>
 		</div>

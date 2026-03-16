@@ -22,70 +22,74 @@ export const SourceStatusBar: React.FC = () => {
 	const hasCalendar = config.calendarFeeds && config.calendarFeeds.length > 0;
 	const hasRescueTime = !!config.rescueTimeApiKey;
 
+	// Only show configured sources
+	const sources: Array<{
+		label: string;
+		loading: boolean;
+		error: string | null;
+	}> = [{ label: 'Jira', loading: isLoadingJira, error: jiraError }];
+
+	if (hasGitlab)
+		sources.push({
+			label: 'GitLab',
+			loading: isLoadingGitlab,
+			error: gitlabError,
+		});
+	if (hasCalendar)
+		sources.push({
+			label: 'Calendar',
+			loading: isLoadingCalendar,
+			error: calendarError,
+		});
+	if (hasRescueTime)
+		sources.push({
+			label: 'RescueTime',
+			loading: isLoadingRescueTime,
+			error: rescueTimeError,
+		});
+
+	const hasErrors = sources.some((s) => s.error);
+	const isAnyLoading = sources.some((s) => s.loading);
+
 	return (
-		<div className={styles.container}>
-			<SourcePill
-				label="Jira"
-				loading={isLoadingJira}
-				error={jiraError}
-				configured
-			/>
-			<SourcePill
-				label="GitLab"
-				loading={isLoadingGitlab}
-				error={gitlabError}
-				configured={hasGitlab}
-			/>
-			<SourcePill
-				label="Calendar"
-				loading={isLoadingCalendar}
-				error={calendarError}
-				configured={hasCalendar}
-			/>
-			<SourcePill
-				label="RescueTime"
-				loading={isLoadingRescueTime}
-				error={rescueTimeError}
-				configured={hasRescueTime}
-			/>
+		<div className={styles.container} title={buildTooltip(sources)}>
+			{hasErrors ? (
+				// Expanded: show error labels
+				sources
+					.filter((s) => s.error)
+					.map((s) => (
+						<span
+							key={s.label}
+							className={`${styles.pill} ${styles.error}`}
+							title={s.error || ''}
+						>
+							{s.label}
+						</span>
+					))
+			) : (
+				// Compact: just dots
+				<div className={styles.dots}>
+					{sources.map((s) => (
+						<span
+							key={s.label}
+							className={`${styles.dot} ${s.loading ? styles.dotLoading : styles.dotOk}`}
+						/>
+					))}
+					{isAnyLoading && <span className={styles.loadingLabel}>Syncing</span>}
+				</div>
+			)}
 		</div>
 	);
 };
 
-function SourcePill({
-	label,
-	loading,
-	error,
-	configured,
-}: {
-	label: string;
-	loading: boolean;
-	error: string | null;
-	configured: boolean;
-}) {
-	let status: string;
-	let className: string;
-
-	if (!configured) {
-		status = 'Off';
-		className = styles.off;
-	} else if (loading) {
-		status = '...';
-		className = styles.loading;
-	} else if (error) {
-		status = 'Error';
-		className = styles.error;
-	} else {
-		status = 'OK';
-		className = styles.ok;
-	}
-
-	return (
-		<span
-			className={`${styles.pill} ${className}`}
-			title={error || (configured ? 'Connected' : 'Not configured')}
-		>
-			{label}: {status}
-		</span>
-	);
+function buildTooltip(
+	sources: Array<{ label: string; loading: boolean; error: string | null }>,
+): string {
+	return sources
+		.map((s) => {
+			if (s.loading) return `${s.label}: syncing...`;
+			if (s.error) return `${s.label}: ${s.error}`;
+			return `${s.label}: connected`;
+		})
+		.join('\n');
 }

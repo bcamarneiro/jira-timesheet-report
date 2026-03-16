@@ -4,31 +4,46 @@ import type { Config } from './useConfigStore';
 import { useConfigStore } from './useConfigStore';
 import { useJiraClientStore } from './useJiraClientStore';
 
+interface IntegrationTestResult {
+	loading: boolean;
+	result: { success: boolean; message: string } | null;
+}
+
 interface SettingsFormState {
 	// Form state (separate from saved config)
 	formData: Config;
 
-	// Test connection state
-	isTesting: boolean;
-	testResult: {
-		success: boolean;
-		message: string;
-	} | null;
+	// Per-integration test state
+	integrationTests: {
+		jira: IntegrationTestResult;
+		gitlab: IntegrationTestResult;
+		calendar: IntegrationTestResult;
+		rescuetime: IntegrationTestResult;
+	};
 
 	// Actions
 	updateFormField: <K extends keyof Config>(field: K, value: Config[K]) => void;
 	loadFromConfig: () => void;
 	saveSettings: () => void;
 	resetForm: () => void;
-	testConnection: () => Promise<void>;
+	testJira: () => Promise<void>;
+	testGitlab: () => Promise<void>;
+	testCalendar: () => Promise<void>;
+	testRescueTime: () => Promise<void>;
 }
+
+const emptyTest: IntegrationTestResult = { loading: false, result: null };
 
 export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 	// Initialize form data from config store
 	formData: useConfigStore.getState().config,
 
-	isTesting: false,
-	testResult: null,
+	integrationTests: {
+		jira: { ...emptyTest },
+		gitlab: { ...emptyTest },
+		calendar: { ...emptyTest },
+		rescuetime: { ...emptyTest },
+	},
 
 	updateFormField: <K extends keyof Config>(field: K, value: Config[K]) => {
 		set((state) => ({
@@ -53,11 +68,24 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 
 	resetForm: () => {
 		const config = useConfigStore.getState().config;
-		set({ formData: config, testResult: null });
+		set({
+			formData: config,
+			integrationTests: {
+				jira: { ...emptyTest },
+				gitlab: { ...emptyTest },
+				calendar: { ...emptyTest },
+				rescuetime: { ...emptyTest },
+			},
+		});
 	},
 
-	testConnection: async () => {
-		set({ isTesting: true, testResult: null });
+	testJira: async () => {
+		set((s) => ({
+			integrationTests: {
+				...s.integrationTests,
+				jira: { loading: true, result: null },
+			},
+		}));
 
 		try {
 			const { formData } = get();
@@ -65,15 +93,6 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			const host = formData.corsProxy
 				? `${formData.corsProxy.replace(/\/$/, '')}/https://${formData.jiraHost}`
 				: `https://${formData.jiraHost}`;
-
-			console.log(`[Test] Connecting to ${host}`);
-			console.log(
-				`[Test] Jira host: ${formData.jiraHost} | Proxy: ${formData.corsProxy || 'none'}`,
-			);
-			const tokenPreview = formData.apiToken
-				? `${formData.apiToken.substring(0, 8)}...`
-				: 'empty';
-			console.log(`[Test] Token: ${tokenPreview}`);
 
 			const client = new Version2Client({
 				host,
@@ -87,10 +106,9 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			const startTime = performance.now();
 			const myself = await client.myself.getCurrentUser();
 			const duration = Math.round(performance.now() - startTime);
+			console.log(`[Test] Jira OK in ${duration}ms: ${myself.displayName}`);
 
-			console.log(`[Test] Success in ${duration}ms: ${myself.displayName}`);
-
-			// Try to auto-detect worklog permissions
+			// Auto-detect worklog permissions
 			try {
 				const perms = await client.permissions.getMyPermissions({
 					permissions:
@@ -109,9 +127,6 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 						(p.DELETE_ALL_WORKLOGS?.havePermission ||
 							p.DELETE_OWN_WORKLOGS?.havePermission) ??
 						true;
-					console.log(
-						`[Test] Permissions detected — add: ${canAdd}, edit: ${canEdit}, delete: ${canDelete}`,
-					);
 					set((state) => ({
 						formData: {
 							...state.formData,
@@ -121,45 +136,237 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 						},
 					}));
 				}
-			} catch (permError) {
-				console.warn(
-					'[Test] Could not detect worklog permissions, using defaults',
-					permError,
+			} catch {
+				// permissions check is optional
+			}
+
+			set((s) => ({
+				integrationTests: {
+					...s.integrationTests,
+					jira: {
+						loading: false,
+						result: {
+							success: true,
+							message: `Connected as ${myself.displayName}`,
+						},
+					},
+				},
+			}));
+		} catch (error) {
+			console.error('[Test] Jira failed:', error);
+			set((s) => ({
+				integrationTests: {
+					...s.integrationTests,
+					jira: {
+						loading: false,
+						result: {
+							success: false,
+							message:
+								error instanceof Error ? error.message : 'Connection failed',
+						},
+					},
+				},
+			}));
+		}
+	},
+
+	testGitlab: async () => {
+		set((s) => ({
+			integrationTests: {
+				...s.integrationTests,
+				gitlab: { loading: true, result: null },
+			},
+		}));
+
+		try {
+			const { formData } = get();
+			if (!formData.gitlabToken || !formData.gitlabHost) {
+				throw new Error('GitLab host and token are required');
+			}
+
+			const cleanHost = formData.gitlabHost
+				.replace(/^https?:\/\//, '')
+				.replace(/\/$/, '');
+			const gitlabOrigin = `https://${cleanHost}`;
+			const baseUrl = formData.corsProxy
+				? `${formData.corsProxy.replace(/\/$/, '')}/${gitlabOrigin}`
+				: gitlabOrigin;
+
+			const res = await fetch(`${baseUrl}/api/v4/user`, {
+				headers: {
+					'PRIVATE-TOKEN': formData.gitlabToken,
+					Accept: 'application/json',
+				},
+			});
+
+			if (!res.ok) {
+				if (res.status === 401) throw new Error('Invalid GitLab token');
+				throw new Error(`GitLab API error: ${res.status}`);
+			}
+
+			const user = (await res.json()) as { username: string };
+			set((s) => ({
+				integrationTests: {
+					...s.integrationTests,
+					gitlab: {
+						loading: false,
+						result: {
+							success: true,
+							message: `Connected as @${user.username}`,
+						},
+					},
+				},
+			}));
+		} catch (error) {
+			console.error('[Test] GitLab failed:', error);
+			set((s) => ({
+				integrationTests: {
+					...s.integrationTests,
+					gitlab: {
+						loading: false,
+						result: {
+							success: false,
+							message:
+								error instanceof Error ? error.message : 'Connection failed',
+						},
+					},
+				},
+			}));
+		}
+	},
+
+	testCalendar: async () => {
+		set((s) => ({
+			integrationTests: {
+				...s.integrationTests,
+				calendar: { loading: true, result: null },
+			},
+		}));
+
+		try {
+			const { formData } = get();
+			const feeds = (formData.calendarFeeds ?? []).filter((f) => f.url.trim());
+			if (feeds.length === 0) {
+				throw new Error('No calendar feeds configured');
+			}
+
+			const results: string[] = [];
+			for (const feed of feeds) {
+				const url = formData.corsProxy
+					? `${formData.corsProxy.replace(/\/$/, '')}/${feed.url}`
+					: feed.url;
+				const res = await fetch(url);
+				if (!res.ok) {
+					throw new Error(
+						`Feed "${feed.label || feed.url}" returned ${res.status}`,
+					);
+				}
+				const text = await res.text();
+				if (!text.includes('BEGIN:VCALENDAR')) {
+					throw new Error(
+						`Feed "${feed.label || feed.url}" is not a valid ICS file`,
+					);
+				}
+				const eventCount = (text.match(/BEGIN:VEVENT/g) || []).length;
+				results.push(
+					`${feed.label || 'Feed'}: ${eventCount} event${eventCount !== 1 ? 's' : ''}`,
 				);
 			}
 
-			set({
-				testResult: {
-					success: true,
-					message: `Connection successful! Hello, ${myself.displayName}.`,
+			set((s) => ({
+				integrationTests: {
+					...s.integrationTests,
+					calendar: {
+						loading: false,
+						result: {
+							success: true,
+							message: results.join(', '),
+						},
+					},
 				},
-			});
+			}));
 		} catch (error) {
-			console.error('[Test] Connection failed:', error);
-			if (error instanceof Error) {
-				console.error(`[Test] Name: ${error.name} | Message: ${error.message}`);
-				if ('status' in error)
-					console.error(
-						`[Test] HTTP Status: ${(error as { status: number }).status}`,
-					);
-				if ('response' in error) {
-					const resp = (
-						error as {
-							response: { data?: unknown; status?: number; headers?: unknown };
-						}
-					).response;
-					console.error(`[Test] Response status: ${resp?.status}`);
-					console.error(`[Test] Response body:`, resp?.data);
-					console.error(`[Test] Response headers:`, resp?.headers);
-				}
+			console.error('[Test] Calendar failed:', error);
+			set((s) => ({
+				integrationTests: {
+					...s.integrationTests,
+					calendar: {
+						loading: false,
+						result: {
+							success: false,
+							message:
+								error instanceof Error ? error.message : 'Connection failed',
+						},
+					},
+				},
+			}));
+		}
+	},
+
+	testRescueTime: async () => {
+		set((s) => ({
+			integrationTests: {
+				...s.integrationTests,
+				rescuetime: { loading: true, result: null },
+			},
+		}));
+
+		try {
+			const { formData } = get();
+			if (!formData.rescueTimeApiKey) {
+				throw new Error('RescueTime API key is required');
 			}
-			const message =
-				error instanceof Error ? error.message : 'Connection failed.';
-			set({
-				testResult: { success: false, message },
+
+			const today = new Date().toISOString().slice(0, 10);
+			const params = new URLSearchParams({
+				key: formData.rescueTimeApiKey,
+				perspective: 'interval',
+				restrict_kind: 'activity',
+				resolution_time: 'day',
+				restrict_begin: today,
+				restrict_end: today,
+				format: 'json',
 			});
-		} finally {
-			set({ isTesting: false });
+
+			const baseUrl = 'https://www.rescuetime.com/anapi/data';
+			const url = formData.corsProxy
+				? `${formData.corsProxy.replace(/\/$/, '')}/${baseUrl}?${params}`
+				: `${baseUrl}?${params}`;
+
+			const res = await fetch(url);
+			if (!res.ok) {
+				if (res.status === 403) throw new Error('Invalid RescueTime API key');
+				throw new Error(`RescueTime API error: ${res.status}`);
+			}
+
+			const data = (await res.json()) as { rows: unknown[] };
+			set((s) => ({
+				integrationTests: {
+					...s.integrationTests,
+					rescuetime: {
+						loading: false,
+						result: {
+							success: true,
+							message: `Connected — ${data.rows.length} activit${data.rows.length !== 1 ? 'ies' : 'y'} today`,
+						},
+					},
+				},
+			}));
+		} catch (error) {
+			console.error('[Test] RescueTime failed:', error);
+			set((s) => ({
+				integrationTests: {
+					...s.integrationTests,
+					rescuetime: {
+						loading: false,
+						result: {
+							success: false,
+							message:
+								error instanceof Error ? error.message : 'Connection failed',
+						},
+					},
+				},
+			}));
 		}
 	},
 }));

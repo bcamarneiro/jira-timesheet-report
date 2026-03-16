@@ -19,6 +19,7 @@ function getDayStatus(day: DaySummary): string {
 export const WeekOverview: React.FC<Props> = ({ days }) => {
 	const totalLogged = days.reduce((sum, d) => sum + d.loggedSeconds, 0);
 	const totalTarget = days.reduce((sum, d) => sum + d.targetSeconds, 0);
+	const todayStr = new Date().toISOString().slice(0, 10);
 
 	return (
 		<div className={styles.container}>
@@ -28,10 +29,11 @@ export const WeekOverview: React.FC<Props> = ({ days }) => {
 						day.targetSeconds > 0
 							? Math.min(100, (day.loggedSeconds / day.targetSeconds) * 100)
 							: 0;
+					const isToday = day.date === todayStr;
 					return (
 						<div
 							key={day.date}
-							className={`${styles.day} ${getDayStatus(day)}`}
+							className={`${styles.day} ${getDayStatus(day)} ${isToday ? styles.today : ''}`}
 						>
 							<div className={styles.dayName}>{DAY_NAMES[day.dayOfWeek]}</div>
 							<div className={styles.dayDate}>

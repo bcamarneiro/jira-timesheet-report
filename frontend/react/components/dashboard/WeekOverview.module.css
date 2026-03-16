@@ -81,6 +81,22 @@
 	opacity: 0.7;
 }
 
+.today {
+	border-width: 2px;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px var(--color-primary-focus);
+	opacity: 1;
+	background: var(--color-surface-raised);
+}
+
+.today .dayName {
+	color: var(--color-primary);
+}
+
+.today .dayDate {
+	color: var(--color-primary);
+}
+
 .weekend {
 	opacity: 0.4;
 }

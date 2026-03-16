@@ -196,7 +196,9 @@ test.describe('Dashboard Page', () => {
 	});
 
 	test('shows source status bar', async ({ page }) => {
-		await expect(page.getByText('Jira: OK')).toBeVisible();
+		await expect(
+			page.locator('[class*="SourceStatusBar"]').first(),
+		).toBeVisible();
 	});
 
 	test('shows week overview with day bars', async ({ page }) => {
@@ -330,7 +332,9 @@ test.describe('Team Page', () => {
 
 	test('shows team member table with data', async ({ page }) => {
 		await expect(page.getByText('Team Member')).toBeVisible();
-		await expect(page.getByRole('columnheader', { name: 'Total' })).toBeVisible();
+		await expect(
+			page.getByRole('columnheader', { name: 'Total' }),
+		).toBeVisible();
 		await expect(page.getByText('Gap')).toBeVisible();
 
 		const tableText = await page.locator('table').textContent();

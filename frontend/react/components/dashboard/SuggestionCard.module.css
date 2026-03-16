@@ -145,6 +145,17 @@
 	line-height: 1.4;
 }
 
+.reasonTruncated {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.reasonTruncated:hover {
+	color: var(--color-text);
+}
+
 .actions {
 	display: flex;
 	align-items: center;

@@ -9,13 +9,17 @@ import * as styles from './SettingsForm.module.css';
 
 export const SettingsForm: React.FC = () => {
 	const formData = useSettingsFormStore((state) => state.formData);
-	const isTesting = useSettingsFormStore((state) => state.isTesting);
-	const testResult = useSettingsFormStore((state) => state.testResult);
+	const integrationTests = useSettingsFormStore(
+		(state) => state.integrationTests,
+	);
 	const updateFormField = useSettingsFormStore(
 		(state) => state.updateFormField,
 	);
 	const saveSettings = useSettingsFormStore((state) => state.saveSettings);
-	const testConnection = useSettingsFormStore((state) => state.testConnection);
+	const testJira = useSettingsFormStore((state) => state.testJira);
+	const testGitlab = useSettingsFormStore((state) => state.testGitlab);
+	const testCalendar = useSettingsFormStore((state) => state.testCalendar);
+	const testRescueTime = useSettingsFormStore((state) => state.testRescueTime);
 	const loadFromConfig = useSettingsFormStore((state) => state.loadFromConfig);
 
 	const calendarMappings = useUserDataStore((s) => s.calendarMappings);
@@ -71,14 +75,29 @@ export const SettingsForm: React.FC = () => {
 		toast.success('Settings saved');
 	};
 
-	const handleTestConnection = async () => {
-		await testConnection();
-	};
-
 	return (
 		<form onSubmit={handleSubmit} className={styles.form}>
 			<fieldset className={styles.section}>
-				<legend className={styles.sectionTitle}>Connection</legend>
+				<legend className={styles.sectionTitle}>
+					<div className={styles.sectionHeader}>
+						<span>Connection</span>
+						<button
+							type="button"
+							className={styles.testButton}
+							onClick={testJira}
+							disabled={integrationTests.jira.loading}
+						>
+							{integrationTests.jira.loading ? 'Testing...' : 'Test'}
+						</button>
+					</div>
+				</legend>
+				{integrationTests.jira.result && (
+					<p
+						className={`${styles.testResult} ${integrationTests.jira.result.success ? styles.testSuccess : styles.testError}`}
+					>
+						{integrationTests.jira.result.message}
+					</p>
+				)}
 				<div className={styles.formGroup}>
 					<label htmlFor={jiraHostId}>Jira Host</label>
 					<input
@@ -211,13 +230,29 @@ export const SettingsForm: React.FC = () => {
 
 			<fieldset className={styles.section}>
 				<legend className={styles.sectionTitle}>
-					Integrations <span className={styles.optional}>optional</span>
+					<div className={styles.sectionHeader}>
+						<span>
+							Integrations <span className={styles.optional}>optional</span>
+						</span>
+					</div>
 				</legend>
 				<small className={styles.permissionsHint}>
 					Power the Dashboard suggestions. Leave blank to disable.
 				</small>
 				<div className={styles.formGroup}>
-					<label htmlFor={gitlabHostId}>GitLab Host</label>
+					<label htmlFor={gitlabHostId}>
+						GitLab Host
+						{(formData.gitlabHost || formData.gitlabToken) && (
+							<button
+								type="button"
+								className={styles.testButton}
+								onClick={testGitlab}
+								disabled={integrationTests.gitlab.loading}
+							>
+								{integrationTests.gitlab.loading ? 'Testing...' : 'Test'}
+							</button>
+						)}
+					</label>
 					<input
 						type="text"
 						id={gitlabHostId}
@@ -240,9 +275,28 @@ export const SettingsForm: React.FC = () => {
 					<small>
 						Personal access token with <code>read_user</code> scope
 					</small>
+					{integrationTests.gitlab.result && (
+						<p
+							className={`${styles.testResult} ${integrationTests.gitlab.result.success ? styles.testSuccess : styles.testError}`}
+						>
+							{integrationTests.gitlab.result.message}
+						</p>
+					)}
 				</div>
 				<div className={styles.formGroup}>
-					<label htmlFor={rescueTimeKeyId}>RescueTime API Key</label>
+					<label htmlFor={rescueTimeKeyId}>
+						RescueTime API Key
+						{formData.rescueTimeApiKey && (
+							<button
+								type="button"
+								className={styles.testButton}
+								onClick={testRescueTime}
+								disabled={integrationTests.rescuetime.loading}
+							>
+								{integrationTests.rescuetime.loading ? 'Testing...' : 'Test'}
+							</button>
+						)}
+					</label>
 					<input
 						type="password"
 						id={rescueTimeKeyId}
@@ -251,11 +305,29 @@ export const SettingsForm: React.FC = () => {
 						onChange={handleChange}
 					/>
 					<small>Requires CORS proxy to be running</small>
+					{integrationTests.rescuetime.result && (
+						<p
+							className={`${styles.testResult} ${integrationTests.rescuetime.result.success ? styles.testSuccess : styles.testError}`}
+						>
+							{integrationTests.rescuetime.result.message}
+						</p>
+					)}
 				</div>
 
 				<div className={styles.formGroup}>
 					<span className={styles.calendarHeading}>
 						Calendar Feeds (ICS/iCal)
+						{(formData.calendarFeeds ?? []).some((f) => f.url.trim()) && (
+							<button
+								type="button"
+								className={styles.testButton}
+								onClick={testCalendar}
+								disabled={integrationTests.calendar.loading}
+								style={{ marginLeft: 'var(--space-2)' }}
+							>
+								{integrationTests.calendar.loading ? 'Testing...' : 'Test'}
+							</button>
+						)}
 					</span>
 					<small>
 						Add calendar feed URLs to suggest worklogs from meetings. Works with
@@ -317,6 +389,13 @@ export const SettingsForm: React.FC = () => {
 					>
 						+ Add calendar
 					</button>
+					{integrationTests.calendar.result && (
+						<p
+							className={`${styles.testResult} ${integrationTests.calendar.result.success ? styles.testSuccess : styles.testError}`}
+						>
+							{integrationTests.calendar.result.message}
+						</p>
+					)}
 				</div>
 			</fieldset>
 
@@ -422,22 +501,7 @@ export const SettingsForm: React.FC = () => {
 
 			<div className={styles.buttonGroup}>
 				<Button type="submit">Save</Button>
-				<Button
-					type="button"
-					onClick={handleTestConnection}
-					disabled={isTesting}
-					variant="secondary"
-				>
-					{isTesting ? 'Testing...' : 'Test Connection'}
-				</Button>
 			</div>
-			{testResult && (
-				<p
-					className={testResult.success ? styles.successText : styles.errorText}
-				>
-					{testResult.message}
-				</p>
-			)}
 		</form>
 	);
 };

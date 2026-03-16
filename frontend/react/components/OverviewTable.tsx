@@ -134,9 +134,7 @@ export const OverviewTable: React.FC<Props> = ({
 						>
 							<td>
 								<div className={styles.userInfo}>
-									<span className={styles.avatar}>
-										{getInitials(row.user)}
-									</span>
+									<span className={styles.avatar}>{getInitials(row.user)}</span>
 									<span className={styles.userName}>{row.user}</span>
 								</div>
 							</td>

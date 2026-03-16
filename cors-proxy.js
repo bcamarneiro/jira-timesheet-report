@@ -133,8 +133,7 @@ function buildOutboundHeaders(incomingHeaders, targetHost) {
 		headers['x-atlassian-token'] = 'no-check';
 	} else {
 		// Generic user-agent for external hosts (Google Drive, calendar feeds, etc.)
-		headers['user-agent'] =
-			'Mozilla/5.0 (compatible; JiraTimesheetApp/1.0)';
+		headers['user-agent'] = 'Mozilla/5.0 (compatible; JiraTimesheetApp/1.0)';
 		// Remove authorization header — don't leak Jira/GitLab tokens to third parties
 		delete headers.authorization;
 		delete headers.Authorization;
@@ -242,10 +241,7 @@ const server = http.createServer((req, res) => {
 			redirectCount < 5 &&
 			!isJiraHost(targetUrl.hostname)
 		) {
-			const redirectUrl = new URL(
-				proxyRes.headers.location,
-				targetUrl.href,
-			);
+			const redirectUrl = new URL(proxyRes.headers.location, targetUrl.href);
 			console.log(
 				`[${timestamp()}] #${reqId}  -> Following redirect to ${redirectUrl.href}`,
 			);
@@ -257,8 +253,7 @@ const server = http.createServer((req, res) => {
 			const redirectOpts = {
 				hostname: redirectUrl.hostname,
 				port:
-					redirectUrl.port ||
-					(redirectUrl.protocol === 'https:' ? 443 : 80),
+					redirectUrl.port || (redirectUrl.protocol === 'https:' ? 443 : 80),
 				path: redirectUrl.pathname + redirectUrl.search,
 				method: status === 303 ? 'GET' : req.method,
 				headers: buildOutboundHeaders(req.headers, redirectUrl.host),
@@ -268,8 +263,7 @@ const server = http.createServer((req, res) => {
 
 			const redirectReq = redirectTransport.request(
 				redirectOpts,
-				(redirectRes) =>
-					handleProxyResponse(redirectRes, redirectCount + 1),
+				(redirectRes) => handleProxyResponse(redirectRes, redirectCount + 1),
 			);
 			redirectReq.on('error', (err) => {
 				console.error(
