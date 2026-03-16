@@ -1,13 +1,23 @@
-.container {
-	margin-bottom: var(--space-12);
+.card {
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-xl);
+	box-shadow: var(--shadow-sm);
+	padding: var(--space-5);
+	margin-bottom: var(--space-6);
 }
 
 .monthTotal {
-	background-color: var(--color-surface);
+	background-color: var(--color-surface-sunken);
 	border-radius: var(--radius-lg);
-	padding: var(--space-3) var(--space-5);
+	padding: var(--space-3) var(--space-4);
 	margin-top: var(--space-3);
-	border: 1px solid var(--color-border);
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.monthTotalTop {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -20,7 +30,7 @@
 }
 
 .monthTotalValue {
-	font-size: var(--text-xl);
+	font-size: var(--text-sm);
 	font-weight: var(--font-bold);
 	color: var(--color-text);
 	font-variant-numeric: tabular-nums;

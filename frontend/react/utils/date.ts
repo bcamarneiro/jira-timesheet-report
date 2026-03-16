@@ -38,6 +38,22 @@ export function isDateInMonth(
 }
 
 /**
+ * Count the number of weekdays (Mon-Fri) in a given month.
+ */
+export function getWorkingDaysInMonth(
+	year: number,
+	monthZeroIndexed: number,
+): number {
+	const numDays = getDaysInMonth(year, monthZeroIndexed);
+	let count = 0;
+	for (let d = 1; d <= numDays; d++) {
+		const day = new Date(Date.UTC(year, monthZeroIndexed, d)).getUTCDay();
+		if (day !== 0 && day !== 6) count++;
+	}
+	return count;
+}
+
+/**
  * Extract local date string (YYYY-MM-DD) from an ISO date string or Date object.
  * This avoids timezone conversion issues that occur with toISOString().
  */

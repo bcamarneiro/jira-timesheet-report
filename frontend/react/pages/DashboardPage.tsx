@@ -1,12 +1,27 @@
 import type React from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { DayCard } from '../components/dashboard/DayCard';
+import { FavoritesManager } from '../components/dashboard/FavoritesManager';
+import { KeyboardShortcutsHelp } from '../components/dashboard/KeyboardShortcutsHelp';
+import { MonthHeatmap } from '../components/dashboard/MonthHeatmap';
+import { OfflineIndicator } from '../components/dashboard/OfflineIndicator';
 import { SourceStatusBar } from '../components/dashboard/SourceStatusBar';
+import { TemplatesManager } from '../components/dashboard/TemplatesManager';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
 import { WeekOverview } from '../components/dashboard/WeekOverview';
+import { Button } from '../components/ui/Button';
+import { toast } from '../components/ui/Toast';
+import { useComplianceReminder } from '../hooks/useComplianceReminder';
+import { useCopyPreviousWeek } from '../hooks/useCopyPreviousWeek';
 import { useDashboardDataFetcher } from '../hooks/useDashboardDataFetcher';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useMonthHeatmapData } from '../hooks/useMonthHeatmapData';
+import { downloadAsFile } from '../utils/downloadFile';
+import { generateWeeklyCsv } from '../utils/weekCsvExport';
+import { generateWeeklySummary } from '../utils/weekSummary';
 import * as styles from './DashboardPage.module.css';
 
 export const DashboardPage: React.FC = () => {
@@ -21,6 +36,45 @@ export const DashboardPage: React.FC = () => {
 	const goToNextWeek = useDashboardStore((s) => s.goToNextWeek);
 	const goToCurrentWeek = useDashboardStore((s) => s.goToCurrentWeek);
 	const worklogsError = useDashboardStore((s) => s.worklogsError);
+	const weekWorklogs = useDashboardStore((s) => s.weekWorklogs);
+
+	const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+	const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+
+	const weekdays = daySummaries.filter((d) => !d.isWeekend);
+	const { focusedDayIndex, focusedSuggestionIndex, showHelp, setShowHelp } =
+		useKeyboardShortcuts(weekdays);
+	const { canRemind, reminderEnabled, enableReminder, totalGapHours } =
+		useComplianceReminder();
+	const { copyPreviousWeek, isLoading: isCopyingPrevWeek } =
+		useCopyPreviousWeek();
+	const monthHeatmap = useMonthHeatmapData();
+
+	const handleExportMd = async () => {
+		const markdown = generateWeeklySummary(weekStart, weekEnd, weekWorklogs);
+		try {
+			await navigator.clipboard.writeText(markdown);
+			toast.success('Weekly summary copied to clipboard');
+		} catch {
+			toast.error('Failed to copy to clipboard');
+		}
+	};
+
+	const handleExportCsv = () => {
+		const csv = generateWeeklyCsv(weekStart, weekEnd, weekWorklogs);
+		const filename = `timesheet-${weekStart}-${weekEnd}.csv`;
+		downloadAsFile(csv, filename, 'text/csv;charset=utf-8');
+		toast.success('CSV file downloaded');
+	};
+
+	const handleCopyPrevWeek = async () => {
+		try {
+			await copyPreviousWeek();
+			toast.success('Previous week worklogs copied as suggestions');
+		} catch {
+			toast.error('Failed to copy previous week');
+		}
+	};
 
 	if (!jiraHost) {
 		return (
@@ -59,11 +113,11 @@ export const DashboardPage: React.FC = () => {
 		);
 	}
 
-	const weekdays = daySummaries.filter((d) => !d.isWeekend);
 	const hasGaps = weekdays.some((d) => d.gapSeconds > 0);
 
 	return (
 		<div className={styles.container}>
+			<OfflineIndicator />
 			<div className={styles.toolbar}>
 				<WeekNavigator
 					weekStart={weekStart}
@@ -72,7 +126,44 @@ export const DashboardPage: React.FC = () => {
 					onNext={goToNextWeek}
 					onToday={goToCurrentWeek}
 				/>
-				<SourceStatusBar />
+				<div className={styles.toolbarRight}>
+					<Button variant="secondary" onClick={() => setIsFavoritesOpen(true)}>
+						Pinned
+					</Button>
+					<Button variant="secondary" onClick={() => setIsTemplatesOpen(true)}>
+						Templates
+					</Button>
+					<Button
+						variant="secondary"
+						onClick={handleCopyPrevWeek}
+						disabled={isCopyingPrevWeek || daySummaries.length === 0}
+					>
+						{isCopyingPrevWeek ? 'Copying...' : 'Copy Prev Week'}
+					</Button>
+					<Button
+						variant="secondary"
+						onClick={handleExportMd}
+						disabled={weekWorklogs.length === 0}
+					>
+						Export MD
+					</Button>
+					<Button
+						variant="secondary"
+						onClick={handleExportCsv}
+						disabled={weekWorklogs.length === 0}
+					>
+						Export CSV
+					</Button>
+					<button
+						type="button"
+						className={styles.helpButton}
+						onClick={() => setShowHelp(true)}
+						title="Keyboard shortcuts (?)"
+					>
+						?
+					</button>
+					<SourceStatusBar />
+				</div>
 			</div>
 
 			{isLoadingWorklogs && daySummaries.length === 0 && (
@@ -86,13 +177,28 @@ export const DashboardPage: React.FC = () => {
 				<>
 					<WeekOverview days={daySummaries} />
 
+					{!monthHeatmap.isLoading && monthHeatmap.data.size > 0 && (
+						<MonthHeatmap
+							monthData={monthHeatmap.data}
+							month={monthHeatmap.month}
+							year={monthHeatmap.year}
+						/>
+					)}
+
 					{hasGaps && (
 						<div className={styles.daysSection}>
 							<h3 className={styles.sectionTitle}>Days to fill</h3>
 							{weekdays
 								.filter((d) => d.gapSeconds > 0)
-								.map((day) => (
-									<DayCard key={day.date} day={day} />
+								.map((day, i) => (
+									<DayCard
+										key={day.date}
+										day={day}
+										isFocused={focusedDayIndex === i}
+										focusedSuggestionIndex={
+											focusedDayIndex === i ? focusedSuggestionIndex : undefined
+										}
+									/>
 								))}
 						</div>
 					)}
@@ -108,6 +214,32 @@ export const DashboardPage: React.FC = () => {
 					)}
 				</>
 			)}
+
+			{canRemind && !reminderEnabled && totalGapHours > 0 && (
+				<div className={styles.reminderBanner}>
+					<span>{totalGapHours.toFixed(1)}h remaining this week.</span>
+					<button
+						type="button"
+						className={styles.reminderButton}
+						onClick={enableReminder}
+					>
+						Enable reminders
+					</button>
+				</div>
+			)}
+
+			<FavoritesManager
+				isOpen={isFavoritesOpen}
+				onClose={() => setIsFavoritesOpen(false)}
+			/>
+			<TemplatesManager
+				isOpen={isTemplatesOpen}
+				onClose={() => setIsTemplatesOpen(false)}
+			/>
+			<KeyboardShortcutsHelp
+				isOpen={showHelp}
+				onClose={() => setShowHelp(false)}
+			/>
 		</div>
 	);
 };

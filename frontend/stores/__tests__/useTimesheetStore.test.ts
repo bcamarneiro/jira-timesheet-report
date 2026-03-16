@@ -78,6 +78,10 @@ describe('useTimesheetStore', () => {
 					gitlabToken: '',
 					gitlabHost: '',
 					rescueTimeApiKey: '',
+					calendarFeeds: [],
+					theme: 'system',
+					timeRounding: 'off',
+					complianceReminderEnabled: false,
 				},
 			});
 		});
@@ -297,6 +301,10 @@ describe('useTimesheetStore', () => {
 					gitlabToken: '',
 					gitlabHost: '',
 					rescueTimeApiKey: '',
+					calendarFeeds: [],
+					complianceReminderEnabled: false,
+					theme: 'system',
+					timeRounding: 'off',
 				});
 			});
 

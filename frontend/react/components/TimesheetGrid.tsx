@@ -3,10 +3,11 @@ import type { JiraWorklog } from '../../../types/JiraWorklog';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useCalendar } from '../hooks/useCalendar';
 import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
-import { isoDateFromYMD } from '../utils/date';
+import { getWorkingDaysInMonth, isoDateFromYMD } from '../utils/date';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
 import * as styles from './TimesheetGrid.module.css';
+import { ProgressBar } from './ui/ProgressBar';
 import { UserHeader } from './user/UserHeader';
 
 type Props = {
@@ -33,6 +34,12 @@ export const TimesheetGrid: React.FC<Props> = ({
 		year,
 		monthZeroIndexed,
 	);
+
+	const targetSeconds =
+		getWorkingDaysInMonth(year, monthZeroIndexed) * 8 * 3600;
+	const totalHours = totalSeconds / 3600;
+	const targetHours = targetSeconds / 3600;
+	const pct = targetSeconds > 0 ? (totalSeconds / targetSeconds) * 100 : 0;
 
 	const now = new Date();
 	const todayIso =
@@ -62,10 +69,11 @@ export const TimesheetGrid: React.FC<Props> = ({
 	}
 
 	return (
-		<div key={user} className={styles.container}>
+		<div key={user} className={styles.card}>
 			<UserHeader
 				user={user}
 				totalSeconds={totalSeconds}
+				targetSeconds={targetSeconds}
 				onDownloadUser={onDownloadUser}
 			/>
 
@@ -74,10 +82,13 @@ export const TimesheetGrid: React.FC<Props> = ({
 			</CalendarGrid>
 
 			<div className={styles.monthTotal}>
-				<span className={styles.monthTotalLabel}>Month Total</span>
-				<span className={styles.monthTotalValue}>
-					{(totalSeconds / 3600).toFixed(2)} h
-				</span>
+				<div className={styles.monthTotalTop}>
+					<span className={styles.monthTotalLabel}>Month Total</span>
+					<span className={styles.monthTotalValue}>
+						{totalHours.toFixed(1)}h / {targetHours}h ({Math.round(pct)}%)
+					</span>
+				</div>
+				<ProgressBar value={pct} height={6} />
 			</div>
 		</div>
 	);

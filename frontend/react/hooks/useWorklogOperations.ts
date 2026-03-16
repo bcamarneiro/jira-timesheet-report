@@ -169,6 +169,85 @@ export function useWorklogOperations() {
 		}
 	};
 
+	const createMultipleWorklogs = async (
+		params: Array<{
+			issueKey: string;
+			timeSpent: string;
+			comment: string;
+			started: string;
+		}>,
+	): Promise<{
+		success: number;
+		failed: string[];
+		created: Array<{ issueKey: string; worklogId: string }>;
+	}> => {
+		if (!config.jiraHost || !config.apiToken) {
+			throw new Error('Jira client not configured');
+		}
+
+		setIsLoading(true);
+		setError(null);
+
+		const failed: string[] = [];
+		const created: Array<{ issueKey: string; worklogId: string }> = [];
+		let successCount = 0;
+
+		try {
+			for (const entry of params) {
+				try {
+					// Validate that the issue exists
+					const issueUrl = buildUrl(
+						`/rest/api/2/issue/${entry.issueKey}?fields=summary,issuetype,parent,project,status`,
+					);
+					const issue = await makeRequest(issueUrl);
+
+					if (!issue) {
+						failed.push(entry.issueKey);
+						continue;
+					}
+
+					// Create the worklog
+					const worklogUrl = buildUrl(
+						`/rest/api/2/issue/${entry.issueKey}/worklog`,
+					);
+					const newWorklog = await makeRequest(worklogUrl, {
+						method: 'POST',
+						body: JSON.stringify({
+							timeSpent: entry.timeSpent,
+							comment: entry.comment,
+							started: toJiraDatetime(entry.started),
+						}),
+					});
+
+					// Add to store
+					const enrichedWorklog: EnrichedJiraWorklog = {
+						...newWorklog,
+						issue: issue,
+					};
+
+					const updatedData = [
+						...(useTimesheetStore.getState().data || []),
+						enrichedWorklog,
+					];
+					invalidateTimesheetCache();
+					setData(updatedData);
+
+					created.push({
+						issueKey: entry.issueKey,
+						worklogId: newWorklog.id,
+					});
+					successCount++;
+				} catch {
+					failed.push(entry.issueKey);
+				}
+			}
+
+			return { success: successCount, failed, created };
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
 	const deleteWorklog = async (issueKey: string, worklogId: string) => {
 		if (!config.jiraHost || !config.apiToken) {
 			throw new Error('Jira client not configured');
@@ -201,6 +280,7 @@ export function useWorklogOperations() {
 
 	return {
 		createWorklog,
+		createMultipleWorklogs,
 		updateWorklog,
 		deleteWorklog,
 		isLoading,

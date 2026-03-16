@@ -13,6 +13,12 @@
 	box-shadow: 0 0 0 1px var(--color-primary-focus);
 }
 
+.focused {
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px var(--color-primary-focus);
+	outline: none;
+}
+
 .weekend {
 	opacity: 0.5;
 }
@@ -100,6 +106,45 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);
+}
+
+.fillButton {
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	padding: var(--space-1) var(--space-3);
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	color: var(--color-primary);
+	cursor: pointer;
+	transition: all var(--transition-fast);
+}
+
+.fillButton:hover {
+	background: var(--color-primary);
+	color: white;
+	border-color: var(--color-primary);
+}
+
+.logAllButton {
+	background: var(--color-primary);
+	color: white;
+	border: none;
+	border-radius: var(--radius-md);
+	padding: var(--space-1) var(--space-3);
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	cursor: pointer;
+	transition: opacity var(--transition-fast);
+}
+
+.logAllButton:hover {
+	opacity: 0.9;
+}
+
+.logAllButton:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .noSuggestions {

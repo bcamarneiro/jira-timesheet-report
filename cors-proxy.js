@@ -94,8 +94,30 @@ function extractTargetUrl(reqUrl) {
 	return raw;
 }
 
+// Known Jira/Atlassian host patterns — get special headers.
+// Self-hosted Jira instances are also detected by the x-atlassian-token
+// header being present in the original request from the browser.
+function isJiraHost(hostname) {
+	return (
+		hostname.endsWith('.atlassian.net') ||
+		hostname.endsWith('.atlassian.com') ||
+		hostname.endsWith('.jira.com')
+	);
+}
+
+function isJiraRequest(targetHost, incomingHeaders) {
+	// Atlassian cloud
+	if (isJiraHost(targetHost)) return true;
+	// Self-hosted: browser sends x-atlassian-token or Authorization for Jira
+	if (incomingHeaders['x-atlassian-token']) return true;
+	// GitLab: browser sends PRIVATE-TOKEN
+	if (incomingHeaders['private-token']) return true;
+	return false;
+}
+
 /**
  * Build outbound headers: forward from browser but strip problematic ones.
+ * Only add Jira-specific headers for Jira/Atlassian/GitLab hosts.
  */
 function buildOutboundHeaders(incomingHeaders, targetHost) {
 	const headers = {};
@@ -104,10 +126,21 @@ function buildOutboundHeaders(incomingHeaders, targetHost) {
 			headers[key] = value;
 		}
 	}
-	// Force these on every request
 	headers.host = targetHost;
-	headers['user-agent'] = 'JiraTimesheetApp/1.0';
-	headers['x-atlassian-token'] = 'no-check';
+
+	if (isJiraRequest(targetHost, incomingHeaders)) {
+		headers['user-agent'] = 'JiraTimesheetApp/1.0';
+		headers['x-atlassian-token'] = 'no-check';
+	} else {
+		// Generic user-agent for external hosts (Google Drive, calendar feeds, etc.)
+		headers['user-agent'] =
+			'Mozilla/5.0 (compatible; JiraTimesheetApp/1.0)';
+		// Remove authorization header — don't leak Jira/GitLab tokens to third parties
+		delete headers.authorization;
+		delete headers.Authorization;
+		delete headers['private-token'];
+		delete headers['PRIVATE-TOKEN'];
+	}
 	return headers;
 }
 
@@ -176,7 +209,10 @@ const server = http.createServer((req, res) => {
 		proxyOpts.agent = socksAgent;
 	}
 
-	const proxyReq = transport.request(proxyOpts, (proxyRes) => {
+	/**
+	 * Handle a proxy response. Follows redirects for non-Jira hosts (up to 5).
+	 */
+	function handleProxyResponse(proxyRes, redirectCount) {
 		const duration = formatDuration(Date.now() - start);
 		const status = proxyRes.statusCode;
 		const statusTag = status >= 400 ? 'ERR' : 'OK';
@@ -197,6 +233,58 @@ const server = http.createServer((req, res) => {
 		}
 		if (Object.keys(logHeaders).length > 0) {
 			console.log(`  Response headers: ${JSON.stringify(logHeaders)}`);
+		}
+
+		// Follow redirects for non-Jira hosts (Google Drive, calendar feeds, etc.)
+		if (
+			[301, 302, 303, 307, 308].includes(status) &&
+			proxyRes.headers.location &&
+			redirectCount < 5 &&
+			!isJiraHost(targetUrl.hostname)
+		) {
+			const redirectUrl = new URL(
+				proxyRes.headers.location,
+				targetUrl.href,
+			);
+			console.log(
+				`[${timestamp()}] #${reqId}  -> Following redirect to ${redirectUrl.href}`,
+			);
+			// Drain the current response
+			proxyRes.resume();
+
+			const redirectTransport =
+				redirectUrl.protocol === 'https:' ? https : http;
+			const redirectOpts = {
+				hostname: redirectUrl.hostname,
+				port:
+					redirectUrl.port ||
+					(redirectUrl.protocol === 'https:' ? 443 : 80),
+				path: redirectUrl.pathname + redirectUrl.search,
+				method: status === 303 ? 'GET' : req.method,
+				headers: buildOutboundHeaders(req.headers, redirectUrl.host),
+				rejectUnauthorized: false,
+			};
+			if (socksAgent) redirectOpts.agent = socksAgent;
+
+			const redirectReq = redirectTransport.request(
+				redirectOpts,
+				(redirectRes) =>
+					handleProxyResponse(redirectRes, redirectCount + 1),
+			);
+			redirectReq.on('error', (err) => {
+				console.error(
+					`[${timestamp()}] #${reqId} <-- REDIRECT ERROR: ${err.message}`,
+				);
+				if (!res.headersSent) {
+					setCorsHeaders(res, req);
+					res.writeHead(502, { 'content-type': 'text/plain' });
+				}
+				if (!res.writableEnded) {
+					res.end(`Proxy redirect error: ${err.message}`);
+				}
+			});
+			redirectReq.end();
+			return;
 		}
 
 		// Forward status + headers with CORS
@@ -220,7 +308,11 @@ const server = http.createServer((req, res) => {
 
 		// Pipe response body
 		proxyRes.pipe(res);
-	});
+	}
+
+	const proxyReq = transport.request(proxyOpts, (proxyRes) =>
+		handleProxyResponse(proxyRes, 0),
+	);
 
 	proxyReq.on('error', (err) => {
 		const duration = formatDuration(Date.now() - start);

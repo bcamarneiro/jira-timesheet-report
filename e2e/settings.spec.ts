@@ -15,7 +15,7 @@ test.describe('Settings Page', () => {
 
 	test('should have Jira host input', async ({ page }) => {
 		// Look for Jira host field
-		const jiraHostInput = page.getByLabel(/jira.*host|host/i);
+		const jiraHostInput = page.getByLabel('Jira Host');
 		await expect(jiraHostInput).toBeVisible();
 	});
 
@@ -27,7 +27,7 @@ test.describe('Settings Page', () => {
 
 	test('should have API token input', async ({ page }) => {
 		// Look for API token field
-		const tokenInput = page.getByLabel(/api.*token|token/i);
+		const tokenInput = page.getByLabel('API Token');
 		await expect(tokenInput).toBeVisible();
 	});
 

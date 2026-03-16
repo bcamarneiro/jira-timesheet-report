@@ -19,6 +19,9 @@ export const Navigation: React.FC = () => {
 					<Link to="/dashboard" className={getLinkStyle('/dashboard')}>
 						Dashboard
 					</Link>
+					<Link to="/team" className={getLinkStyle('/team')}>
+						Team
+					</Link>
 					<Link to="/timesheet" className={getLinkStyle('/timesheet')}>
 						Timesheet
 					</Link>

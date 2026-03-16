@@ -41,7 +41,8 @@
 	color: var(--color-text-tertiary);
 }
 
-.formGroup input {
+.formGroup input,
+.formGroup select {
 	padding: var(--space-3);
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-md);
@@ -52,7 +53,8 @@
 	transition: all var(--transition-fast);
 }
 
-.formGroup input:focus {
+.formGroup input:focus,
+.formGroup select:focus {
 	outline: none;
 	border-color: var(--color-primary);
 	box-shadow: 0 0 0 3px var(--color-primary-focus);
@@ -106,4 +108,65 @@
 	height: 16px;
 	accent-color: var(--color-primary);
 	cursor: pointer;
+}
+
+.calendarHeading {
+	font-weight: var(--font-medium);
+	font-size: var(--text-sm);
+	color: var(--color-text);
+}
+
+.calendarFeedRow {
+	display: flex;
+	gap: var(--space-2);
+	align-items: center;
+}
+
+.calendarLabel {
+	flex: 0 0 140px;
+}
+
+.calendarUrl {
+	flex: 1;
+	min-width: 0;
+}
+
+.calendarRemove {
+	flex-shrink: 0;
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	width: 32px;
+	height: 32px;
+	font-size: var(--text-lg);
+	color: var(--color-text-tertiary);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all var(--transition-fast);
+}
+
+.calendarRemove:hover {
+	background: var(--color-error-bg);
+	color: var(--color-error);
+	border-color: var(--color-error);
+}
+
+.calendarAdd {
+	background: none;
+	border: 1px dashed var(--color-border);
+	border-radius: var(--radius-md);
+	padding: var(--space-2) var(--space-3);
+	font-size: var(--text-sm);
+	color: var(--color-text-secondary);
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	text-align: left;
+}
+
+.calendarAdd:hover {
+	background: var(--color-surface-hover);
+	color: var(--color-text);
+	border-color: var(--color-text-tertiary);
 }

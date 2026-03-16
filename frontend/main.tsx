@@ -31,6 +31,10 @@ async function startApp() {
 				gitlabToken: '',
 				gitlabHost: '',
 				rescueTimeApiKey: '',
+				calendarFeeds: [],
+				complianceReminderEnabled: false,
+				theme: 'system',
+				timeRounding: 'off',
 			});
 			console.log('[OFFLINE MODE] Default configuration set');
 

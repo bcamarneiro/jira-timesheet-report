@@ -5,12 +5,36 @@ const JIRA_KEY_RE = /([A-Z][A-Z0-9]+-\d+)/g;
 interface GitLabEvent {
 	action_name: string;
 	created_at: string;
+	target_type?: string;
+	target_title?: string;
+	note?: {
+		body?: string;
+		noteable_type?: string;
+	};
 	push_data?: {
 		commit_title?: string;
 		ref?: string;
 		commit_count?: number;
 	};
 }
+
+type ActivityType = 'push' | 'mr-action' | 'review';
+
+interface ActivityEntry {
+	type: ActivityType;
+	count: number;
+	reasons: string[];
+}
+
+const PUSH_ACTIONS = new Set(['pushed to', 'pushed new']);
+const MR_ACTIONS = new Set([
+	'accepted',
+	'merged',
+	'opened',
+	'closed',
+	'approved',
+]);
+const REVIEW_ACTIONS = new Set(['commented on']);
 
 function extractJiraKeys(text: string): string[] {
 	const matches = text.match(JIRA_KEY_RE);
@@ -21,9 +45,77 @@ function dateOnly(iso: string): string {
 	return iso.slice(0, 10);
 }
 
+function isPushEvent(action: string): boolean {
+	return PUSH_ACTIONS.has(action);
+}
+
+function isMrActionEvent(event: GitLabEvent): boolean {
+	return (
+		MR_ACTIONS.has(event.action_name) && event.target_type === 'MergeRequest'
+	);
+}
+
+function isReviewEvent(event: GitLabEvent): boolean {
+	return (
+		REVIEW_ACTIONS.has(event.action_name) &&
+		(event.target_type === 'MergeRequest' ||
+			event.note?.noteable_type === 'MergeRequest')
+	);
+}
+
+function getEntry(
+	map: Map<string, ActivityEntry>,
+	mapKey: string,
+	type: ActivityType,
+): ActivityEntry {
+	let entry = map.get(mapKey);
+	if (!entry) {
+		entry = { type, count: 0, reasons: [] };
+		map.set(mapKey, entry);
+	}
+	return entry;
+}
+
+function formatReason(entry: ActivityEntry): string {
+	const { type, count, reasons } = entry;
+	const snippet =
+		reasons.length > 0
+			? `: ${reasons.slice(0, 2).join('; ')}${reasons.length > 2 ? '...' : ''}`
+			: '';
+
+	switch (type) {
+		case 'push':
+			return `${count} commit${count > 1 ? 's' : ''}${snippet}`;
+		case 'mr-action':
+			return `${count} MR action${count > 1 ? 's' : ''}${snippet}`;
+		case 'review':
+			return `${count} review comment${count > 1 ? 's' : ''}${snippet}`;
+	}
+}
+
+const TIME_ESTIMATES: Record<ActivityType, { perUnit: number; max: number }> = {
+	push: { perUnit: 3600, max: 4 * 3600 },
+	'mr-action': { perUnit: 1800, max: 2 * 3600 },
+	review: { perUnit: 900, max: 2 * 3600 },
+};
+
+function estimateSeconds(type: ActivityType, count: number): number {
+	const { perUnit, max } = TIME_ESTIMATES[type];
+	return Math.min(count * perUnit, max);
+}
+
+function estimateConfidence(
+	type: ActivityType,
+	count: number,
+): 'high' | 'medium' | 'low' {
+	if (type === 'push') return count >= 3 ? 'high' : 'medium';
+	if (type === 'mr-action') return 'medium';
+	return count >= 3 ? 'medium' : 'low';
+}
+
 /**
- * Fetch the user's recent GitLab push events and extract Jira issue keys
- * from commit messages and branch names.
+ * Fetch the user's recent GitLab events (pushes, MR actions, review comments)
+ * and extract Jira issue keys to build worklog suggestions.
  */
 export async function fetchGitlabSuggestions(
 	gitlabToken: string,
@@ -35,7 +127,6 @@ export async function fetchGitlabSuggestions(
 ): Promise<WorklogSuggestion[]> {
 	if (!gitlabToken || !gitlabHost) return [];
 
-	const suggestions: WorklogSuggestion[] = [];
 	const cleanHost = gitlabHost.replace(/^https?:\/\//, '').replace(/\/$/, '');
 	const gitlabOrigin = `https://${cleanHost}`;
 	const baseUrl = corsProxy
@@ -67,63 +158,122 @@ export async function fetchGitlabSuggestions(
 		if (events.length < 20) break;
 	}
 
-	// Group pushes by (date, issueKey)
-	const grouped = new Map<
-		string,
-		{ keys: Set<string>; commitCount: number; reasons: string[] }
-	>();
+	// Group activities by (date, issueKey, activityType)
+	const grouped = new Map<string, ActivityEntry>();
 
 	for (const event of allEvents) {
-		if (event.action_name !== 'pushed to' && event.action_name !== 'pushed new')
-			continue;
-
 		const day = dateOnly(event.created_at);
 		if (day < weekStart || day > weekEnd) continue;
 
-		const pushData = event.push_data;
-		if (!pushData) continue;
+		if (isPushEvent(event.action_name)) {
+			const pushData = event.push_data;
+			if (!pushData) continue;
 
-		const branchKeys = pushData.ref ? extractJiraKeys(pushData.ref) : [];
-		const titleKeys = pushData.commit_title
-			? extractJiraKeys(pushData.commit_title)
-			: [];
-		const allKeys = [...new Set([...branchKeys, ...titleKeys])];
+			const branchKeys = pushData.ref ? extractJiraKeys(pushData.ref) : [];
+			const titleKeys = pushData.commit_title
+				? extractJiraKeys(pushData.commit_title)
+				: [];
+			const keys = [...new Set([...branchKeys, ...titleKeys])];
+			if (keys.length === 0) continue;
 
-		if (allKeys.length === 0) continue;
-
-		const commits = pushData.commit_count || 1;
-
-		for (const key of allKeys) {
-			const mapKey = `${day}::${key}`;
-			const existing = grouped.get(mapKey) || {
-				keys: new Set<string>(),
-				commitCount: 0,
-				reasons: [],
-			};
-			existing.keys.add(key);
-			existing.commitCount += commits;
-			if (pushData.commit_title) {
-				existing.reasons.push(pushData.commit_title.slice(0, 80));
+			const commits = pushData.commit_count || 1;
+			for (const key of keys) {
+				const entry = getEntry(grouped, `${day}::${key}::push`, 'push');
+				entry.count += commits;
+				if (pushData.commit_title) {
+					entry.reasons.push(pushData.commit_title.slice(0, 80));
+				}
 			}
-			grouped.set(mapKey, existing);
+		} else if (isMrActionEvent(event)) {
+			const title = event.target_title || '';
+			const keys = extractJiraKeys(title);
+			if (keys.length === 0) continue;
+
+			const label = event.action_name;
+			for (const key of keys) {
+				const entry = getEntry(
+					grouped,
+					`${day}::${key}::mr-action`,
+					'mr-action',
+				);
+				entry.count++;
+				entry.reasons.push(`${label} MR: ${title.slice(0, 60)}`);
+			}
+		} else if (isReviewEvent(event)) {
+			const title = event.target_title || event.note?.body || '';
+			const noteBody = event.note?.body || '';
+			const keys = [...extractJiraKeys(title), ...extractJiraKeys(noteBody)];
+			const uniqueKeys = [...new Set(keys)];
+			if (uniqueKeys.length === 0) continue;
+
+			for (const key of uniqueKeys) {
+				const entry = getEntry(grouped, `${day}::${key}::review`, 'review');
+				entry.count++;
+				const snippet =
+					noteBody.length > 60
+						? `${noteBody.slice(0, 57)}...`
+						: noteBody || title.slice(0, 60);
+				entry.reasons.push(snippet);
+			}
 		}
 	}
 
-	for (const [mapKey, data] of grouped) {
-		const [day, issueKey] = mapKey.split('::');
-		// Estimate: 1h per commit, max 4h per issue per day
-		const estimatedSeconds = Math.min(data.commitCount * 3600, 4 * 3600);
-		const hours = estimatedSeconds / 3600;
+	// Convert grouped entries to suggestions, merging activity types per (day, issueKey)
+	const merged = new Map<
+		string,
+		{
+			seconds: number;
+			confidence: 'high' | 'medium' | 'low';
+			reasons: string[];
+		}
+	>();
+
+	for (const [mapKey, entry] of grouped) {
+		const parts = mapKey.split('::');
+		const day = parts[0];
+		const issueKey = parts[1];
+		const dayIssueKey = `${day}::${issueKey}`;
+
+		const seconds = estimateSeconds(entry.type, entry.count);
+		const confidence = estimateConfidence(entry.type, entry.count);
+
+		const existing = merged.get(dayIssueKey);
+		if (existing) {
+			existing.seconds += seconds;
+			existing.reasons.push(formatReason(entry));
+			// Upgrade confidence
+			const rank = { high: 2, medium: 1, low: 0 };
+			if (rank[confidence] > rank[existing.confidence]) {
+				existing.confidence = confidence;
+			}
+		} else {
+			merged.set(dayIssueKey, {
+				seconds,
+				confidence,
+				reasons: [formatReason(entry)],
+			});
+		}
+	}
+
+	const suggestions: WorklogSuggestion[] = [];
+
+	for (const [dayIssueKey, data] of merged) {
+		const [day, issueKey] = dayIssueKey.split('::');
+		const cappedSeconds = Math.min(data.seconds, 6 * 3600);
+		const hours = cappedSeconds / 3600;
 
 		suggestions.push({
 			id: `gitlab-${issueKey}-${day}`,
 			source: 'gitlab',
 			issueKey,
 			date: day,
-			suggestedTimeSpent: `${hours}h`,
-			suggestedSeconds: estimatedSeconds,
-			confidence: data.commitCount >= 3 ? 'high' : 'medium',
-			reason: `${data.commitCount} commit${data.commitCount > 1 ? 's' : ''}: ${data.reasons.slice(0, 2).join('; ')}${data.reasons.length > 2 ? '...' : ''}`,
+			suggestedTimeSpent:
+				hours >= 1
+					? `${Math.floor(hours)}h${hours % 1 >= 0.5 ? ' 30m' : ''}`
+					: '30m',
+			suggestedSeconds: cappedSeconds,
+			confidence: data.confidence,
+			reason: data.reasons.join(' + '),
 			logged: false,
 		});
 	}

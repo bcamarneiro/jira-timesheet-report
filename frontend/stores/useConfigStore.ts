@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface CalendarFeed {
+	label: string;
+	url: string;
+}
+
 export interface Config {
 	jiraHost: string;
 	email: string;
@@ -14,6 +19,10 @@ export interface Config {
 	gitlabToken: string;
 	gitlabHost: string;
 	rescueTimeApiKey: string;
+	calendarFeeds: CalendarFeed[];
+	complianceReminderEnabled: boolean;
+	theme: 'system' | 'light' | 'dark';
+	timeRounding: 'off' | '15m' | '30m';
 }
 
 interface ConfigState {
@@ -37,6 +46,10 @@ export const useConfigStore = create<ConfigState>()(
 				gitlabToken: '',
 				gitlabHost: '',
 				rescueTimeApiKey: '',
+				calendarFeeds: [],
+				complianceReminderEnabled: false,
+				theme: 'system',
+				timeRounding: 'off',
 			},
 			setConfig: (newConfig) => set({ config: newConfig }),
 		}),

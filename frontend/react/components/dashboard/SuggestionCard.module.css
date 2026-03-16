@@ -8,6 +8,12 @@
 	gap: var(--space-2);
 }
 
+.focused {
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px var(--color-primary-focus);
+	outline: none;
+}
+
 .logged {
 	flex-direction: row;
 	align-items: center;
@@ -86,9 +92,29 @@
 	color: #1e40af;
 }
 
+.calendar {
+	background: #d1fae5;
+	color: #065f46;
+}
+
 .rescuetime {
 	background: #fef3c7;
 	color: #92400e;
+}
+
+.favorite {
+	background: #fce7f3;
+	color: #9d174d;
+}
+
+.template {
+	background: #e0f2fe;
+	color: #075985;
+}
+
+.previousWeek {
+	background: #ede9fe;
+	color: #5b21b6;
 }
 
 .confidence {
@@ -126,11 +152,53 @@
 	padding-top: var(--space-1);
 }
 
+.timeAdjust {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	margin-right: auto;
+}
+
 .time {
 	font-size: var(--text-sm);
 	font-weight: var(--font-semibold);
 	color: var(--color-text);
-	margin-right: auto;
+	min-width: 3.5em;
+	text-align: center;
+}
+
+.adjustButton {
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	width: 24px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--text-sm);
+	color: var(--color-text-secondary);
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	padding: 0;
+	line-height: 1;
+}
+
+.adjustButton:hover {
+	background: var(--color-surface-raised);
+	color: var(--color-text);
+	border-color: var(--color-text-tertiary);
+}
+
+.adjustButton:disabled {
+	opacity: 0.3;
+	cursor: not-allowed;
+}
+
+.adjustButton:disabled:hover {
+	background: none;
+	color: var(--color-text-secondary);
+	border-color: var(--color-border);
 }
 
 .logButton {
@@ -184,6 +252,73 @@
 	color: var(--color-text-secondary);
 }
 
+.unmapped {
+	border-style: dashed;
+	border-color: var(--color-text-tertiary);
+	background: var(--color-surface-sunken);
+}
+
+.unmappedTitle {
+	font-size: var(--text-sm);
+	font-weight: var(--font-semibold);
+	color: var(--color-text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.unmappedLabel {
+	font-size: 10px;
+	font-weight: var(--font-medium);
+	padding: 1px var(--space-2);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-tertiary);
+	border: 1px solid var(--color-border);
+}
+
+.mapButton {
+	background: none;
+	border: 1px solid var(--color-primary);
+	border-radius: var(--radius-md);
+	padding: var(--space-1) var(--space-3);
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	color: var(--color-primary);
+	cursor: pointer;
+	transition: all var(--transition-fast);
+}
+
+.mapButton:hover {
+	background: var(--color-primary);
+	color: white;
+}
+
+.mappingRow {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding-top: var(--space-1);
+}
+
+.mappingInput {
+	flex: 1;
+	padding: var(--space-1) var(--space-2);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	font-family: var(--font-sans);
+	font-size: var(--text-sm);
+	color: var(--color-text);
+	background: var(--color-surface);
+	min-width: 0;
+}
+
+.mappingInput:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: 0 0 0 2px var(--color-primary-focus);
+}
+
 @media (prefers-color-scheme: dark) {
 	.jiraActivity {
 		background: #312e81;
@@ -193,9 +328,25 @@
 		background: #1e3a5f;
 		color: #93c5fd;
 	}
+	.calendar {
+		background: #064e3b;
+		color: #6ee7b7;
+	}
 	.rescuetime {
 		background: #78350f;
 		color: #fde68a;
+	}
+	.favorite {
+		background: #831843;
+		color: #fbcfe8;
+	}
+	.template {
+		background: #0c4a6e;
+		color: #bae6fd;
+	}
+	.previousWeek {
+		background: #4c1d95;
+		color: #ddd6fe;
 	}
 	.high {
 		background: #14532d;

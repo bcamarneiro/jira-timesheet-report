@@ -24,8 +24,11 @@ test.describe('Navigation', () => {
 	test('should navigate to settings page', async ({ page }) => {
 		await page.goto('/');
 
-		// Click on settings link
-		await page.getByRole('link', { name: /settings/i }).click();
+		// Click on settings link in navigation
+		await page
+			.getByRole('navigation')
+			.getByRole('link', { name: 'Settings' })
+			.click();
 
 		// Verify URL changed
 		await expect(page).toHaveURL(/\/settings/);
@@ -34,8 +37,8 @@ test.describe('Navigation', () => {
 	test('should navigate back to home from timesheet', async ({ page }) => {
 		await page.goto('/timesheet');
 
-		// Click on home link
-		await page.getByRole('link', { name: /home/i }).click();
+		// Click on brand link to go home
+		await page.getByRole('link', { name: 'Jira Timesheet' }).click();
 
 		// Verify URL changed back to home
 		await expect(page).toHaveURL('/');

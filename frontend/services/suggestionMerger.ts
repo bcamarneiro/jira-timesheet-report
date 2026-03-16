@@ -3,6 +3,10 @@ import type {
 	RescueTimeDaySummary,
 	WorklogSuggestion,
 } from '../../types/Suggestion';
+import type {
+	FavoriteIssue,
+	RecurringTemplate,
+} from '../stores/useUserDataStore';
 
 const BASELINE_SECONDS = 8 * 3600;
 
@@ -10,6 +14,18 @@ interface WorklogEntry {
 	date: string;
 	issueKey?: string;
 	timeSpentSeconds: number;
+}
+
+export interface MergeSuggestionsInput {
+	weekStart: string;
+	jiraSuggestions: WorklogSuggestion[];
+	gitlabSuggestions: WorklogSuggestion[];
+	calendarSuggestions: WorklogSuggestion[];
+	rescueTimeData: Map<string, RescueTimeDaySummary>;
+	existingWorklogs: WorklogEntry[];
+	favorites?: FavoriteIssue[];
+	templates?: RecurringTemplate[];
+	timeRounding?: 'off' | '15m' | '30m';
 }
 
 /**
@@ -34,6 +50,42 @@ function formatTimeSpent(seconds: number): string {
 		return remaining > 0 ? `${h}h ${Math.round(remaining / 60)}m` : `${h}h`;
 	}
 	return `${Math.round(seconds / 60)}m`;
+}
+
+/**
+ * Round a duration in seconds to the nearest interval.
+ * Always rounds to at least 1 interval (never rounds to zero).
+ */
+export function roundToInterval(
+	seconds: number,
+	intervalMinutes: number,
+): number {
+	const intervalSeconds = intervalMinutes * 60;
+	const rounded = Math.round(seconds / intervalSeconds) * intervalSeconds;
+	return Math.max(rounded, intervalSeconds);
+}
+
+const ROUNDING_INTERVALS: Record<string, number> = {
+	'15m': 15,
+	'30m': 30,
+};
+
+function applyRounding(
+	suggestions: WorklogSuggestion[],
+	timeRounding: string | undefined,
+): WorklogSuggestion[] {
+	if (!timeRounding || timeRounding === 'off') return suggestions;
+	const interval = ROUNDING_INTERVALS[timeRounding];
+	if (!interval) return suggestions;
+
+	return suggestions.map((s) => {
+		const rounded = roundToInterval(s.suggestedSeconds, interval);
+		return {
+			...s,
+			suggestedSeconds: rounded,
+			suggestedTimeSpent: formatTimeSpent(rounded),
+		};
+	});
 }
 
 /**
@@ -91,6 +143,66 @@ function scaleSuggestionsWithRT(
 }
 
 /**
+ * Proportionally scale suggestion durations so they sum to exactly `gapSeconds`.
+ *
+ * Edge cases:
+ * - Empty suggestions array: returns empty array
+ * - Zero or negative gap: returns suggestions unchanged
+ * - Total suggested already >= gap: returns suggestions unchanged
+ */
+export function distributeSuggestionsToFillGap(
+	suggestions: WorklogSuggestion[],
+	gapSeconds: number,
+	timeRounding?: 'off' | '15m' | '30m',
+): WorklogSuggestion[] {
+	if (suggestions.length === 0) return [];
+	if (gapSeconds <= 0) return suggestions;
+
+	const totalSuggested = suggestions.reduce(
+		(sum, s) => sum + s.suggestedSeconds,
+		0,
+	);
+
+	// If suggestions already fill or exceed the gap, return unchanged
+	if (totalSuggested >= gapSeconds) return suggestions;
+
+	const scaleFactor = gapSeconds / totalSuggested;
+
+	// Scale each suggestion proportionally, then reconcile rounding so the
+	// total matches gapSeconds exactly.
+	const scaled = suggestions.map((s) => {
+		const newSeconds = Math.round(s.suggestedSeconds * scaleFactor);
+		return {
+			...s,
+			suggestedSeconds: newSeconds,
+			suggestedTimeSpent: formatTimeSpent(newSeconds),
+		};
+	});
+
+	// Fix rounding drift: add/subtract the remainder to the largest item
+	const scaledTotal = scaled.reduce((sum, s) => sum + s.suggestedSeconds, 0);
+	const drift = gapSeconds - scaledTotal;
+
+	if (drift !== 0) {
+		// Find the suggestion with the largest suggestedSeconds to absorb drift
+		let maxIdx = 0;
+		for (let i = 1; i < scaled.length; i++) {
+			if (scaled[i].suggestedSeconds > scaled[maxIdx].suggestedSeconds) {
+				maxIdx = i;
+			}
+		}
+		const adjusted = scaled[maxIdx].suggestedSeconds + drift;
+		scaled[maxIdx] = {
+			...scaled[maxIdx],
+			suggestedSeconds: adjusted,
+			suggestedTimeSpent: formatTimeSpent(adjusted),
+		};
+	}
+
+	return applyRounding(scaled, timeRounding);
+}
+
+/**
  * Merge suggestions from all sources, dedup, filter already-logged issues,
  * and produce a full week of DaySummary objects.
  *
@@ -98,14 +210,23 @@ function scaleSuggestionsWithRT(
  * 1. Scale suggestion durations to match actual productive hours
  * 2. Boost confidence when RT confirms heavy work
  * 3. Show activity breakdown per day
+ *
+ * Injects favorites and recurring templates as additional suggestions
+ * for weekdays where they are not already suggested or logged.
  */
-export function mergeSuggestions(
-	weekStart: string,
-	jiraSuggestions: WorklogSuggestion[],
-	gitlabSuggestions: WorklogSuggestion[],
-	rescueTimeData: Map<string, RescueTimeDaySummary>,
-	existingWorklogs: WorklogEntry[],
-): DaySummary[] {
+export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
+	const {
+		weekStart,
+		jiraSuggestions,
+		gitlabSuggestions,
+		calendarSuggestions,
+		rescueTimeData,
+		existingWorklogs,
+		favorites = [],
+		templates = [],
+		timeRounding,
+	} = input;
+
 	const dates = getWeekDates(weekStart);
 
 	// Build a set of (date, issueKey) already logged
@@ -120,8 +241,23 @@ export function mergeSuggestions(
 		}
 	}
 
-	// Combine all suggestions
-	const allSuggestions = [...jiraSuggestions, ...gitlabSuggestions];
+	// Separate unmapped calendar events (empty issueKey) from mapped suggestions
+	const unmappedCalendar: WorklogSuggestion[] = [];
+	const mappedCalendar: WorklogSuggestion[] = [];
+	for (const s of calendarSuggestions) {
+		if (!s.issueKey && s.calendarEventTitle) {
+			unmappedCalendar.push(s);
+		} else {
+			mappedCalendar.push(s);
+		}
+	}
+
+	// Combine all mapped suggestions
+	const allSuggestions = [
+		...jiraSuggestions,
+		...gitlabSuggestions,
+		...mappedCalendar,
+	];
 
 	// Deduplicate: same (date, issueKey), keep higher confidence
 	const deduped = new Map<string, WorklogSuggestion>();
@@ -139,6 +275,54 @@ export function mergeSuggestions(
 			confidenceOrder[s.confidence] > confidenceOrder[existing.confidence]
 		) {
 			deduped.set(key, s);
+		}
+	}
+
+	// Inject favorite suggestions for each weekday
+	for (const date of dates) {
+		const d = new Date(date);
+		const dayOfWeek = d.getDay();
+		const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+		if (isWeekend) continue;
+
+		for (const fav of favorites) {
+			const key = `${date}::${fav.issueKey}`;
+			if (loggedSet.has(key) || deduped.has(key)) continue;
+
+			deduped.set(key, {
+				id: `fav-${fav.issueKey}-${date}`,
+				source: 'favorite',
+				issueKey: fav.issueKey,
+				issueSummary: fav.issueSummary,
+				date,
+				suggestedTimeSpent: fav.defaultTimeSpent,
+				suggestedSeconds: fav.defaultSeconds,
+				confidence: 'high',
+				reason: 'Pinned issue',
+				logged: false,
+			});
+		}
+
+		// Inject template suggestions for matching days
+		for (const tmpl of templates) {
+			if (!tmpl.enabled) continue;
+			if (!tmpl.daysOfWeek.includes(dayOfWeek)) continue;
+
+			const key = `${date}::${tmpl.issueKey}`;
+			if (loggedSet.has(key) || deduped.has(key)) continue;
+
+			deduped.set(key, {
+				id: `tmpl-${tmpl.id}-${date}`,
+				source: 'template',
+				issueKey: tmpl.issueKey,
+				issueSummary: tmpl.issueSummary,
+				date,
+				suggestedTimeSpent: tmpl.timeSpent,
+				suggestedSeconds: tmpl.seconds,
+				confidence: 'high',
+				reason: tmpl.comment || 'Recurring template',
+				logged: false,
+			});
 		}
 	}
 
@@ -180,6 +364,13 @@ export function mergeSuggestions(
 			suggestedTotal += cappedSeconds;
 		}
 
+		// Apply time rounding if configured
+		const roundedSuggestions = applyRounding(daySuggestions, timeRounding);
+
+		// Append unmapped calendar events for this day (not capped by gap —
+		// they need user action to map before they can be logged)
+		const dayUnmapped = unmappedCalendar.filter((s) => s.date === date);
+
 		return {
 			date,
 			dayOfWeek,
@@ -187,7 +378,7 @@ export function mergeSuggestions(
 			loggedSeconds,
 			targetSeconds,
 			gapSeconds,
-			suggestions: daySuggestions,
+			suggestions: [...roundedSuggestions, ...dayUnmapped],
 			rescueTime: rtDay,
 		};
 	});

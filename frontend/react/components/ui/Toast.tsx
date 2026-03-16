@@ -10,30 +10,52 @@ const TYPE_STYLES: Record<ToastType, string> = {
 	info: styles.info,
 };
 
+export interface ToastAction {
+	label: string;
+	onClick: () => void;
+}
+
 interface ToastItem {
 	id: number;
 	message: string;
 	type: ToastType;
+	action?: ToastAction;
+}
+
+interface ToastOptions {
+	action?: ToastAction;
 }
 
 let toastId = 0;
-let addToastFn: ((message: string, type: ToastType) => void) | null = null;
+let addToastFn:
+	| ((message: string, type: ToastType, options?: ToastOptions) => void)
+	| null = null;
 
-export function toast(message: string, type: ToastType = 'info') {
-	addToastFn?.(message, type);
+export function toast(
+	message: string,
+	type: ToastType = 'info',
+	options?: ToastOptions,
+) {
+	addToastFn?.(message, type, options);
 }
 
-toast.success = (message: string) => toast(message, 'success');
-toast.error = (message: string) => toast(message, 'error');
-toast.info = (message: string) => toast(message, 'info');
+toast.success = (message: string, options?: ToastOptions) =>
+	toast(message, 'success', options);
+toast.error = (message: string, options?: ToastOptions) =>
+	toast(message, 'error', options);
+toast.info = (message: string, options?: ToastOptions) =>
+	toast(message, 'info', options);
 
 export const ToastContainer: React.FC = () => {
 	const [toasts, setToasts] = useState<ToastItem[]>([]);
 
 	useEffect(() => {
-		addToastFn = (message: string, type: ToastType) => {
+		addToastFn = (message: string, type: ToastType, options?: ToastOptions) => {
 			const id = ++toastId;
-			setToasts((prev) => [...prev, { id, message, type }]);
+			setToasts((prev) => [
+				...prev,
+				{ id, message, type, action: options?.action },
+			]);
 			setTimeout(() => {
 				setToasts((prev) => prev.filter((t) => t.id !== id));
 			}, 3500);
@@ -55,6 +77,18 @@ export const ToastContainer: React.FC = () => {
 						{t.type === 'info' && '\u2139'}
 					</span>
 					<span className={styles.message}>{t.message}</span>
+					{t.action && (
+						<button
+							type="button"
+							className={styles.action}
+							onClick={() => {
+								t.action?.onClick();
+								setToasts((prev) => prev.filter((x) => x.id !== t.id));
+							}}
+						>
+							{t.action.label}
+						</button>
+					)}
 					<button
 						type="button"
 						className={styles.dismiss}

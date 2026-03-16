@@ -1,5 +1,17 @@
 import { create } from 'zustand';
-import type { DaySummary } from '../../types/Suggestion';
+import type { DaySummary, WorklogSuggestion } from '../../types/Suggestion';
+import { distributeSuggestionsToFillGap } from '../services/suggestionMerger';
+import { useConfigStore } from './useConfigStore';
+
+function formatTimeSpent(seconds: number): string {
+	const hours = seconds / 3600;
+	if (hours >= 1) {
+		const h = Math.floor(hours);
+		const remaining = seconds % 3600;
+		return remaining > 0 ? `${h}h ${Math.round(remaining / 60)}m` : `${h}h`;
+	}
+	return `${Math.round(seconds / 60)}m`;
+}
 
 function getMonday(date: Date): string {
 	const d = new Date(date);
@@ -23,36 +35,56 @@ function shiftWeek(monday: string, weeks: number): string {
 
 const todayMonday = getMonday(new Date());
 
+export interface WeekWorklogEntry {
+	date: string;
+	issueKey: string;
+	issueSummary?: string;
+	timeSpentSeconds: number;
+}
+
 interface DashboardState {
 	weekStart: string;
 	weekEnd: string;
 
 	daySummaries: DaySummary[];
+	weekWorklogs: WeekWorklogEntry[];
 
 	isLoadingWorklogs: boolean;
 	isLoadingJiraSuggestions: boolean;
 	isLoadingGitlabSuggestions: boolean;
+	isLoadingCalendarSuggestions: boolean;
 	isLoadingRescueTime: boolean;
 
 	worklogsError: string | null;
 	jiraSuggestionsError: string | null;
 	gitlabSuggestionsError: string | null;
+	calendarSuggestionsError: string | null;
 	rescueTimeError: string | null;
+
+	lastFetchedAt: string | null;
+	setLastFetchedAt: (ts: string | null) => void;
 
 	setWeek: (start: string) => void;
 	goToPrevWeek: () => void;
 	goToNextWeek: () => void;
 	goToCurrentWeek: () => void;
 	setDaySummaries: (summaries: DaySummary[]) => void;
+	setWeekWorklogs: (worklogs: WeekWorklogEntry[]) => void;
 	markSuggestionLogged: (suggestionId: string) => void;
+	unmarkSuggestionLogged: (suggestionId: string) => void;
+	markMultipleSuggestionsLogged: (ids: string[]) => void;
+	unmarkMultipleSuggestionsLogged: (ids: string[]) => void;
 	dismissSuggestion: (suggestionId: string) => void;
+	mergePreviousWeekSuggestions: (suggestions: WorklogSuggestion[]) => void;
+	adjustSuggestionTime: (suggestionId: string, deltaSeconds: number) => void;
+	fillDayGap: (date: string) => void;
 
 	setLoading: (
-		source: 'worklogs' | 'jira' | 'gitlab' | 'rescuetime',
+		source: 'worklogs' | 'jira' | 'gitlab' | 'calendar' | 'rescuetime',
 		value: boolean,
 	) => void;
 	setError: (
-		source: 'worklogs' | 'jira' | 'gitlab' | 'rescuetime',
+		source: 'worklogs' | 'jira' | 'gitlab' | 'calendar' | 'rescuetime',
 		value: string | null,
 	) => void;
 }
@@ -61,6 +93,7 @@ const loadingKeys = {
 	worklogs: 'isLoadingWorklogs',
 	jira: 'isLoadingJiraSuggestions',
 	gitlab: 'isLoadingGitlabSuggestions',
+	calendar: 'isLoadingCalendarSuggestions',
 	rescuetime: 'isLoadingRescueTime',
 } as const;
 
@@ -68,6 +101,7 @@ const errorKeys = {
 	worklogs: 'worklogsError',
 	jira: 'jiraSuggestionsError',
 	gitlab: 'gitlabSuggestionsError',
+	calendar: 'calendarSuggestionsError',
 	rescuetime: 'rescueTimeError',
 } as const;
 
@@ -76,16 +110,22 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 	weekEnd: getSunday(todayMonday),
 
 	daySummaries: [],
+	weekWorklogs: [],
 
 	isLoadingWorklogs: false,
 	isLoadingJiraSuggestions: false,
 	isLoadingGitlabSuggestions: false,
+	isLoadingCalendarSuggestions: false,
 	isLoadingRescueTime: false,
 
 	worklogsError: null,
 	jiraSuggestionsError: null,
 	gitlabSuggestionsError: null,
+	calendarSuggestionsError: null,
 	rescueTimeError: null,
+
+	lastFetchedAt: null,
+	setLastFetchedAt: (ts) => set({ lastFetchedAt: ts }),
 
 	setWeek: (start) => set({ weekStart: start, weekEnd: getSunday(start) }),
 
@@ -106,6 +146,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
 	setDaySummaries: (summaries) => set({ daySummaries: summaries }),
 
+	setWeekWorklogs: (worklogs) => set({ weekWorklogs: worklogs }),
+
 	markSuggestionLogged: (suggestionId) =>
 		set((state) => ({
 			daySummaries: state.daySummaries.map((day) => ({
@@ -116,6 +158,42 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 			})),
 		})),
 
+	unmarkSuggestionLogged: (suggestionId) =>
+		set((state) => ({
+			daySummaries: state.daySummaries.map((day) => ({
+				...day,
+				suggestions: day.suggestions.map((s) =>
+					s.id === suggestionId ? { ...s, logged: false } : s,
+				),
+			})),
+		})),
+
+	markMultipleSuggestionsLogged: (ids) =>
+		set((state) => {
+			const idSet = new Set(ids);
+			return {
+				daySummaries: state.daySummaries.map((day) => ({
+					...day,
+					suggestions: day.suggestions.map((s) =>
+						idSet.has(s.id) ? { ...s, logged: true } : s,
+					),
+				})),
+			};
+		}),
+
+	unmarkMultipleSuggestionsLogged: (ids) =>
+		set((state) => {
+			const idSet = new Set(ids);
+			return {
+				daySummaries: state.daySummaries.map((day) => ({
+					...day,
+					suggestions: day.suggestions.map((s) =>
+						idSet.has(s.id) ? { ...s, logged: false } : s,
+					),
+				})),
+			};
+		}),
+
 	dismissSuggestion: (suggestionId) =>
 		set((state) => ({
 			daySummaries: state.daySummaries.map((day) => ({
@@ -123,6 +201,65 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 				suggestions: day.suggestions.filter((s) => s.id !== suggestionId),
 			})),
 		})),
+
+	mergePreviousWeekSuggestions: (suggestions) =>
+		set((state) => ({
+			daySummaries: state.daySummaries.map((day) => {
+				// Find suggestions that target this day
+				const newForDay = suggestions.filter((s) => s.date === day.date);
+				if (newForDay.length === 0) return day;
+
+				// Build a set of issue keys already present (logged or suggested)
+				const existingKeys = new Set<string>();
+				for (const s of day.suggestions) {
+					existingKeys.add(s.issueKey);
+				}
+
+				// Only add suggestions for issues not already present
+				const toAdd = newForDay.filter((s) => !existingKeys.has(s.issueKey));
+				if (toAdd.length === 0) return day;
+
+				return {
+					...day,
+					suggestions: [...day.suggestions, ...toAdd],
+				};
+			}),
+		})),
+
+	adjustSuggestionTime: (suggestionId, deltaSeconds) =>
+		set((state) => ({
+			daySummaries: state.daySummaries.map((day) => ({
+				...day,
+				suggestions: day.suggestions.map((s) => {
+					if (s.id !== suggestionId) return s;
+					const newSeconds = Math.max(900, s.suggestedSeconds + deltaSeconds);
+					return {
+						...s,
+						suggestedSeconds: newSeconds,
+						suggestedTimeSpent: formatTimeSpent(newSeconds),
+					};
+				}),
+			})),
+		})),
+
+	fillDayGap: (date) =>
+		set((state) => {
+			const timeRounding = useConfigStore.getState().config.timeRounding;
+			return {
+				daySummaries: state.daySummaries.map((day) => {
+					if (day.date !== date) return day;
+					const active = day.suggestions.filter((s) => !s.logged);
+					if (active.length === 0 || day.gapSeconds <= 0) return day;
+					const scaled = distributeSuggestionsToFillGap(
+						active,
+						day.gapSeconds,
+						timeRounding,
+					);
+					const logged = day.suggestions.filter((s) => s.logged);
+					return { ...day, suggestions: [...scaled, ...logged] };
+				}),
+			};
+		}),
 
 	setLoading: (source, value) => set({ [loadingKeys[source]]: value }),
 

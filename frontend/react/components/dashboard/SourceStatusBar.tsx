@@ -9,12 +9,17 @@ export const SourceStatusBar: React.FC = () => {
 	const isLoadingGitlab = useDashboardStore(
 		(s) => s.isLoadingGitlabSuggestions,
 	);
+	const isLoadingCalendar = useDashboardStore(
+		(s) => s.isLoadingCalendarSuggestions,
+	);
 	const isLoadingRescueTime = useDashboardStore((s) => s.isLoadingRescueTime);
 	const jiraError = useDashboardStore((s) => s.jiraSuggestionsError);
 	const gitlabError = useDashboardStore((s) => s.gitlabSuggestionsError);
+	const calendarError = useDashboardStore((s) => s.calendarSuggestionsError);
 	const rescueTimeError = useDashboardStore((s) => s.rescueTimeError);
 
 	const hasGitlab = !!(config.gitlabToken && config.gitlabHost);
+	const hasCalendar = config.calendarFeeds && config.calendarFeeds.length > 0;
 	const hasRescueTime = !!config.rescueTimeApiKey;
 
 	return (
@@ -30,6 +35,12 @@ export const SourceStatusBar: React.FC = () => {
 				loading={isLoadingGitlab}
 				error={gitlabError}
 				configured={hasGitlab}
+			/>
+			<SourcePill
+				label="Calendar"
+				loading={isLoadingCalendar}
+				error={calendarError}
+				configured={hasCalendar}
 			/>
 			<SourcePill
 				label="RescueTime"

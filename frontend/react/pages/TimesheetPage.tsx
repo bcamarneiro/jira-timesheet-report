@@ -5,6 +5,7 @@ import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { OverviewTable } from '../components/OverviewTable';
 import { TimesheetGrid } from '../components/TimesheetGrid';
+import { TimesheetStatsCards } from '../components/timesheet/TimesheetStatsCards';
 import { UserSelector } from '../components/UserSelector';
 import { Button } from '../components/ui/Button';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
@@ -166,6 +167,11 @@ export const TimesheetPage: React.FC = () => {
 						</ErrorBoundary>
 					) : (
 						<>
+							<TimesheetStatsCards
+								entries={visibleEntries}
+								year={currentYear}
+								monthZeroIndexed={currentMonth}
+							/>
 							{visibleEntries.length > 1 && (
 								<OverviewTable
 									entries={visibleEntries}

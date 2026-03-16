@@ -9,11 +9,13 @@ test.describe('Timesheet Page', () => {
 	});
 
 	test('should display month navigation', async ({ page }) => {
-		// Check for previous/next month buttons
+		// Check for previous/next month buttons (use aria-label)
 		await expect(
-			page.getByRole('button', { name: /previous|prev|←/i }),
+			page.getByRole('button', { name: 'Previous month' }),
 		).toBeVisible();
-		await expect(page.getByRole('button', { name: /next|→/i })).toBeVisible();
+		await expect(
+			page.getByRole('button', { name: 'Next month' }),
+		).toBeVisible();
 	});
 
 	test('should display mock users in offline mode', async ({ page }) => {
@@ -39,7 +41,7 @@ test.describe('Timesheet Page', () => {
 		const initialText = await monthLabel.textContent();
 
 		// Click previous month
-		await page.getByRole('button', { name: '←' }).click();
+		await page.getByRole('button', { name: 'Previous month' }).click();
 
 		// Wait for navigation
 		await page.waitForTimeout(500);
@@ -51,7 +53,7 @@ test.describe('Timesheet Page', () => {
 
 	test('should navigate to next month', async ({ page }) => {
 		// First go back a month
-		await page.getByRole('button', { name: '←' }).click();
+		await page.getByRole('button', { name: 'Previous month' }).click();
 		await page.waitForTimeout(500);
 
 		// Get month label using MonthNavigator CSS class
@@ -61,7 +63,7 @@ test.describe('Timesheet Page', () => {
 		const initialText = await monthLabel.textContent();
 
 		// Click next month
-		await page.getByRole('button', { name: '→' }).click();
+		await page.getByRole('button', { name: 'Next month' }).click();
 
 		// Wait for navigation
 		await page.waitForTimeout(500);

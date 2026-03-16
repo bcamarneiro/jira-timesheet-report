@@ -1,0 +1,23 @@
+.track {
+	width: 100%;
+	background: var(--color-surface-sunken);
+	border-radius: var(--radius-full);
+	overflow: hidden;
+}
+
+.fill {
+	border-radius: var(--radius-full);
+	transition: width var(--transition-base);
+}
+
+.fillGreen {
+	background: var(--color-success);
+}
+
+.fillYellow {
+	background: var(--color-warning);
+}
+
+.fillRed {
+	background: var(--color-error);
+}

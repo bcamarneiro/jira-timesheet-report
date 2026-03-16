@@ -1,6 +1,13 @@
 export interface WorklogSuggestion {
 	id: string;
-	source: 'jira-activity' | 'gitlab' | 'rescuetime';
+	source:
+		| 'jira-activity'
+		| 'gitlab'
+		| 'calendar'
+		| 'rescuetime'
+		| 'favorite'
+		| 'template'
+		| 'previous-week';
 	issueKey: string;
 	issueSummary?: string;
 	date: string;
@@ -9,6 +16,8 @@ export interface WorklogSuggestion {
 	confidence: 'high' | 'medium' | 'low';
 	reason: string;
 	logged: boolean;
+	/** Calendar event title — present on unmapped calendar suggestions */
+	calendarEventTitle?: string;
 }
 
 export interface RescueTimeActivity {

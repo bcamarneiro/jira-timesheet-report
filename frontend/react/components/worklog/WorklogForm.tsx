@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState } from 'react';
 import { Button } from '../ui/Button';
+import { CommentPresets } from './CommentPresets';
 import * as styles from './WorklogForm.module.css';
 
 type Props = {
@@ -72,6 +73,10 @@ export const WorklogForm: React.FC<Props> = ({
 		}
 	};
 
+	const handlePresetSelect = (text: string) => {
+		setComment((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
+	};
+
 	return (
 		<form onSubmit={handleSubmit} className={styles.form}>
 			<div className={styles.formGroup}>
@@ -124,6 +129,7 @@ export const WorklogForm: React.FC<Props> = ({
 
 			<div className={styles.formGroup}>
 				<label htmlFor="comment">Description (Optional)</label>
+				<CommentPresets onSelect={handlePresetSelect} />
 				<textarea
 					id="comment"
 					value={comment}

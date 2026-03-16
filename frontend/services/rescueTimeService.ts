@@ -84,9 +84,19 @@ export async function fetchRescueTimeData(
 			.filter((a) => a.productivity >= 1)
 			.reduce((sum, a) => sum + a.seconds, 0);
 
+		// Merge activities with the same name (can appear under multiple categories)
+		const mergedMap = new Map<string, RescueTimeActivity>();
+		for (const a of activities.filter((a) => a.productivity >= 1)) {
+			const existing = mergedMap.get(a.name);
+			if (existing) {
+				existing.seconds += a.seconds;
+			} else {
+				mergedMap.set(a.name, { ...a });
+			}
+		}
+
 		// Top 5 productive activities by time spent
-		const topActivities = activities
-			.filter((a) => a.productivity >= 1)
+		const topActivities = [...mergedMap.values()]
 			.sort((a, b) => b.seconds - a.seconds)
 			.slice(0, 5);
 

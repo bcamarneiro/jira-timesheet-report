@@ -1,11 +1,18 @@
 import type React from 'react';
+import { useState } from 'react';
 import type { DaySummary } from '../../../../types/Suggestion';
+import { useDashboardStore } from '../../../stores/useDashboardStore';
+import { useWorklogOperations } from '../../hooks/useWorklogOperations';
 import { formatHours } from '../../utils/format';
+import { toast } from '../ui/Toast';
 import * as styles from './DayCard.module.css';
+import { DayNote } from './DayNote';
 import { SuggestionCard } from './SuggestionCard';
 
 type Props = {
 	day: DaySummary;
+	isFocused?: boolean;
+	focusedSuggestionIndex?: number;
 };
 
 const DAY_NAMES = [
@@ -29,15 +36,81 @@ function formatActivityTime(seconds: number): string {
 	return `${Math.round(seconds / 60)}m`;
 }
 
-export const DayCard: React.FC<Props> = ({ day }) => {
+export const DayCard: React.FC<Props> = ({
+	day,
+	isFocused,
+	focusedSuggestionIndex,
+}) => {
+	const fillDayGap = useDashboardStore((s) => s.fillDayGap);
+	const markMultipleSuggestionsLogged = useDashboardStore(
+		(s) => s.markMultipleSuggestionsLogged,
+	);
+	const unmarkMultipleSuggestionsLogged = useDashboardStore(
+		(s) => s.unmarkMultipleSuggestionsLogged,
+	);
+	const { createMultipleWorklogs, deleteWorklog } = useWorklogOperations();
+	const [isBatchLogging, setIsBatchLogging] = useState(false);
 	const activeSuggestions = day.suggestions.filter((s) => !s.logged);
 	const loggedSuggestions = day.suggestions.filter((s) => s.logged);
 	const isToday = day.date === new Date().toISOString().slice(0, 10);
 	const rt = day.rescueTime;
+	const showFillButton = day.gapSeconds > 0 && activeSuggestions.length > 0;
+
+	const handleLogAll = async () => {
+		setIsBatchLogging(true);
+		try {
+			const params = activeSuggestions.map((s) => ({
+				issueKey: s.issueKey,
+				timeSpent: s.suggestedTimeSpent,
+				comment: '',
+				started: `${s.date}T09:00`,
+			}));
+
+			const result = await createMultipleWorklogs(params);
+
+			// Mark successful suggestions as logged
+			const failedKeys = new Set(result.failed);
+			const successIds = activeSuggestions
+				.filter((s) => !failedKeys.has(s.issueKey))
+				.map((s) => s.id);
+
+			if (successIds.length > 0) {
+				markMultipleSuggestionsLogged(successIds);
+			}
+
+			if (result.failed.length === 0) {
+				toast.success(
+					`Logged all ${result.success} worklogs for ${DAY_NAMES[day.dayOfWeek]}`,
+					{
+						action: {
+							label: 'Undo',
+							onClick: () => {
+								Promise.all(
+									result.created.map((w) =>
+										deleteWorklog(w.issueKey, w.worklogId),
+									),
+								).then(() => {
+									unmarkMultipleSuggestionsLogged(successIds);
+								});
+							},
+						},
+					},
+				);
+			} else {
+				toast.error(
+					`Logged ${result.success} of ${params.length}: failed ${result.failed.join(', ')}`,
+				);
+			}
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Batch log failed');
+		} finally {
+			setIsBatchLogging(false);
+		}
+	};
 
 	return (
 		<div
-			className={`${styles.card} ${isToday ? styles.today : ''} ${day.isWeekend ? styles.weekend : ''}`}
+			className={`${styles.card} ${isToday ? styles.today : ''} ${day.isWeekend ? styles.weekend : ''} ${isFocused ? styles.focused : ''}`}
 		>
 			<div className={styles.header}>
 				<div className={styles.dayInfo}>
@@ -60,14 +133,35 @@ export const DayCard: React.FC<Props> = ({ day }) => {
 							RT: {(rt.productiveSeconds / 3600).toFixed(1)}h
 						</span>
 					)}
+					{showFillButton && (
+						<button
+							type="button"
+							className={styles.fillButton}
+							onClick={() => fillDayGap(day.date)}
+						>
+							Fill day
+						</button>
+					)}
+					{activeSuggestions.length > 0 && (
+						<button
+							type="button"
+							className={styles.logAllButton}
+							onClick={handleLogAll}
+							disabled={isBatchLogging}
+						>
+							{isBatchLogging ? 'Logging...' : 'Log All'}
+						</button>
+					)}
 				</div>
 			</div>
 
+			<DayNote date={day.date} />
+
 			{rt && rt.topActivities.length > 0 && (
 				<div className={styles.activities}>
-					{rt.topActivities.map((a) => (
+					{rt.topActivities.map((a, i) => (
 						<span
-							key={a.name}
+							key={`${a.name}-${i}`}
 							className={styles.activityPill}
 							title={`${a.category} — ${formatActivityTime(a.seconds)}`}
 						>
@@ -82,8 +176,12 @@ export const DayCard: React.FC<Props> = ({ day }) => {
 
 			{activeSuggestions.length > 0 && (
 				<div className={styles.suggestions}>
-					{activeSuggestions.map((s) => (
-						<SuggestionCard key={s.id} suggestion={s} />
+					{activeSuggestions.map((s, i) => (
+						<SuggestionCard
+							key={s.id}
+							suggestion={s}
+							isFocused={isFocused && focusedSuggestionIndex === i}
+						/>
 					))}
 				</div>
 			)}

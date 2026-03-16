@@ -1,0 +1,176 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+}
+
+.header {
+	font-size: var(--text-sm);
+	font-weight: var(--font-semibold);
+	color: var(--color-text);
+}
+
+.dayLabels {
+	display: grid;
+	grid-template-columns: repeat(7, 24px);
+	gap: 3px;
+	justify-content: start;
+}
+
+.dayLabel {
+	font-size: 9px;
+	font-weight: var(--font-medium);
+	color: var(--color-text-tertiary);
+	text-align: center;
+	line-height: 14px;
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(7, 24px);
+	gap: 3px;
+	justify-content: start;
+}
+
+.cell {
+	width: 24px;
+	height: 24px;
+	border-radius: var(--radius-sm);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 9px;
+	font-weight: var(--font-medium);
+	color: var(--color-text-secondary);
+	transition: all var(--transition-fast);
+}
+
+.cell:hover {
+	outline: 1px solid var(--color-border-strong);
+}
+
+.cellEmpty {
+	background: var(--color-surface-sunken);
+	border: 1px solid var(--color-border-subtle);
+}
+
+.cellPlaceholder {
+	background: transparent;
+	border: none;
+}
+
+.cellPlaceholder:hover {
+	outline: none;
+}
+
+.cellLevel1 {
+	background: #dcfce7;
+	color: #166534;
+}
+
+.cellLevel2 {
+	background: #86efac;
+	color: #14532d;
+}
+
+.cellLevel3 {
+	background: #4ade80;
+	color: #052e16;
+}
+
+.cellLevel4 {
+	background: #16a34a;
+	color: #ffffff;
+}
+
+.cellWeekend {
+	opacity: 0.5;
+}
+
+.footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--space-2);
+	margin-top: var(--space-1);
+}
+
+.legendLabel {
+	font-size: var(--text-xs);
+	color: var(--color-text-tertiary);
+}
+
+.legendCells {
+	display: flex;
+	gap: 2px;
+	align-items: center;
+}
+
+.legendCell {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+}
+
+.legendCellEmpty {
+	background: var(--color-surface-sunken);
+	border: 1px solid var(--color-border-subtle);
+}
+
+.legendCellLevel1 {
+	background: #dcfce7;
+}
+
+.legendCellLevel2 {
+	background: #86efac;
+}
+
+.legendCellLevel3 {
+	background: #4ade80;
+}
+
+.legendCellLevel4 {
+	background: #16a34a;
+}
+
+@media (prefers-color-scheme: dark) {
+	.cellLevel1 {
+		background: #052e16;
+		color: #86efac;
+	}
+
+	.cellLevel2 {
+		background: #14532d;
+		color: #dcfce7;
+	}
+
+	.cellLevel3 {
+		background: #166534;
+		color: #f0fdf4;
+	}
+
+	.cellLevel4 {
+		background: #16a34a;
+		color: #ffffff;
+	}
+
+	.legendCellLevel1 {
+		background: #052e16;
+	}
+
+	.legendCellLevel2 {
+		background: #14532d;
+	}
+
+	.legendCellLevel3 {
+		background: #166534;
+	}
+
+	.legendCellLevel4 {
+		background: #16a34a;
+	}
+}
