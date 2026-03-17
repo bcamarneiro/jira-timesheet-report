@@ -1,6 +1,8 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import { createRoot } from 'react-dom/client';
-import './react/styles/global.css';
 import { App } from './react/App';
+import { queryClient } from './react/queryClient';
+import './react/styles/global.css';
 import { useConfigStore } from './stores/useConfigStore';
 
 // Start MSW only in offline mode
@@ -50,7 +52,11 @@ async function startApp() {
 	const container = document.getElementById('root');
 	if (container) {
 		const root = createRoot(container);
-		root.render(<App />);
+		root.render(
+			<QueryClientProvider client={queryClient}>
+				<App />
+			</QueryClientProvider>,
+		);
 	}
 }
 

@@ -8,7 +8,8 @@ import { WeekNavigator } from '../components/dashboard/WeekNavigator';
 import { TeamStatsCards } from '../components/team/TeamStatsCards';
 import { Button } from '../components/ui/Button';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { useTeamDataFetcher } from '../hooks/useTeamDataFetcher';
+import { Spinner } from '../components/ui/Spinner';
+import { useTeamData } from '../hooks/useTeamData';
 import { downloadAsFile } from '../utils/downloadFile';
 import { formatHours } from '../utils/format';
 import { buildTeamCsv } from '../utils/teamCsvExport';
@@ -165,17 +166,18 @@ function SortIndicator({
 }
 
 export const TeamPage: React.FC = () => {
-	useTeamDataFetcher();
-
 	const jiraHost = useConfigStore((s) => s.config.jiraHost);
 	const weekStart = useTeamStore((s) => s.weekStart);
 	const weekEnd = useTeamStore((s) => s.weekEnd);
-	const teamMembers = useTeamStore((s) => s.teamMembers);
-	const isLoading = useTeamStore((s) => s.isLoading);
-	const error = useTeamStore((s) => s.error);
 	const goToPrevWeek = useTeamStore((s) => s.goToPrevWeek);
 	const goToNextWeek = useTeamStore((s) => s.goToNextWeek);
 	const goToCurrentWeek = useTeamStore((s) => s.goToCurrentWeek);
+
+	const {
+		data: teamMembers,
+		isLoading,
+		error,
+	} = useTeamData(weekStart, weekEnd);
 
 	const [sortField, setSortField] = useState<SortField>('name');
 	const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -245,7 +247,7 @@ export const TeamPage: React.FC = () => {
 				</div>
 				<div className={styles.error}>
 					<h2>Unable to load team data</h2>
-					<p>{error}</p>
+					<p>{error.message}</p>
 					<Link to="/settings">Check your settings</Link>
 				</div>
 			</div>
@@ -271,7 +273,7 @@ export const TeamPage: React.FC = () => {
 
 			{isLoading && teamMembers.length === 0 && (
 				<div className={styles.loading}>
-					<div className={styles.spinner} />
+					<Spinner size="lg" />
 					<p>Loading team worklogs...</p>
 				</div>
 			)}
@@ -288,6 +290,12 @@ export const TeamPage: React.FC = () => {
 
 			{teamMembers.length > 0 && (
 				<>
+					{isLoading && (
+						<div className={styles.refetching}>
+							<Spinner size="sm" />
+							<span>Updating...</span>
+						</div>
+					)}
 					<TeamStatsCards teamMembers={teamMembers} />
 
 					<div className={styles.tableWrapper}>

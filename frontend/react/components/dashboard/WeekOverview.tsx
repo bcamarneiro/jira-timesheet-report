@@ -1,4 +1,4 @@
-import type React from 'react';
+import { memo } from 'react';
 import type { DaySummary } from '../../../../types/Suggestion';
 import { formatHours } from '../../utils/format';
 import * as styles from './WeekOverview.module.css';
@@ -16,7 +16,7 @@ function getDayStatus(day: DaySummary): string {
 	return styles.empty;
 }
 
-export const WeekOverview: React.FC<Props> = ({ days }) => {
+export const WeekOverview = memo<Props>(function WeekOverview({ days }) {
 	const totalLogged = days.reduce((sum, d) => sum + d.loggedSeconds, 0);
 	const totalTarget = days.reduce((sum, d) => sum + d.targetSeconds, 0);
 	const todayStr = new Date().toISOString().slice(0, 10);
@@ -65,4 +65,4 @@ export const WeekOverview: React.FC<Props> = ({ days }) => {
 			</div>
 		</div>
 	);
-};
+});

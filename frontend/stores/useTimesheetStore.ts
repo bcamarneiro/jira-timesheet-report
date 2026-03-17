@@ -1,11 +1,36 @@
-import type { Version2Models } from 'jira.js';
 import { create } from 'zustand';
 import { toLocalDateString } from '../react/utils/date';
 import { useConfigStore } from './useConfigStore';
 
+// Minimal Jira types covering the fields we actually use
+export interface JiraUser {
+	displayName?: string;
+	emailAddress?: string;
+	accountId?: string;
+	active?: boolean;
+}
+
+export interface JiraIssue {
+	id: string;
+	key: string;
+	fields: {
+		summary: string;
+		[key: string]: unknown;
+	};
+}
+
+export interface JiraWorklog {
+	id?: string;
+	started?: string;
+	timeSpentSeconds?: number;
+	author?: JiraUser;
+	comment?: string | object;
+	[key: string]: unknown;
+}
+
 // Create an enriched type that includes the parent issue
-export type EnrichedJiraWorklog = Version2Models.Worklog & {
-	issue: Version2Models.Issue;
+export type EnrichedJiraWorklog = JiraWorklog & {
+	issue: JiraIssue;
 };
 
 export type GroupedWorklogs = Record<

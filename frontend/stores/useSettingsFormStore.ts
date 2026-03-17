@@ -1,8 +1,6 @@
-import { Version2Client } from 'jira.js';
 import { create } from 'zustand';
 import type { Config } from './useConfigStore';
 import { useConfigStore } from './useConfigStore';
-import { useJiraClientStore } from './useJiraClientStore';
 
 interface IntegrationTestResult {
 	loading: boolean;
@@ -62,8 +60,6 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 	saveSettings: () => {
 		const { formData } = get();
 		useConfigStore.getState().setConfig(formData);
-		// Force reinitialize the Jira client with new config
-		useJiraClientStore.getState().reinitialize();
 	},
 
 	resetForm: () => {
@@ -94,47 +90,51 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				? `${formData.corsProxy.replace(/\/$/, '')}/https://${formData.jiraHost}`
 				: `https://${formData.jiraHost}`;
 
-			const client = new Version2Client({
-				host,
-				authentication: {
-					oauth2: {
-						accessToken: formData.apiToken,
-					},
-				},
-			});
+			const headers: HeadersInit = {
+				Authorization: `Bearer ${formData.apiToken}`,
+				Accept: 'application/json',
+				'X-Atlassian-Token': 'no-check',
+			};
 
 			const startTime = performance.now();
-			const myself = await client.myself.getCurrentUser();
+			const myselfRes = await fetch(`${host}/rest/api/2/myself`, { headers });
+			if (!myselfRes.ok) {
+				throw new Error(`Jira API error: ${myselfRes.status}`);
+			}
+			const myself = (await myselfRes.json()) as { displayName?: string };
 			const duration = Math.round(performance.now() - startTime);
 			console.log(`[Test] Jira OK in ${duration}ms: ${myself.displayName}`);
 
 			// Auto-detect worklog permissions
 			try {
-				const perms = await client.permissions.getMyPermissions({
-					permissions:
-						'WORK_ON_ISSUES,EDIT_ALL_WORKLOGS,EDIT_OWN_WORKLOGS,DELETE_ALL_WORKLOGS,DELETE_OWN_WORKLOGS',
-				});
-				const p = (
-					perms as { permissions?: Record<string, { havePermission: boolean }> }
-				).permissions;
-				if (p) {
-					const canAdd = p.WORK_ON_ISSUES?.havePermission ?? true;
-					const canEdit =
-						(p.EDIT_ALL_WORKLOGS?.havePermission ||
-							p.EDIT_OWN_WORKLOGS?.havePermission) ??
-						true;
-					const canDelete =
-						(p.DELETE_ALL_WORKLOGS?.havePermission ||
-							p.DELETE_OWN_WORKLOGS?.havePermission) ??
-						true;
-					set((state) => ({
-						formData: {
-							...state.formData,
-							canAddWorklogs: canAdd,
-							canEditWorklogs: canEdit,
-							canDeleteWorklogs: canDelete,
-						},
-					}));
+				const permsRes = await fetch(
+					`${host}/rest/api/2/mypermissions?permissions=WORK_ON_ISSUES,EDIT_ALL_WORKLOGS,EDIT_OWN_WORKLOGS,DELETE_ALL_WORKLOGS,DELETE_OWN_WORKLOGS`,
+					{ headers },
+				);
+				if (permsRes.ok) {
+					const perms = (await permsRes.json()) as {
+						permissions?: Record<string, { havePermission: boolean }>;
+					};
+					const p = perms.permissions;
+					if (p) {
+						const canAdd = p.WORK_ON_ISSUES?.havePermission ?? true;
+						const canEdit =
+							(p.EDIT_ALL_WORKLOGS?.havePermission ||
+								p.EDIT_OWN_WORKLOGS?.havePermission) ??
+							true;
+						const canDelete =
+							(p.DELETE_ALL_WORKLOGS?.havePermission ||
+								p.DELETE_OWN_WORKLOGS?.havePermission) ??
+							true;
+						set((state) => ({
+							formData: {
+								...state.formData,
+								canAddWorklogs: canAdd,
+								canEditWorklogs: canEdit,
+								canDeleteWorklogs: canDelete,
+							},
+						}));
+					}
 				}
 			} catch {
 				// permissions check is optional

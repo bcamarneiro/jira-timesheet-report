@@ -145,6 +145,16 @@
 	line-height: 1.4;
 }
 
+.reasonButton {
+	background: none;
+	border: none;
+	padding: 0;
+	text-align: left;
+	font-family: inherit;
+	cursor: pointer;
+	width: 100%;
+}
+
 .reasonTruncated {
 	overflow: hidden;
 	text-overflow: ellipsis;

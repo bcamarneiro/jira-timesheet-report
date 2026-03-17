@@ -9,6 +9,7 @@ import { TimesheetStatsCards } from '../components/timesheet/TimesheetStatsCards
 import { UserSelector } from '../components/UserSelector';
 import { Button } from '../components/ui/Button';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { Spinner } from '../components/ui/Spinner';
 import { useDownload } from '../hooks/useDownload';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
 import { useTimesheetURLSync } from '../hooks/useTimesheetURLSync';
@@ -126,10 +127,17 @@ export const TimesheetPage: React.FC = () => {
 				</div>
 			</div>
 
-			{isLoading && (
+			{isLoading && !data && (
 				<div className={styles.loading}>
-					<div className={styles.spinner} />
+					<Spinner size="lg" />
 					<p>Loading worklogs...</p>
+				</div>
+			)}
+
+			{isLoading && data && (
+				<div className={styles.refetching}>
+					<Spinner size="sm" />
+					<span>Updating...</span>
 				</div>
 			)}
 
@@ -145,7 +153,7 @@ export const TimesheetPage: React.FC = () => {
 				</div>
 			)}
 
-			{!isLoading && data && !hasNoData && (
+			{data && !hasNoData && (
 				<>
 					{isValidUser ? (
 						<ErrorBoundary fallbackMessage="Failed to render this user's timesheet.">

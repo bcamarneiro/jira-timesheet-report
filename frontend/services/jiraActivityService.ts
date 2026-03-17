@@ -62,22 +62,13 @@ export async function fetchJiraActivitySuggestions(
 	);
 	const searchResult = (await jiraFetch(
 		config,
-		`/rest/api/2/search?jql=${jql}&maxResults=20&fields=summary`,
+		`/rest/api/2/search?jql=${jql}&maxResults=20&fields=summary&expand=changelog`,
 		signal,
-	)) as { issues: { key: string; fields: { summary?: string } }[] };
+	)) as { issues: JiraIssueWithChangelog[] };
 
 	const suggestions: WorklogSuggestion[] = [];
 
-	// Fetch changelogs in parallel (max 20 issues)
-	const issueDetails = await Promise.all(
-		searchResult.issues.map((issue) =>
-			jiraFetch(
-				config,
-				`/rest/api/2/issue/${issue.key}?expand=changelog&fields=summary`,
-				signal,
-			).then((data) => data as JiraIssueWithChangelog),
-		),
-	);
+	const issueDetails = searchResult.issues;
 
 	const userEmail = config.email.toLowerCase();
 

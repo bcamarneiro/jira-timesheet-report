@@ -223,12 +223,34 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 		}),
 
 	dismissSuggestion: (suggestionId) =>
-		set((state) => ({
-			daySummaries: state.daySummaries.map((day) => ({
-				...day,
-				suggestions: day.suggestions.filter((s) => s.id !== suggestionId),
-			})),
-		})),
+		set((state) => {
+			const timeRounding = useConfigStore.getState().config.timeRounding;
+			return {
+				daySummaries: state.daySummaries.map((day) => {
+					const hasSuggestion = day.suggestions.some(
+						(s) => s.id === suggestionId,
+					);
+					if (!hasSuggestion) return day;
+
+					const remaining = day.suggestions.filter(
+						(s) => s.id !== suggestionId,
+					);
+					const active = remaining.filter((s) => !s.logged);
+					const logged = remaining.filter((s) => s.logged);
+
+					if (active.length === 0 || day.gapSeconds <= 0) {
+						return { ...day, suggestions: remaining };
+					}
+
+					const redistributed = distributeSuggestionsToFillGap(
+						active,
+						day.gapSeconds,
+						timeRounding,
+					);
+					return { ...day, suggestions: [...redistributed, ...logged] };
+				}),
+			};
+		}),
 
 	mergePreviousWeekSuggestions: (suggestions) =>
 		set((state) => ({
@@ -255,20 +277,27 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 		})),
 
 	adjustSuggestionTime: (suggestionId, deltaSeconds) =>
-		set((state) => ({
-			daySummaries: state.daySummaries.map((day) => ({
-				...day,
-				suggestions: day.suggestions.map((s) => {
-					if (s.id !== suggestionId) return s;
-					const newSeconds = Math.max(900, s.suggestedSeconds + deltaSeconds);
-					return {
-						...s,
-						suggestedSeconds: newSeconds,
-						suggestedTimeSpent: formatTimeSpent(newSeconds),
-					};
-				}),
-			})),
-		})),
+		set((state) => {
+			const rounding = useConfigStore.getState().config.timeRounding;
+			const step = rounding === '30m' ? 1800 : rounding === '15m' ? 900 : 900;
+			return {
+				daySummaries: state.daySummaries.map((day) => ({
+					...day,
+					suggestions: day.suggestions.map((s) => {
+						if (s.id !== suggestionId) return s;
+						const raw = s.suggestedSeconds + deltaSeconds;
+						// Snap to the nearest interval
+						const snapped = Math.round(raw / step) * step;
+						const newSeconds = Math.max(step, snapped);
+						return {
+							...s,
+							suggestedSeconds: newSeconds,
+							suggestedTimeSpent: formatTimeSpent(newSeconds),
+						};
+					}),
+				})),
+			};
+		}),
 
 	fillDayGap: (date) =>
 		set((state) => {

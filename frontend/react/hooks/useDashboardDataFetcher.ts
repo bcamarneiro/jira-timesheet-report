@@ -1,17 +1,52 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import type { RescueTimeDaySummary } from '../../../types/Suggestion';
 import { fetchCalendarSuggestions } from '../../services/calendarService';
 import { fetchGitlabSuggestions } from '../../services/gitlabService';
 import { fetchJiraActivitySuggestions } from '../../services/jiraActivityService';
+import {
+	fetchMonthWorklogs,
+	type WorklogItem,
+} from '../../services/monthWorklogService';
 import { fetchRescueTimeData } from '../../services/rescueTimeService';
 import { mergeSuggestions } from '../../services/suggestionMerger';
-import {
-	fetchWeekWorklogs,
-	type WorklogEntry,
-} from '../../services/worklogService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { useUserDataStore } from '../../stores/useUserDataStore';
+import { monthWorklogsQueryKey } from './useMonthWorklogs';
+
+interface WorklogEntry {
+	date: string;
+	issueKey?: string;
+	issueSummary?: string;
+	timeSpentSeconds: number;
+}
+
+/** Derive WorklogEntry[] from the shared month query, filtered to a week range */
+function deriveWeekWorklogs(
+	worklogs: WorklogItem[],
+	email: string,
+	weekStart: string,
+	weekEnd: string,
+): WorklogEntry[] {
+	const lowerEmail = email.toLowerCase();
+	const entries: WorklogEntry[] = [];
+
+	for (const wl of worklogs) {
+		if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
+		const day = (wl.started ?? '').slice(0, 10);
+		if (day >= weekStart && day <= weekEnd) {
+			entries.push({
+				date: day,
+				issueKey: wl.issue.key,
+				issueSummary: wl.issue.fields.summary as string,
+				timeSpentSeconds: wl.timeSpentSeconds ?? 0,
+			});
+		}
+	}
+
+	return entries;
+}
 
 export function useDashboardDataFetcher() {
 	const config = useConfigStore((s) => s.config);
@@ -22,6 +57,7 @@ export function useDashboardDataFetcher() {
 	const favorites = useUserDataStore((s) => s.favorites);
 	const templates = useUserDataStore((s) => s.templates);
 	const calendarMappings = useUserDataStore((s) => s.calendarMappings);
+	const queryClient = useQueryClient();
 
 	useEffect(() => {
 		if (!config.jiraHost || !config.apiToken) return;
@@ -37,7 +73,7 @@ export function useDashboardDataFetcher() {
 			setError('calendar', null);
 			setError('rescuetime', null);
 
-			// Fetch all sources in parallel
+			// Set loading states
 			setLoading('worklogs', true);
 			setLoading('jira', true);
 			if (config.gitlabToken && config.gitlabHost) setLoading('gitlab', true);
@@ -46,6 +82,25 @@ export function useDashboardDataFetcher() {
 			if (hasCalendar) setLoading('calendar', true);
 			if (config.rescueTimeApiKey) setLoading('rescuetime', true);
 
+			// Determine which month(s) the week spans
+			const [startYear, startMonthStr] = weekStart.split('-').map(Number);
+			const [endYear, endMonthStr] = weekEnd.split('-').map(Number);
+			const startMonth = startMonthStr - 1; // 0-indexed
+			const endMonth = endMonthStr - 1;
+			const spansMonths = startYear !== endYear || startMonth !== endMonth;
+
+			// Fetch worklogs via shared TanStack Query cache
+			const fetchOpts = { currentUserOnly: true };
+			const buildKey = (y: number, m: number) =>
+				monthWorklogsQueryKey(
+					y,
+					m,
+					config.jiraHost,
+					config.corsProxy,
+					true,
+					'',
+				);
+
 			const [
 				worklogs,
 				jiraSuggestions,
@@ -53,12 +108,44 @@ export function useDashboardDataFetcher() {
 				calendarSuggestions,
 				rescueTimeData,
 			] = await Promise.all([
-				fetchWeekWorklogs(config, weekStart, weekEnd, signal)
-					.catch((e) => {
-						if (!signal.aborted) setError('worklogs', e.message);
+				// Worklogs: fetch from shared month query (cached/deduplicated)
+				(async () => {
+					try {
+						const month1Data = await queryClient.fetchQuery({
+							queryKey: buildKey(startYear, startMonth),
+							queryFn: ({ signal: s }) =>
+								fetchMonthWorklogs(config, startYear, startMonth, fetchOpts, s),
+							staleTime: 15 * 60 * 1000,
+						});
+
+						let allData = month1Data;
+						if (spansMonths) {
+							const month2Data = await queryClient.fetchQuery({
+								queryKey: buildKey(endYear, endMonth),
+								queryFn: ({ signal: s }) =>
+									fetchMonthWorklogs(config, endYear, endMonth, fetchOpts, s),
+								staleTime: 15 * 60 * 1000,
+							});
+							allData = [...month1Data, ...month2Data];
+						}
+
+						return deriveWeekWorklogs(
+							allData,
+							config.email,
+							weekStart,
+							weekEnd,
+						);
+					} catch (e) {
+						if (!signal.aborted)
+							setError(
+								'worklogs',
+								e instanceof Error ? e.message : 'Failed to fetch worklogs',
+							);
 						return [] as WorklogEntry[];
-					})
-					.finally(() => setLoading('worklogs', false)),
+					} finally {
+						setLoading('worklogs', false);
+					}
+				})(),
 
 				fetchJiraActivitySuggestions(config, weekStart, weekEnd, signal)
 					.catch((e) => {
@@ -154,5 +241,6 @@ export function useDashboardDataFetcher() {
 		favorites,
 		templates,
 		calendarMappings,
+		queryClient,
 	]);
 }

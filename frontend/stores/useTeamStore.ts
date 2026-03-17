@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import type { TeamMemberSummary } from '../services/teamService';
 
 function getMonday(date: Date): string {
 	const d = new Date(date);
@@ -26,25 +25,16 @@ const todayMonday = getMonday(new Date());
 interface TeamState {
 	weekStart: string;
 	weekEnd: string;
-	teamMembers: TeamMemberSummary[];
-	isLoading: boolean;
-	error: string | null;
 
 	setWeek: (start: string) => void;
 	goToPrevWeek: () => void;
 	goToNextWeek: () => void;
 	goToCurrentWeek: () => void;
-	setTeamMembers: (members: TeamMemberSummary[]) => void;
-	setLoading: (value: boolean) => void;
-	setError: (value: string | null) => void;
 }
 
 export const useTeamStore = create<TeamState>((set, get) => ({
 	weekStart: todayMonday,
 	weekEnd: getSunday(todayMonday),
-	teamMembers: [],
-	isLoading: false,
-	error: null,
 
 	setWeek: (start) => set({ weekStart: start, weekEnd: getSunday(start) }),
 
@@ -62,8 +52,4 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 		const monday = getMonday(new Date());
 		set({ weekStart: monday, weekEnd: getSunday(monday) });
 	},
-
-	setTeamMembers: (members) => set({ teamMembers: members }),
-	setLoading: (value) => set({ isLoading: value }),
-	setError: (value) => set({ error: value }),
 }));

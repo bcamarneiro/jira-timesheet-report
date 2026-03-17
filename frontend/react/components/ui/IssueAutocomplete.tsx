@@ -6,6 +6,7 @@ import {
 } from '../../../services/jiraSearchService';
 import { useConfigStore } from '../../../stores/useConfigStore';
 import * as styles from './IssueAutocomplete.module.css';
+import { Spinner } from './Spinner';
 
 type Props = {
 	value: string;
@@ -138,7 +139,12 @@ export const IssueAutocomplete: React.FC<Props> = ({
 			/>
 			{showDropdown && (
 				<div className={styles.dropdown}>
-					{isLoading && <div className={styles.loading}>Searching...</div>}
+					{isLoading && (
+						<div className={styles.loading}>
+							<Spinner size="sm" />
+							<span>Searching...</span>
+						</div>
+					)}
 					{!isLoading && hasSearched && results.length === 0 && (
 						<div className={styles.noResults}>No issues found</div>
 					)}

@@ -1,5 +1,4 @@
-import type React from 'react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { DaySummary } from '../../../../types/Suggestion';
 import { useDashboardStore } from '../../../stores/useDashboardStore';
 import { useWorklogOperations } from '../../hooks/useWorklogOperations';
@@ -36,11 +35,11 @@ function formatActivityTime(seconds: number): string {
 	return `${Math.round(seconds / 60)}m`;
 }
 
-export const DayCard: React.FC<Props> = ({
+export const DayCard = memo<Props>(function DayCard({
 	day,
 	isFocused,
 	focusedSuggestionIndex,
-}) => {
+}) {
 	const fillDayGap = useDashboardStore((s) => s.fillDayGap);
 	const markMultipleSuggestionsLogged = useDashboardStore(
 		(s) => s.markMultipleSuggestionsLogged,
@@ -203,4 +202,4 @@ export const DayCard: React.FC<Props> = ({
 				)}
 		</div>
 	);
-};
+});

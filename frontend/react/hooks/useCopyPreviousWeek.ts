@@ -1,8 +1,13 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { WorklogSuggestion } from '../../../types/Suggestion';
-import { fetchWeekWorklogs } from '../../services/worklogService';
+import {
+	fetchMonthWorklogs,
+	type WorklogItem,
+} from '../../services/monthWorklogService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
+import { monthWorklogsQueryKey } from './useMonthWorklogs';
 
 /**
  * Given a date string, shift it forward by 7 days and return the new date string.
@@ -38,6 +43,37 @@ function getPreviousWeekEnd(prevWeekStart: string): string {
 	return d.toISOString().slice(0, 10);
 }
 
+/** Derive week worklogs from month data */
+function deriveWeekWorklogs(
+	worklogs: WorklogItem[],
+	email: string,
+	weekStart: string,
+	weekEnd: string,
+) {
+	const lowerEmail = email.toLowerCase();
+	const entries: {
+		date: string;
+		issueKey: string;
+		issueSummary?: string;
+		timeSpentSeconds: number;
+	}[] = [];
+
+	for (const wl of worklogs) {
+		if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
+		const day = (wl.started ?? '').slice(0, 10);
+		if (day >= weekStart && day <= weekEnd) {
+			entries.push({
+				date: day,
+				issueKey: wl.issue.key,
+				issueSummary: wl.issue.fields.summary as string,
+				timeSpentSeconds: wl.timeSpentSeconds ?? 0,
+			});
+		}
+	}
+
+	return entries;
+}
+
 export function useCopyPreviousWeek() {
 	const config = useConfigStore((s) => s.config);
 	const weekStart = useDashboardStore((s) => s.weekStart);
@@ -45,6 +81,7 @@ export function useCopyPreviousWeek() {
 		(s) => s.mergePreviousWeekSuggestions,
 	);
 	const [isLoading, setIsLoading] = useState(false);
+	const queryClient = useQueryClient();
 
 	const copyPreviousWeek = async () => {
 		if (!config.jiraHost || !config.apiToken) return;
@@ -54,7 +91,46 @@ export function useCopyPreviousWeek() {
 			const prevStart = getPreviousWeekStart(weekStart);
 			const prevEnd = getPreviousWeekEnd(prevStart);
 
-			const prevWorklogs = await fetchWeekWorklogs(config, prevStart, prevEnd);
+			// Determine which month(s) the previous week spans
+			const [startYear, startMonthStr] = prevStart.split('-').map(Number);
+			const [endYear, endMonthStr] = prevEnd.split('-').map(Number);
+			const startMonth = startMonthStr - 1;
+			const endMonth = endMonthStr - 1;
+			const fetchOpts = { currentUserOnly: true };
+			const buildKey = (y: number, m: number) =>
+				monthWorklogsQueryKey(
+					y,
+					m,
+					config.jiraHost,
+					config.corsProxy,
+					true,
+					'',
+				);
+
+			const month1Data = await queryClient.fetchQuery({
+				queryKey: buildKey(startYear, startMonth),
+				queryFn: ({ signal }) =>
+					fetchMonthWorklogs(config, startYear, startMonth, fetchOpts, signal),
+				staleTime: 15 * 60 * 1000,
+			});
+
+			let allData = month1Data;
+			if (startYear !== endYear || startMonth !== endMonth) {
+				const month2Data = await queryClient.fetchQuery({
+					queryKey: buildKey(endYear, endMonth),
+					queryFn: ({ signal }) =>
+						fetchMonthWorklogs(config, endYear, endMonth, fetchOpts, signal),
+					staleTime: 15 * 60 * 1000,
+				});
+				allData = [...month1Data, ...month2Data];
+			}
+
+			const prevWorklogs = deriveWeekWorklogs(
+				allData,
+				config.email,
+				prevStart,
+				prevEnd,
+			);
 
 			if (prevWorklogs.length === 0) return;
 
@@ -70,7 +146,6 @@ export function useCopyPreviousWeek() {
 			>();
 
 			for (const wl of prevWorklogs) {
-				if (!wl.issueKey) continue;
 				const key = `${wl.date}::${wl.issueKey}`;
 				const existing = grouped.get(key);
 				if (existing) {

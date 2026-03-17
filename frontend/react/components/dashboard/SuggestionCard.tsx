@@ -1,5 +1,4 @@
-import type React from 'react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { WorklogSuggestion } from '../../../../types/Suggestion';
 import { useConfigStore } from '../../../stores/useConfigStore';
 import { useDashboardStore } from '../../../stores/useDashboardStore';
@@ -41,8 +40,13 @@ const CONFIDENCE_STYLES: Record<string, string> = {
 	low: styles.low,
 };
 
-export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
+export const SuggestionCard = memo<Props>(function SuggestionCard({
+	suggestion,
+	isFocused,
+}) {
 	const jiraDomain = useConfigStore((s) => s.config.jiraHost);
+	const timeRounding = useConfigStore((s) => s.config.timeRounding);
+	const stepSeconds = timeRounding === '30m' ? 1800 : 900;
 	const markLogged = useDashboardStore((s) => s.markSuggestionLogged);
 	const unmarkLogged = useDashboardStore((s) => s.unmarkSuggestionLogged);
 	const dismiss = useDashboardStore((s) => s.dismissSuggestion);
@@ -52,7 +56,7 @@ export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
 	const [isEditOpen, setIsEditOpen] = useState(false);
 	const [isMappingOpen, setIsMappingOpen] = useState(false);
 	const [mappingIssueKey, setMappingIssueKey] = useState('');
-	const [isReasonExpanded, setIsReasonExpanded] = useState(false);
+	const [isReasonCollapsed, setIsReasonCollapsed] = useState(false);
 	const isLongReason = suggestion.reason.length > 80;
 
 	const isUnmapped =
@@ -146,15 +150,17 @@ export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
 						<span className={styles.unmappedLabel}>Unmapped</span>
 					</div>
 				</div>
-								<div
-					className={`${styles.reason} ${isLongReason && !isReasonExpanded ? styles.reasonTruncated : ''}`}
-					onClick={isLongReason ? () => setIsReasonExpanded(!isReasonExpanded) : undefined}
-					role={isLongReason ? 'button' : undefined}
-					tabIndex={isLongReason ? 0 : undefined}
-					onKeyDown={isLongReason ? (e) => { if (e.key === 'Enter' || e.key === ' ') setIsReasonExpanded(!isReasonExpanded); } : undefined}
-				>
-					{suggestion.reason}
-				</div>
+				{isLongReason ? (
+					<button
+						type="button"
+						className={`${styles.reason} ${styles.reasonButton} ${isReasonCollapsed ? styles.reasonTruncated : ''}`}
+						onClick={() => setIsReasonCollapsed(!isReasonCollapsed)}
+					>
+						{suggestion.reason}
+					</button>
+				) : (
+					<div className={styles.reason}>{suggestion.reason}</div>
+				)}
 				{isMappingOpen ? (
 					<div className={styles.mappingRow}>
 						<input
@@ -239,23 +245,25 @@ export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
 						</span>
 					</div>
 				</div>
-								<div
-					className={`${styles.reason} ${isLongReason && !isReasonExpanded ? styles.reasonTruncated : ''}`}
-					onClick={isLongReason ? () => setIsReasonExpanded(!isReasonExpanded) : undefined}
-					role={isLongReason ? 'button' : undefined}
-					tabIndex={isLongReason ? 0 : undefined}
-					onKeyDown={isLongReason ? (e) => { if (e.key === 'Enter' || e.key === ' ') setIsReasonExpanded(!isReasonExpanded); } : undefined}
-				>
-					{suggestion.reason}
-				</div>
+				{isLongReason ? (
+					<button
+						type="button"
+						className={`${styles.reason} ${styles.reasonButton} ${isReasonCollapsed ? styles.reasonTruncated : ''}`}
+						onClick={() => setIsReasonCollapsed(!isReasonCollapsed)}
+					>
+						{suggestion.reason}
+					</button>
+				) : (
+					<div className={styles.reason}>{suggestion.reason}</div>
+				)}
 				<div className={styles.actions}>
 					<div className={styles.timeAdjust}>
 						<button
 							type="button"
 							className={styles.adjustButton}
-							onClick={() => adjustTime(suggestion.id, -900)}
-							disabled={suggestion.suggestedSeconds <= 900}
-							aria-label="Decrease time by 15 minutes"
+							onClick={() => adjustTime(suggestion.id, -stepSeconds)}
+							disabled={suggestion.suggestedSeconds <= stepSeconds}
+							aria-label={`Decrease time by ${stepSeconds / 60} minutes`}
 						>
 							&minus;
 						</button>
@@ -263,8 +271,8 @@ export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
 						<button
 							type="button"
 							className={styles.adjustButton}
-							onClick={() => adjustTime(suggestion.id, 900)}
-							aria-label="Increase time by 15 minutes"
+							onClick={() => adjustTime(suggestion.id, stepSeconds)}
+							aria-label={`Increase time by ${stepSeconds / 60} minutes`}
 						>
 							+
 						</button>
@@ -313,4 +321,4 @@ export const SuggestionCard: React.FC<Props> = ({ suggestion, isFocused }) => {
 			</Modal>
 		</>
 	);
-};
+});

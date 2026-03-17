@@ -331,7 +331,9 @@ test.describe('Team Page', () => {
 	});
 
 	test('shows team member table with data', async ({ page }) => {
-		await expect(page.getByText('Team Member')).toBeVisible();
+		await expect(
+			page.getByRole('columnheader', { name: /Team Member/ }),
+		).toBeVisible();
 		await expect(
 			page.getByRole('columnheader', { name: 'Total' }),
 		).toBeVisible();

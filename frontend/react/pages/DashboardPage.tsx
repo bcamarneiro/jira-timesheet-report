@@ -13,6 +13,7 @@ import { TemplatesManager } from '../components/dashboard/TemplatesManager';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
 import { WeekOverview } from '../components/dashboard/WeekOverview';
 import { Button } from '../components/ui/Button';
+import { Spinner } from '../components/ui/Spinner';
 import { toast } from '../components/ui/Toast';
 import { useComplianceReminder } from '../hooks/useComplianceReminder';
 import { useCopyPreviousWeek } from '../hooks/useCopyPreviousWeek';
@@ -168,16 +169,29 @@ export const DashboardPage: React.FC = () => {
 
 			{isLoadingWorklogs && daySummaries.length === 0 && (
 				<div className={styles.loading}>
-					<div className={styles.spinner} />
+					<Spinner size="lg" />
 					<p>Loading your week...</p>
 				</div>
 			)}
 
 			{daySummaries.length > 0 && (
 				<>
+					{isLoadingWorklogs && (
+						<div className={styles.refetching}>
+							<Spinner size="sm" />
+							<span>Updating...</span>
+						</div>
+					)}
+
 					<WeekOverview days={daySummaries} />
 
-					{!monthHeatmap.isLoading && monthHeatmap.data.size > 0 && (
+					{monthHeatmap.isLoading && monthHeatmap.data.size === 0 && (
+						<div className={styles.heatmapLoading}>
+							<Spinner size="sm" />
+							<span>Loading month overview...</span>
+						</div>
+					)}
+					{monthHeatmap.data.size > 0 && (
 						<MonthHeatmap
 							monthData={monthHeatmap.data}
 							month={monthHeatmap.month}

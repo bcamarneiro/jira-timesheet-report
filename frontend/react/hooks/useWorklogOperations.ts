@@ -1,8 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
-import { invalidateTimesheetCache } from './useTimesheetDataFetcher';
 
 /** Format a date string to Jira's expected format: 2026-03-02T09:00:00.000+0000 */
 function toJiraDatetime(dateStr: string): string {
@@ -21,8 +21,8 @@ export function useWorklogOperations() {
 	const config = useConfigStore((state) => state.config);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const data = useTimesheetStore((state) => state.data);
 	const setData = useTimesheetStore((state) => state.setData);
+	const queryClient = useQueryClient();
 
 	// Helper to build the full URL
 	const buildUrl = (path: string): string => {
@@ -100,9 +100,10 @@ export function useWorklogOperations() {
 				issue: issue,
 			};
 
-			const updatedData = [...(data || []), enrichedWorklog];
-			invalidateTimesheetCache();
-			setData(updatedData);
+			const currentData = useTimesheetStore.getState().data;
+			queryClient.invalidateQueries({ queryKey: ['monthWorklogs'] });
+			queryClient.invalidateQueries({ queryKey: ['team'] });
+			setData([...(currentData || []), enrichedWorklog]);
 
 			return enrichedWorklog;
 		} catch (err) {
@@ -145,7 +146,8 @@ export function useWorklogOperations() {
 			});
 
 			// Update in the store
-			const updatedData = data?.map((wl) => {
+			const currentData = useTimesheetStore.getState().data;
+			const updatedData = currentData?.map((wl) => {
 				if (wl.id === worklogId) {
 					return {
 						...updatedWorklog,
@@ -155,7 +157,8 @@ export function useWorklogOperations() {
 				return wl;
 			});
 
-			invalidateTimesheetCache();
+			queryClient.invalidateQueries({ queryKey: ['monthWorklogs'] });
+			queryClient.invalidateQueries({ queryKey: ['team'] });
 			setData(updatedData || null);
 
 			return updatedWorklog;
@@ -229,7 +232,8 @@ export function useWorklogOperations() {
 						...(useTimesheetStore.getState().data || []),
 						enrichedWorklog,
 					];
-					invalidateTimesheetCache();
+					queryClient.invalidateQueries({ queryKey: ['monthWorklogs'] });
+					queryClient.invalidateQueries({ queryKey: ['team'] });
 					setData(updatedData);
 
 					created.push({
@@ -265,8 +269,10 @@ export function useWorklogOperations() {
 			});
 
 			// Remove from the store
-			const updatedData = data?.filter((wl) => wl.id !== worklogId);
-			invalidateTimesheetCache();
+			const currentData = useTimesheetStore.getState().data;
+			const updatedData = currentData?.filter((wl) => wl.id !== worklogId);
+			queryClient.invalidateQueries({ queryKey: ['monthWorklogs'] });
+			queryClient.invalidateQueries({ queryKey: ['team'] });
 			setData(updatedData || null);
 		} catch (err) {
 			const errorMessage =

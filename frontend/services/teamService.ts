@@ -18,6 +18,14 @@ function buildUrl(config: Config, path: string): string {
 	return `${base}${path}`;
 }
 
+/** Format a local Date as YYYY-MM-DD without UTC conversion */
+function toDateStr(d: Date): string {
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, '0');
+	const day = String(d.getDate()).padStart(2, '0');
+	return `${y}-${m}-${day}`;
+}
+
 function isWeekday(dateStr: string): boolean {
 	const d = new Date(dateStr);
 	const day = d.getDay();
@@ -29,12 +37,31 @@ function getWeekdaysBetween(start: string, end: string): string[] {
 	const current = new Date(start);
 	const last = new Date(end);
 	while (current <= last) {
-		if (isWeekday(current.toISOString().slice(0, 10))) {
-			days.push(current.toISOString().slice(0, 10));
+		const dateStr = toDateStr(current);
+		if (isWeekday(dateStr)) {
+			days.push(dateStr);
 		}
 		current.setDate(current.getDate() + 1);
 	}
 	return days;
+}
+
+interface WorklogEntry {
+	author: { emailAddress?: string; displayName?: string };
+	started: string;
+	timeSpentSeconds: number;
+}
+
+interface SearchIssue {
+	key: string;
+	fields: {
+		worklog?: {
+			startAt: number;
+			maxResults: number;
+			total: number;
+			worklogs: WorklogEntry[];
+		};
+	};
 }
 
 export async function fetchTeamWorklogs(
@@ -45,57 +72,103 @@ export async function fetchTeamWorklogs(
 ): Promise<TeamMemberSummary[]> {
 	if (!config.jiraHost || !config.apiToken) return [];
 
+	const headers: HeadersInit = {
+		Authorization: `Bearer ${config.apiToken}`,
+		Accept: 'application/json',
+		'X-Atlassian-Token': 'no-check',
+	};
+
 	const jql = encodeURIComponent(
 		`worklogDate >= "${weekStart}" AND worklogDate <= "${weekEnd}"`,
 	);
 
+	// Step 1: Search with embedded worklogs
+	const issues: SearchIssue[] = [];
 	let startAt = 0;
 	const maxResults = 50;
-	const allIssues: {
-		key: string;
-		fields: {
-			summary?: string;
-			worklog?: {
-				worklogs: {
-					author: { emailAddress?: string; displayName?: string };
-					started: string;
-					timeSpentSeconds: number;
-				}[];
-				total?: number;
-			};
-		};
-	}[] = [];
 
-	// Paginate through results
 	while (true) {
 		const res = await fetch(
 			buildUrl(
 				config,
-				`/rest/api/2/search?jql=${jql}&maxResults=${maxResults}&startAt=${startAt}&fields=key,summary,worklog`,
+				`/rest/api/2/search?jql=${jql}&maxResults=${maxResults}&startAt=${startAt}&fields=key,worklog`,
 			),
-			{
-				headers: {
-					Authorization: `Bearer ${config.apiToken}`,
-					Accept: 'application/json',
-					'X-Atlassian-Token': 'no-check',
-				},
-				signal,
-			},
+			{ headers, signal },
 		);
 
 		if (!res.ok) throw new Error(`Jira API error: ${res.status}`);
 
 		const data = (await res.json()) as {
-			issues: typeof allIssues;
+			issues: SearchIssue[];
 			total: number;
 		};
 
-		allIssues.push(...data.issues);
+		for (const issue of data.issues) {
+			issues.push(issue);
+		}
 
-		if (allIssues.length >= data.total || data.issues.length === 0) {
+		if (issues.length >= data.total || data.issues.length === 0) {
 			break;
 		}
 		startAt += maxResults;
+	}
+
+	// Step 2: Use embedded worklogs when complete, fetch separately only for truncated
+	const allWorklogs: WorklogEntry[] = [];
+	const truncatedKeys: string[] = [];
+
+	for (const issue of issues) {
+		const embedded = issue.fields.worklog;
+		if (!embedded) {
+			truncatedKeys.push(issue.key);
+			continue;
+		}
+
+		if (embedded.total <= embedded.maxResults) {
+			// All worklogs are in the embedded response — filter by date in JS
+			for (const wl of embedded.worklogs) {
+				const day = wl.started.slice(0, 10);
+				if (day >= weekStart && day <= weekEnd) {
+					allWorklogs.push(wl);
+				}
+			}
+		} else {
+			truncatedKeys.push(issue.key);
+		}
+	}
+
+	// Fetch full worklogs only for truncated issues
+	if (truncatedKeys.length > 0) {
+		const weekStartMillis = new Date(weekStart).getTime();
+		const weekEndMillis = new Date(`${weekEnd}T23:59:59.999`).getTime();
+		const batchSize = 10;
+
+		for (let i = 0; i < truncatedKeys.length; i += batchSize) {
+			const batch = truncatedKeys.slice(i, i + batchSize);
+			const results = await Promise.all(
+				batch.map(async (key) => {
+					try {
+						const res = await fetch(
+							buildUrl(
+								config,
+								`/rest/api/2/issue/${key}/worklog?startedAfter=${weekStartMillis}&startedBefore=${weekEndMillis}`,
+							),
+							{ headers, signal },
+						);
+						if (!res.ok) return [];
+						const data = (await res.json()) as {
+							worklogs: WorklogEntry[];
+						};
+						return data.worklogs || [];
+					} catch {
+						return [];
+					}
+				}),
+			);
+			for (const worklogs of results) {
+				allWorklogs.push(...worklogs);
+			}
+		}
 	}
 
 	// Parse the allowed users filter
@@ -114,29 +187,27 @@ export async function fetchTeamWorklogs(
 		{ displayName: string; dailySeconds: Map<string, number> }
 	>();
 
-	for (const issue of allIssues) {
-		for (const wl of issue.fields.worklog?.worklogs || []) {
-			const email = wl.author?.emailAddress?.toLowerCase();
-			if (!email) continue;
+	for (const wl of allWorklogs) {
+		const email = wl.author?.emailAddress?.toLowerCase();
+		if (!email) continue;
 
-			// Filter by allowed users if configured
-			if (allowedSet && !allowedSet.has(email)) continue;
+		// Filter by allowed users if configured
+		if (allowedSet && !allowedSet.has(email)) continue;
 
-			const day = wl.started.slice(0, 10);
-			if (day < weekStart || day > weekEnd) continue;
+		const day = wl.started.slice(0, 10);
+		if (day < weekStart || day > weekEnd) continue;
 
-			let member = memberMap.get(email);
-			if (!member) {
-				member = {
-					displayName: wl.author.displayName || email,
-					dailySeconds: new Map(),
-				};
-				memberMap.set(email, member);
-			}
-
-			const existing = member.dailySeconds.get(day) || 0;
-			member.dailySeconds.set(day, existing + wl.timeSpentSeconds);
+		let member = memberMap.get(email);
+		if (!member) {
+			member = {
+				displayName: wl.author.displayName || email,
+				dailySeconds: new Map(),
+			};
+			memberMap.set(email, member);
 		}
+
+		const existing = member.dailySeconds.get(day) || 0;
+		member.dailySeconds.set(day, existing + wl.timeSpentSeconds);
 	}
 
 	// Ensure all allowed users appear even with zero hours
@@ -152,8 +223,13 @@ export async function fetchTeamWorklogs(
 	}
 
 	// Convert to TeamMemberSummary[]
+	// For the current/future week, cap the target at today so we don't
+	// penalise people for days that haven't happened yet.
+	const today = toDateStr(new Date());
+	const effectiveEnd = weekEnd > today ? today : weekEnd;
 	const weekdays = getWeekdaysBetween(weekStart, weekEnd);
-	const targetSeconds = weekdays.length * SECONDS_PER_DAY;
+	const targetWeekdays = getWeekdaysBetween(weekStart, effectiveEnd);
+	const targetSeconds = targetWeekdays.length * SECONDS_PER_DAY;
 
 	const summaries: TeamMemberSummary[] = [];
 

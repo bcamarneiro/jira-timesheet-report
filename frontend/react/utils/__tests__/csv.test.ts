@@ -1,23 +1,22 @@
-import type { Version2Models } from 'jira.js';
 import { describe, expect, it } from 'vitest';
 import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
 import { buildCsvForUser } from '../csv';
 
 describe('buildCsvForUser', () => {
-	const mockIssue: Version2Models.Issue = {
+	const mockIssue = {
 		id: '12345',
 		key: 'PROJ-123',
 		fields: {
 			summary: 'Test Issue',
 		},
-	} as Version2Models.Issue;
+	};
 
-	const mockAuthor: Version2Models.User = {
+	const mockAuthor = {
 		displayName: 'John Doe',
 		emailAddress: 'john@example.com',
 		accountId: 'acc123',
 		active: true,
-	} as Version2Models.User;
+	};
 
 	it('should generate CSV with correct headers and total row', () => {
 		const data: EnrichedJiraWorklog[] = [];

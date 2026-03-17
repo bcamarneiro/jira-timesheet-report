@@ -110,6 +110,9 @@ function isJiraRequest(targetHost, incomingHeaders) {
 	if (isJiraHost(targetHost)) return true;
 	// Self-hosted: browser sends x-atlassian-token or Authorization for Jira
 	if (incomingHeaders['x-atlassian-token']) return true;
+	// Bearer token auth (jira.js client uses this for self-hosted Jira)
+	const auth = incomingHeaders.authorization || incomingHeaders.Authorization;
+	if (auth && auth.startsWith('Bearer ')) return true;
 	// GitLab: browser sends PRIVATE-TOKEN
 	if (incomingHeaders['private-token']) return true;
 	return false;
