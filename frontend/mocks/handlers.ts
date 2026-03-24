@@ -2,7 +2,11 @@ import { HttpResponse, http } from 'msw';
 import type { JiraIssue } from '../../types/JiraIssue';
 import type { JiraWorklog } from '../../types/JiraWorklog';
 import { logger } from '../react/utils/logger';
-import { addDaysToIsoDate, parseIsoDateLocal, toLocalDateString } from '../react/utils/date';
+import {
+	addDaysToIsoDate,
+	parseIsoDateLocal,
+	toLocalDateString,
+} from '../react/utils/date';
 import MockIssueSummariesSimple from './MockIssueSummariesSimple';
 import MockWorklogsSimple from './MockWorklogsSimple';
 
@@ -30,7 +34,9 @@ function getMonday(date: Date): string {
 }
 
 function getWeekdays(monday: string): string[] {
-	return Array.from({ length: 5 }, (_, index) => addDaysToIsoDate(monday, index));
+	return Array.from({ length: 5 }, (_, index) =>
+		addDaysToIsoDate(monday, index),
+	);
 }
 
 function shiftWeek(monday: string, weeks: number): string {

@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import type { DaySummary, WorklogSuggestion } from '../../types/Suggestion';
-import { addDaysToIsoDate, parseIsoDateLocal, toLocalDateString } from '../react/utils/date';
+import {
+	addDaysToIsoDate,
+	parseIsoDateLocal,
+	toLocalDateString,
+} from '../react/utils/date';
 import { distributeSuggestionsToFillGap } from '../services/suggestionMerger';
 import { useConfigStore } from './useConfigStore';
 

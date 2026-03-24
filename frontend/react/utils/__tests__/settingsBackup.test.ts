@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	createSettingsBackup,
-	parseSettingsBackup,
-} from '../settingsBackup';
+import { createSettingsBackup, parseSettingsBackup } from '../settingsBackup';
 
 const defaultConfig = {
 	jiraHost: '',
@@ -44,7 +41,11 @@ describe('settingsBackup', () => {
 				email: ' user@example.com ',
 				apiToken: ' secret ',
 				calendarFeeds: [
-					{ label: ' Work ', url: ' https://example.com/work.ics ', type: 'absence' },
+					{
+						label: ' Work ',
+						url: ' https://example.com/work.ics ',
+						type: 'absence',
+					},
 					{ label: 'Ignored', url: '   ' },
 				],
 				timeRounding: '15m',

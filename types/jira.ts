@@ -42,4 +42,3 @@ export type GroupedWorklogs = Record<
 	string,
 	Record<string, EnrichedJiraWorklog[]>
 >;
-

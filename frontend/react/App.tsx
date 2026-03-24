@@ -22,17 +22,17 @@ export const App: React.FC = () => {
 		<Router>
 			<div className={styles.appContainer}>
 				<Navigation />
-					<Routes>
-						<Route path="/" element={<HomePage />} />
-						<Route path="/dashboard" element={<DashboardPage />} />
-						<Route path="/reports" element={<TimesheetPage />} />
-						<Route path="/team" element={<Navigate to="/reports" replace />} />
-						<Route
-							path="/timesheet"
-							element={<Navigate to="/reports" replace />}
-						/>
-						<Route path="/settings" element={<SettingsPage />} />
-					</Routes>
+				<Routes>
+					<Route path="/" element={<HomePage />} />
+					<Route path="/dashboard" element={<DashboardPage />} />
+					<Route path="/reports" element={<TimesheetPage />} />
+					<Route path="/team" element={<Navigate to="/reports" replace />} />
+					<Route
+						path="/timesheet"
+						element={<Navigate to="/reports" replace />}
+					/>
+					<Route path="/settings" element={<SettingsPage />} />
+				</Routes>
 				<ToastContainer />
 			</div>
 		</Router>

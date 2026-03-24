@@ -80,7 +80,9 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 
 	const handleLogIt = async () => {
 		if (!suggestion.issueKey) {
-			toast.error('This suggestion needs a Jira issue key before it can be logged');
+			toast.error(
+				'This suggestion needs a Jira issue key before it can be logged',
+			);
 			return;
 		}
 		try {

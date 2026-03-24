@@ -28,7 +28,9 @@ export const FavoritesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 		a.issueKey.localeCompare(b.issueKey),
 	);
 	const canSubmit =
-		!!issueKey.trim() && !!defaultTime.trim() && isValidTimeSpentFormat(defaultTime);
+		!!issueKey.trim() &&
+		!!defaultTime.trim() &&
+		isValidTimeSpentFormat(defaultTime);
 
 	useEffect(() => {
 		if (!isOpen) {
@@ -132,7 +134,8 @@ export const FavoritesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 				{favorites.length > 0 && (
 					<div className={styles.list}>
 						<h4 className={styles.listTitle}>
-							Current Pins <span className={styles.listCount}>{favorites.length}</span>
+							Current Pins{' '}
+							<span className={styles.listCount}>{favorites.length}</span>
 						</h4>
 						{sortedFavorites.map((fav) => (
 							<div key={fav.issueKey} className={styles.item}>

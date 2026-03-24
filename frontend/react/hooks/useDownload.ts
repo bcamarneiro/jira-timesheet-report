@@ -1,7 +1,4 @@
-import type {
-	EnrichedJiraWorklog,
-	GroupedWorklogs,
-} from '../../../types/jira';
+import type { EnrichedJiraWorklog, GroupedWorklogs } from '../../../types/jira';
 import {
 	buildCsvForUser,
 	buildSummaryCsv,
@@ -95,7 +92,10 @@ export function useDownload() {
 		// Download the summary CSV with all users
 		if (users.length > 1) {
 			const summaryCsv = buildSummaryCsv(summaries, year, month);
-			download(sanitizeFilename(`summary-${year}-${month + 1}.csv`), summaryCsv);
+			download(
+				sanitizeFilename(`summary-${year}-${month + 1}.csv`),
+				summaryCsv,
+			);
 		}
 	};
 

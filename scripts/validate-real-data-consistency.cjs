@@ -199,7 +199,10 @@ function deriveMonthlyGrouped(worklogs, allowedUsers) {
 			};
 			grouped.set(email, member);
 		}
-		member.dailySeconds.set(day, (member.dailySeconds.get(day) ?? 0) + (wl.timeSpentSeconds ?? 0));
+		member.dailySeconds.set(
+			day,
+			(member.dailySeconds.get(day) ?? 0) + (wl.timeSpentSeconds ?? 0),
+		);
 	}
 
 	return grouped;
@@ -234,7 +237,10 @@ function deriveTeamSummary(worklogs, weekStart, weekEnd, allowedUsers) {
 			};
 			memberMap.set(email, member);
 		}
-		member.dailySeconds.set(day, (member.dailySeconds.get(day) ?? 0) + (wl.timeSpentSeconds ?? 0));
+		member.dailySeconds.set(
+			day,
+			(member.dailySeconds.get(day) ?? 0) + (wl.timeSpentSeconds ?? 0),
+		);
 	}
 
 	if (allowedSet) {
@@ -333,7 +339,14 @@ function escapeCsv(value) {
 	return text;
 }
 
-function buildWeeklyChecks(groupedMonthly, allWorklogs, allowedUsers, configEmail, periodStart, periodEnd) {
+function buildWeeklyChecks(
+	groupedMonthly,
+	allWorklogs,
+	allowedUsers,
+	configEmail,
+	periodStart,
+	periodEnd,
+) {
 	return getMondaysBetween(periodStart, periodEnd).map((weekStart) => {
 		const weekEnd = addDaysToIsoDate(weekStart, 6);
 		const fullWeekInsidePeriod = isFullWeekInsidePeriod(
@@ -402,7 +415,9 @@ function writeReports(result, reportDir) {
 	const stamp = `${result.context.periodStart}_to_${result.context.periodEnd}`;
 	const mdPath = path.join(reportDir, `jira-consistency-${stamp}.md`);
 	const csvPath = path.join(reportDir, `jira-consistency-${stamp}.csv`);
-	const relevantWeeks = result.weeklyChecks.filter((check) => check.fullWeekInsidePeriod);
+	const relevantWeeks = result.weeklyChecks.filter(
+		(check) => check.fullWeekInsidePeriod,
+	);
 	const mismatches = relevantWeeks.filter(
 		(check) => !check.teamVsMonthlyWeekMatch || !check.perUserMatch,
 	);
@@ -429,8 +444,9 @@ function writeReports(result, reportDir) {
 		'',
 		'| Week | Full Week | Team Total | Monthly Total | Team vs Monthly | Per User |',
 		'| --- | --- | ---: | ---: | --- | --- |',
-		...result.weeklyChecks.map((check) =>
-			`| ${check.weekStart} to ${check.weekEnd} | ${check.fullWeekInsidePeriod ? 'yes' : 'no'} | ${check.teamWeekTotalSeconds} | ${check.monthlyWeekTotalSeconds} | ${check.teamVsMonthlyWeekMatch ? 'match' : 'mismatch'} | ${check.perUserMatch ? 'match' : 'mismatch'} |`,
+		...result.weeklyChecks.map(
+			(check) =>
+				`| ${check.weekStart} to ${check.weekEnd} | ${check.fullWeekInsidePeriod ? 'yes' : 'no'} | ${check.teamWeekTotalSeconds} | ${check.monthlyWeekTotalSeconds} | ${check.teamVsMonthlyWeekMatch ? 'match' : 'mismatch'} | ${check.perUserMatch ? 'match' : 'mismatch'} |`,
 		),
 	];
 
@@ -482,7 +498,9 @@ function writeReports(result, reportDir) {
 					member.teamSeconds,
 					member.monthlySeconds,
 					member.match,
-				].map(escapeCsv).join(','),
+				]
+					.map(escapeCsv)
+					.join(','),
 			);
 		}
 	}
@@ -505,7 +523,9 @@ async function main() {
 	const proxyUrl = process.argv[3] || 'socks5h://127.0.0.1:8080';
 	const backup = JSON.parse(fs.readFileSync(path.resolve(configPath), 'utf8'));
 	const config = backup.config;
-	const client = createHttpClient(config, proxyUrl, { ignoreCorsProxy: !!proxyUrl });
+	const client = createHttpClient(config, proxyUrl, {
+		ignoreCorsProxy: !!proxyUrl,
+	});
 
 	const myself = (await client.get('/rest/api/2/myself')).data;
 	const now = new Date();
@@ -539,7 +559,9 @@ async function main() {
 	const periodEnd = monthlyBuckets[monthlyBuckets.length - 1].end;
 	const currentWeekStart = getMonday(now);
 	const currentWeekEnd = addDaysToIsoDate(currentWeekStart, 6);
-	const reportDir = path.resolve(process.argv[5] || path.join(process.cwd(), 'tmp'));
+	const reportDir = path.resolve(
+		process.argv[5] || path.join(process.cwd(), 'tmp'),
+	);
 
 	const allowedUsers = parseAllowedUsers(config.allowedUsers || '');
 	const groupedMonthly = deriveMonthlyGrouped(allWorklogs, allowedUsers);
@@ -561,9 +583,17 @@ async function main() {
 		currentWeekStart,
 		currentWeekEnd,
 	);
-	const teamWeekTotal = teamSummary.reduce((sum, member) => sum + member.totalSeconds, 0);
-	const personalWeekTotal = dashboardPersonal.reduce((sum, wl) => sum + (wl.timeSpentSeconds ?? 0), 0);
-	const selfIncludedInReports = allowedUsers.length === 0 || allowedUsers.includes(config.email.toLowerCase());
+	const teamWeekTotal = teamSummary.reduce(
+		(sum, member) => sum + member.totalSeconds,
+		0,
+	);
+	const personalWeekTotal = dashboardPersonal.reduce(
+		(sum, wl) => sum + (wl.timeSpentSeconds ?? 0),
+		0,
+	);
+	const selfIncludedInReports =
+		allowedUsers.length === 0 ||
+		allowedUsers.includes(config.email.toLowerCase());
 	const weeklyChecks = buildWeeklyChecks(
 		groupedMonthly,
 		allWorklogs,
@@ -572,7 +602,9 @@ async function main() {
 		periodStart,
 		periodEnd,
 	);
-	const relevantWeeks = weeklyChecks.filter((check) => check.fullWeekInsidePeriod);
+	const relevantWeeks = weeklyChecks.filter(
+		(check) => check.fullWeekInsidePeriod,
+	);
 	const reportPaths = writeReports(
 		{
 			context: {
@@ -594,67 +626,71 @@ async function main() {
 			},
 			consistency: {
 				teamVsMonthlyWeekMatch: monthlyWeekTotal === teamWeekTotal,
-				dashboardVsReportsMatch:
-					selfIncludedInReports
-						? personalWeekTotal ===
-							(sumGroupedWeek(
-								new Map(
-									[...groupedMonthly.entries()].filter(([email]) =>
-										email === config.email.toLowerCase(),
-									),
+				dashboardVsReportsMatch: selfIncludedInReports
+					? personalWeekTotal ===
+						sumGroupedWeek(
+							new Map(
+								[...groupedMonthly.entries()].filter(
+									([email]) => email === config.email.toLowerCase(),
 								),
-								currentWeekStart,
-								currentWeekEnd,
-							))
-						: null,
+							),
+							currentWeekStart,
+							currentWeekEnd,
+						)
+					: null,
 			},
 			weeklyChecks,
 		},
 		reportDir,
 	);
 
-	console.log(JSON.stringify({
-		context: {
-			jiraUser: myself.displayName,
-			email: config.email,
-			currentWeekStart,
-			currentWeekEnd,
-			periodStart,
-			periodEnd,
-			monthsBack,
-			jqlFilter: config.jqlFilter,
-			allowedUsersCount: allowedUsers.length,
-			selfIncludedInReports,
-		},
-		reportPaths,
-		totals: {
-			monthlyWeekTotalSeconds: monthlyWeekTotal,
-			teamWeekTotalSeconds: teamWeekTotal,
-			dashboardPersonalWeekTotalSeconds: personalWeekTotal,
-		},
-		consistency: {
-			teamVsMonthlyWeekMatch: monthlyWeekTotal === teamWeekTotal,
-			dashboardVsReportsMatch:
-				selfIncludedInReports
-					? personalWeekTotal ===
-						(sumGroupedWeek(
-							new Map(
-								[...groupedMonthly.entries()].filter(([email]) =>
-									email === config.email.toLowerCase(),
+	console.log(
+		JSON.stringify(
+			{
+				context: {
+					jiraUser: myself.displayName,
+					email: config.email,
+					currentWeekStart,
+					currentWeekEnd,
+					periodStart,
+					periodEnd,
+					monthsBack,
+					jqlFilter: config.jqlFilter,
+					allowedUsersCount: allowedUsers.length,
+					selfIncludedInReports,
+				},
+				reportPaths,
+				totals: {
+					monthlyWeekTotalSeconds: monthlyWeekTotal,
+					teamWeekTotalSeconds: teamWeekTotal,
+					dashboardPersonalWeekTotalSeconds: personalWeekTotal,
+				},
+				consistency: {
+					teamVsMonthlyWeekMatch: monthlyWeekTotal === teamWeekTotal,
+					dashboardVsReportsMatch: selfIncludedInReports
+						? personalWeekTotal ===
+							sumGroupedWeek(
+								new Map(
+									[...groupedMonthly.entries()].filter(
+										([email]) => email === config.email.toLowerCase(),
+									),
 								),
-							),
-							currentWeekStart,
-							currentWeekEnd,
-						))
-					: null,
-			relevantFullWeeksChecked: relevantWeeks.length,
-			relevantFullWeeksAllMatch: relevantWeeks.every(
-				(check) => check.teamVsMonthlyWeekMatch && check.perUserMatch,
-			),
-		},
-		weeklyChecks,
-		teamMembers: teamSummary,
-	}, null, 2));
+								currentWeekStart,
+								currentWeekEnd,
+							)
+						: null,
+					relevantFullWeeksChecked: relevantWeeks.length,
+					relevantFullWeeksAllMatch: relevantWeeks.every(
+						(check) => check.teamVsMonthlyWeekMatch && check.perUserMatch,
+					),
+				},
+				weeklyChecks,
+				teamMembers: teamSummary,
+			},
+			null,
+			2,
+		),
+	);
 }
 
 main().catch((error) => {

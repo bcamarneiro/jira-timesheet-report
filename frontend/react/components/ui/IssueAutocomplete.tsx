@@ -176,7 +176,9 @@ export const IssueAutocomplete: React.FC<Props> = ({
 				aria-controls={listboxId}
 				aria-autocomplete="list"
 				aria-activedescendant={
-					highlightedIndex >= 0 ? `${listboxId}-option-${highlightedIndex}` : undefined
+					highlightedIndex >= 0
+						? `${listboxId}-option-${highlightedIndex}`
+						: undefined
 				}
 			/>
 			{showDropdown && (

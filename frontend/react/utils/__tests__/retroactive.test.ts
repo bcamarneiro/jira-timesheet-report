@@ -7,15 +7,11 @@ describe('isRetroactivelyLogged', () => {
 	});
 
 	it('returns false when created is undefined', () => {
-		expect(isRetroactivelyLogged(undefined, '2026-03-15T10:00:00')).toBe(
-			false,
-		);
+		expect(isRetroactivelyLogged(undefined, '2026-03-15T10:00:00')).toBe(false);
 	});
 
 	it('returns false when started is undefined', () => {
-		expect(isRetroactivelyLogged('2026-03-15T10:00:00', undefined)).toBe(
-			false,
-		);
+		expect(isRetroactivelyLogged('2026-03-15T10:00:00', undefined)).toBe(false);
 	});
 
 	it('returns false when same month', () => {

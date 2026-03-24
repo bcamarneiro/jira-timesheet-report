@@ -1,7 +1,4 @@
-import type {
-	EnrichedJiraWorklog,
-	GroupedWorklogs,
-} from '../../../types/jira';
+import type { EnrichedJiraWorklog, GroupedWorklogs } from '../../../types/jira';
 import { toLocalDateString } from './date';
 
 export interface MonthlyReportState {

@@ -76,9 +76,7 @@ export const WeekOverview = memo<Props>(function WeekOverview({ days }) {
 				<span>
 					{formatHours(totalLogged)} / {formatHours(totalTarget)}
 				</span>
-				{totalTarget > 0 && (
-					<span className={styles.pct}>{totalPct}%</span>
-				)}
+				{totalTarget > 0 && <span className={styles.pct}>{totalPct}%</span>}
 			</div>
 		</div>
 	);

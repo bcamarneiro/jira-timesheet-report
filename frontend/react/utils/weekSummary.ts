@@ -117,7 +117,9 @@ export function generateWeeklySummary(
 		a.localeCompare(b),
 	)) {
 		const d = parseIsoDateLocal(date);
-		lines.push(`- ${DAY_LABELS[d.getDay()]} (${date}): ${formatDuration(seconds)}`);
+		lines.push(
+			`- ${DAY_LABELS[d.getDay()]} (${date}): ${formatDuration(seconds)}`,
+		);
 	}
 
 	return lines.join('\n');

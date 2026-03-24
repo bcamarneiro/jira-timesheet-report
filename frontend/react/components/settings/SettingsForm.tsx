@@ -4,7 +4,10 @@ import type { CalendarFeed } from '../../../stores/useConfigStore';
 import { useConfigStore } from '../../../stores/useConfigStore';
 import { useSettingsFormStore } from '../../../stores/useSettingsFormStore';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
-import { createSettingsBackup, parseSettingsBackup } from '../../utils/settingsBackup';
+import {
+	createSettingsBackup,
+	parseSettingsBackup,
+} from '../../utils/settingsBackup';
 import { downloadAsFile } from '../../utils/downloadFile';
 import { Button } from '../ui/Button';
 import { toast } from '../ui/Toast';
@@ -26,7 +29,9 @@ export const SettingsForm: React.FC = () => {
 	const testRescueTime = useSettingsFormStore((state) => state.testRescueTime);
 	const loadFromConfig = useSettingsFormStore((state) => state.loadFromConfig);
 	const resetForm = useSettingsFormStore((state) => state.resetForm);
-	const replaceFormData = useSettingsFormStore((state) => state.replaceFormData);
+	const replaceFormData = useSettingsFormStore(
+		(state) => state.replaceFormData,
+	);
 
 	const calendarMappings = useUserDataStore((s) => s.calendarMappings);
 	const addCalendarMapping = useUserDataStore((s) => s.addCalendarMapping);
@@ -68,7 +73,9 @@ export const SettingsForm: React.FC = () => {
 	const canTestGitlab =
 		!!formData.gitlabHost.trim() && !!formData.gitlabToken.trim();
 	const canTestRescueTime = !!formData.rescueTimeApiKey.trim();
-	const hasCalendarFeeds = (formData.calendarFeeds ?? []).some((f) => f.url.trim());
+	const hasCalendarFeeds = (formData.calendarFeeds ?? []).some((f) =>
+		f.url.trim(),
+	);
 
 	useEffect(() => {
 		loadFromConfig();
@@ -149,7 +156,11 @@ export const SettingsForm: React.FC = () => {
 					</span>
 				</div>
 				<div className={styles.buttonGroup}>
-					<Button type="button" variant="secondary" onClick={handleExportSettings}>
+					<Button
+						type="button"
+						variant="secondary"
+						onClick={handleExportSettings}
+					>
 						Export
 					</Button>
 					<Button type="button" variant="secondary" onClick={handleImportClick}>
@@ -348,9 +359,7 @@ export const SettingsForm: React.FC = () => {
 								type="button"
 								className={styles.testButton}
 								onClick={testGitlab}
-								disabled={
-									integrationTests.gitlab.loading || !canTestGitlab
-								}
+								disabled={integrationTests.gitlab.loading || !canTestGitlab}
 							>
 								{integrationTests.gitlab.loading ? 'Testing...' : 'Test'}
 							</button>

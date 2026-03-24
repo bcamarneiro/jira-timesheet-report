@@ -136,7 +136,9 @@ describe('useUIStore', () => {
 				useUIStore.getState().toggleUserExpanded('Alex Thompson');
 			});
 
-			expect(useUIStore.getState().expandedUsers['Alex Thompson']).toBeUndefined();
+			expect(
+				useUIStore.getState().expandedUsers['Alex Thompson'],
+			).toBeUndefined();
 		});
 
 		it('should handle multiple users independently', () => {
@@ -152,7 +154,9 @@ describe('useUIStore', () => {
 				useUIStore.getState().toggleUserExpanded('Alex Thompson');
 			});
 
-			expect(useUIStore.getState().expandedUsers['Alex Thompson']).toBeUndefined();
+			expect(
+				useUIStore.getState().expandedUsers['Alex Thompson'],
+			).toBeUndefined();
 			expect(useUIStore.getState().expandedUsers['Sarah Johnson']).toBe(true);
 		});
 	});

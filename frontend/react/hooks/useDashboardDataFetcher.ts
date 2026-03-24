@@ -156,12 +156,7 @@ export function useDashboardDataFetcher() {
 							allData = [...month1Data, ...month2Data];
 						}
 
-						return deriveWeekWorklogs(
-							allData,
-							email,
-							weekStart,
-							weekEnd,
-						);
+						return deriveWeekWorklogs(allData, email, weekStart, weekEnd);
 					} catch (e) {
 						if (!signal.aborted)
 							setError(

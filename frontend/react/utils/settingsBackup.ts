@@ -8,7 +8,9 @@ export interface SettingsBackup {
 	calendarMappings: CalendarMapping[];
 }
 
-function normalizeCalendarFeed(feed: Partial<CalendarFeed>): CalendarFeed | null {
+function normalizeCalendarFeed(
+	feed: Partial<CalendarFeed>,
+): CalendarFeed | null {
 	const url = typeof feed.url === 'string' ? feed.url.trim() : '';
 	if (!url) return null;
 
@@ -22,9 +24,12 @@ function normalizeCalendarFeed(feed: Partial<CalendarFeed>): CalendarFeed | null
 function normalizeCalendarMapping(
 	mapping: Partial<CalendarMapping>,
 ): CalendarMapping | null {
-	const pattern = typeof mapping.pattern === 'string' ? mapping.pattern.trim() : '';
+	const pattern =
+		typeof mapping.pattern === 'string' ? mapping.pattern.trim() : '';
 	const issueKey =
-		typeof mapping.issueKey === 'string' ? mapping.issueKey.trim().toUpperCase() : '';
+		typeof mapping.issueKey === 'string'
+			? mapping.issueKey.trim().toUpperCase()
+			: '';
 	if (!pattern || !issueKey) return null;
 
 	return {
@@ -77,14 +82,38 @@ export function parseSettingsBackup(
 	const config: Config = {
 		...defaultConfig,
 		...data.config,
-		jiraHost: typeof data.config.jiraHost === 'string' ? data.config.jiraHost.trim() : defaultConfig.jiraHost,
-		email: typeof data.config.email === 'string' ? data.config.email.trim() : defaultConfig.email,
-		apiToken: typeof data.config.apiToken === 'string' ? data.config.apiToken.trim() : defaultConfig.apiToken,
-		corsProxy: typeof data.config.corsProxy === 'string' ? data.config.corsProxy.trim() : defaultConfig.corsProxy,
-		jqlFilter: typeof data.config.jqlFilter === 'string' ? data.config.jqlFilter.trim() : defaultConfig.jqlFilter,
-		allowedUsers: typeof data.config.allowedUsers === 'string' ? data.config.allowedUsers.trim() : defaultConfig.allowedUsers,
-		gitlabToken: typeof data.config.gitlabToken === 'string' ? data.config.gitlabToken.trim() : defaultConfig.gitlabToken,
-		gitlabHost: typeof data.config.gitlabHost === 'string' ? data.config.gitlabHost.trim() : defaultConfig.gitlabHost,
+		jiraHost:
+			typeof data.config.jiraHost === 'string'
+				? data.config.jiraHost.trim()
+				: defaultConfig.jiraHost,
+		email:
+			typeof data.config.email === 'string'
+				? data.config.email.trim()
+				: defaultConfig.email,
+		apiToken:
+			typeof data.config.apiToken === 'string'
+				? data.config.apiToken.trim()
+				: defaultConfig.apiToken,
+		corsProxy:
+			typeof data.config.corsProxy === 'string'
+				? data.config.corsProxy.trim()
+				: defaultConfig.corsProxy,
+		jqlFilter:
+			typeof data.config.jqlFilter === 'string'
+				? data.config.jqlFilter.trim()
+				: defaultConfig.jqlFilter,
+		allowedUsers:
+			typeof data.config.allowedUsers === 'string'
+				? data.config.allowedUsers.trim()
+				: defaultConfig.allowedUsers,
+		gitlabToken:
+			typeof data.config.gitlabToken === 'string'
+				? data.config.gitlabToken.trim()
+				: defaultConfig.gitlabToken,
+		gitlabHost:
+			typeof data.config.gitlabHost === 'string'
+				? data.config.gitlabHost.trim()
+				: defaultConfig.gitlabHost,
 		rescueTimeApiKey:
 			typeof data.config.rescueTimeApiKey === 'string'
 				? data.config.rescueTimeApiKey.trim()

@@ -6,8 +6,12 @@ test.describe('Settings Page', () => {
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('shows the real settings sections and offline defaults', async ({ page }) => {
-		await expect(page.getByLabel('Jira Host')).toHaveValue('mock.atlassian.net');
+	test('shows the real settings sections and offline defaults', async ({
+		page,
+	}) => {
+		await expect(page.getByLabel('Jira Host')).toHaveValue(
+			'mock.atlassian.net',
+		);
 		await expect(page.getByLabel('Email')).toHaveValue('dev@example.com');
 		await expect(page.getByLabel('API Token')).toHaveValue('mock-token');
 		await expect(page.getByLabel(/JQL Filter/)).toBeVisible();
@@ -90,7 +94,9 @@ test.describe('Settings Page', () => {
 			),
 		});
 
-		await expect(page.getByText('Settings imported into the form')).toBeVisible();
+		await expect(
+			page.getByText('Settings imported into the form'),
+		).toBeVisible();
 		await expect(page.getByLabel('Jira Host')).toHaveValue(
 			'imported.atlassian.net',
 		);

@@ -98,51 +98,43 @@ export const OverviewTable: React.FC<Props> = ({
 			<table className={styles.table}>
 				<thead>
 					<tr>
-							<th
-								className={`${styles.userCell} ${styles.sortableHeader}`}
+						<th className={`${styles.userCell} ${styles.sortableHeader}`}>
+							<button
+								type="button"
+								className={styles.sortButton}
+								onClick={() => handleSort('user')}
 							>
-								<button
-									type="button"
-									className={styles.sortButton}
-									onClick={() => handleSort('user')}
-								>
-									User {sortArrow('user')}
-								</button>
-							</th>
+								User {sortArrow('user')}
+							</button>
+						</th>
 						<th className={styles.progressCell}>Progress</th>
-							<th
-								className={`${styles.hoursCell} ${styles.sortableHeader}`}
+						<th className={`${styles.hoursCell} ${styles.sortableHeader}`}>
+							<button
+								type="button"
+								className={styles.sortButton}
+								onClick={() => handleSort('days')}
 							>
-								<button
-									type="button"
-									className={styles.sortButton}
-									onClick={() => handleSort('days')}
-								>
-									Days {sortArrow('days')}
-								</button>
-							</th>
-							<th
-								className={`${styles.hoursCell} ${styles.sortableHeader}`}
+								Days {sortArrow('days')}
+							</button>
+						</th>
+						<th className={`${styles.hoursCell} ${styles.sortableHeader}`}>
+							<button
+								type="button"
+								className={styles.sortButton}
+								onClick={() => handleSort('entries')}
 							>
-								<button
-									type="button"
-									className={styles.sortButton}
-									onClick={() => handleSort('entries')}
-								>
-									Entries {sortArrow('entries')}
-								</button>
-							</th>
-							<th
-								className={`${styles.hoursCell} ${styles.sortableHeader}`}
+								Entries {sortArrow('entries')}
+							</button>
+						</th>
+						<th className={`${styles.hoursCell} ${styles.sortableHeader}`}>
+							<button
+								type="button"
+								className={styles.sortButton}
+								onClick={() => handleSort('hours')}
 							>
-								<button
-									type="button"
-									className={styles.sortButton}
-									onClick={() => handleSort('hours')}
-								>
-									Hours {sortArrow('hours')}
-								</button>
-							</th>
+								Hours {sortArrow('hours')}
+							</button>
+						</th>
 					</tr>
 				</thead>
 				<tbody>

@@ -55,11 +55,7 @@ export const SourceStatusBar: React.FC = () => {
 	const tooltip = buildTooltip(sources);
 
 	return (
-		<output
-			className={styles.container}
-			title={tooltip}
-			aria-live="polite"
-		>
+		<output className={styles.container} title={tooltip} aria-live="polite">
 			{hasErrors ? (
 				// Expanded: show error labels
 				sources

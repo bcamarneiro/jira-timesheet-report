@@ -55,7 +55,9 @@ function getGapCellStyle(gapSeconds: number): string {
 }
 
 function getWeekdays(weekStart: string): string[] {
-	return Array.from({ length: 5 }, (_, index) => addDaysToIsoDate(weekStart, index));
+	return Array.from({ length: 5 }, (_, index) =>
+		addDaysToIsoDate(weekStart, index),
+	);
 }
 
 function formatDayHeader(dateStr: string, index: number): string {
@@ -451,7 +453,9 @@ export const TimesheetPage: React.FC = () => {
 					{weeklySummary && (
 						<div className={styles.reportSummary}>
 							<strong>Weekly Snapshot</strong>
-							<span>{formatHours(weeklySummary.totalSeconds)} logged across the team</span>
+							<span>
+								{formatHours(weeklySummary.totalSeconds)} logged across the team
+							</span>
 							<span>
 								{weeklySummary.totalGapSeconds > 0
 									? `${formatHours(weeklySummary.totalGapSeconds)} remaining gap`
@@ -518,7 +522,9 @@ export const TimesheetPage: React.FC = () => {
 													{formatDayHeader(day, i)}
 												</th>
 											))}
-											<th className={`${styles.dayHeader} ${styles.sortableHeader}`}>
+											<th
+												className={`${styles.dayHeader} ${styles.sortableHeader}`}
+											>
 												<button
 													type="button"
 													className={styles.sortButton}
@@ -532,7 +538,9 @@ export const TimesheetPage: React.FC = () => {
 													/>
 												</button>
 											</th>
-											<th className={`${styles.dayHeader} ${styles.sortableHeader}`}>
+											<th
+												className={`${styles.dayHeader} ${styles.sortableHeader}`}
+											>
 												<button
 													type="button"
 													className={styles.sortButton}

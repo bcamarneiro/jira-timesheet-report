@@ -100,14 +100,13 @@ export const MonthHeatmap: React.FC<Props> = ({
 		(sum, seconds) => sum + seconds,
 		0,
 	);
-	const loggedDaysCount = [...monthData.values()].filter((seconds) => seconds > 0)
-		.length;
+	const loggedDaysCount = [...monthData.values()].filter(
+		(seconds) => seconds > 0,
+	).length;
 
 	return (
 		<div className={styles.container}>
-			<div className={styles.header}>
-				{monthLabel(year, month)}
-			</div>
+			<div className={styles.header}>{monthLabel(year, month)}</div>
 			<div className={styles.summary}>
 				<span>{formatHours(totalLoggedSeconds)} logged</span>
 				<span>{loggedDaysCount} active days</span>

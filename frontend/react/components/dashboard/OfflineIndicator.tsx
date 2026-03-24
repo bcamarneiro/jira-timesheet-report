@@ -48,10 +48,7 @@ export const OfflineIndicator: React.FC = () => {
 		: null;
 
 	return (
-		<div
-			className={`${styles.banner} ${styles.offline}`}
-			aria-live="polite"
-		>
+		<div className={`${styles.banner} ${styles.offline}`} aria-live="polite">
 			<span className={styles.message}>
 				You're offline.
 				{formattedTime && (

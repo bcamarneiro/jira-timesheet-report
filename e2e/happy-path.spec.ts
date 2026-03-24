@@ -266,7 +266,9 @@ test.describe('Dashboard Page', () => {
 		await expect(dialog).not.toBeVisible();
 	});
 
-	test('copy previous week creates suggestions with feedback', async ({ page }) => {
+	test('copy previous week creates suggestions with feedback', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: /Copy Prev Week/ }).click();
 
 		await expect(

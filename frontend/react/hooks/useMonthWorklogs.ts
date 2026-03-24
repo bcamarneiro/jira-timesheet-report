@@ -67,8 +67,7 @@ export function useMonthWorklogs(
 				},
 				signal,
 			),
-		enabled:
-			(options?.enabled ?? true) && !!jiraHost && !!apiToken,
+		enabled: (options?.enabled ?? true) && !!jiraHost && !!apiToken,
 		staleTime: 15 * 60 * 1000,
 	});
 

@@ -67,7 +67,11 @@ describe('useSettingsFormStore', () => {
 		});
 
 		expect(useConfigStore.getState().config.jiraHost).toBe('next.example.com');
-		expect(useSettingsFormStore.getState().integrationTests.jira.result).toBeNull();
-		expect(useSettingsFormStore.getState().integrationTests.gitlab.result).toBeNull();
+		expect(
+			useSettingsFormStore.getState().integrationTests.jira.result,
+		).toBeNull();
+		expect(
+			useSettingsFormStore.getState().integrationTests.gitlab.result,
+		).toBeNull();
 	});
 });

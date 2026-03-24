@@ -16,15 +16,11 @@ export function useTimesheetDataFetcher(options?: { enabled?: boolean }) {
 	const setData = useTimesheetStore((state) => state.setData);
 	const jqlFilter = useConfigStore((state) => state.config.jqlFilter);
 
-	const query = useMonthWorklogs(
-		currentYear,
-		currentMonth,
-		{
-			jqlFilter: jqlFilter || undefined,
-			prefetchAdjacent: enabled,
-			enabled,
-		},
-	);
+	const query = useMonthWorklogs(currentYear, currentMonth, {
+		jqlFilter: jqlFilter || undefined,
+		prefetchAdjacent: enabled,
+		enabled,
+	});
 
 	// Sync data to store (cast to EnrichedJiraWorklog — same JSON shape)
 	useEffect(() => {
