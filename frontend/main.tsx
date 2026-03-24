@@ -2,6 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createRoot } from 'react-dom/client';
 import { App } from './react/App';
 import { queryClient } from './react/queryClient';
+import { logger } from './react/utils/logger';
 import './react/styles/global.css';
 import { useConfigStore } from './stores/useConfigStore';
 
@@ -16,7 +17,7 @@ async function startApp() {
 					url: '/mockServiceWorker.js',
 				},
 			});
-			console.log('[OFFLINE MODE] MSW started successfully');
+			logger.debug('[OFFLINE MODE] MSW started successfully');
 
 			// Set up default configuration for offline mode
 			const { setConfig } = useConfigStore.getState();
@@ -38,14 +39,14 @@ async function startApp() {
 				theme: 'system',
 				timeRounding: 'off',
 			});
-			console.log('[OFFLINE MODE] Default configuration set');
+			logger.debug('[OFFLINE MODE] Default configuration set');
 
 			// Set the current month to October 2025 for testing
 			const { useTimesheetStore } = await import('./stores/useTimesheetStore');
 			useTimesheetStore.getState().setCurrentMonth(2025, 9); // October (0-indexed)
-			console.log('[OFFLINE MODE] Set to October 2025 for testing');
+			logger.debug('[OFFLINE MODE] Set to October 2025 for testing');
 		} catch (error) {
-			console.error('[OFFLINE MODE] Failed to start MSW:', error);
+			logger.error('[OFFLINE MODE] Failed to start MSW:', error);
 		}
 	}
 

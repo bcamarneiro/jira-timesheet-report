@@ -1,16 +1,18 @@
 import type React from 'react';
-import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
+import type { EnrichedJiraWorklog } from '../../../../types/jira';
 import { WorklogItem } from './WorklogItem';
 import * as styles from './WorklogList.module.css';
 
 type Props = {
 	worklogs: EnrichedJiraWorklog[];
+	issueSummaries: Record<string, string>;
 	onEdit?: (worklog: EnrichedJiraWorklog) => void;
 	onDelete?: (worklog: EnrichedJiraWorklog) => void;
 };
 
 export const WorklogList: React.FC<Props> = ({
 	worklogs,
+	issueSummaries,
 	onEdit,
 	onDelete,
 }) => {
@@ -20,6 +22,7 @@ export const WorklogList: React.FC<Props> = ({
 				<WorklogItem
 					key={wl.id}
 					worklog={wl}
+					issueSummaries={issueSummaries}
 					onEdit={onEdit}
 					onDelete={onDelete}
 				/>

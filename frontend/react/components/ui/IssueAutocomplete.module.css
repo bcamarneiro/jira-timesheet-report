@@ -49,6 +49,10 @@
 	background: var(--color-surface-hover);
 }
 
+.itemActive {
+	background: var(--color-surface-hover);
+}
+
 .itemKey {
 	font-size: var(--text-sm);
 	font-weight: var(--font-semibold);

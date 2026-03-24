@@ -1,4 +1,5 @@
 import type React from 'react';
+import { monthLabel } from '../../utils/date';
 import { formatHours } from '../../utils/format';
 import * as styles from './MonthHeatmap.module.css';
 
@@ -6,22 +7,8 @@ type Props = {
 	monthData: Map<string, number>;
 	month: number;
 	year: number;
+	vacationDates?: Set<string>;
 };
-
-const MONTH_NAMES = [
-	'January',
-	'February',
-	'March',
-	'April',
-	'May',
-	'June',
-	'July',
-	'August',
-	'September',
-	'October',
-	'November',
-	'December',
-];
 
 const DAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -32,6 +19,7 @@ const cellLevelMap: Record<string, string> = {
 	level2: styles.cellLevel2,
 	level3: styles.cellLevel3,
 	level4: styles.cellLevel4,
+	vacation: styles.cellVacation,
 };
 
 const legendLevelMap: Record<string, string> = {
@@ -56,7 +44,12 @@ function isWeekend(dayOfWeek: number): boolean {
 	return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
-export const MonthHeatmap: React.FC<Props> = ({ monthData, month, year }) => {
+export const MonthHeatmap: React.FC<Props> = ({
+	monthData,
+	month,
+	year,
+	vacationDates,
+}) => {
 	const daysInMonth = new Date(year, month + 1, 0).getDate();
 
 	// Build cells with leading placeholders for alignment
@@ -102,11 +95,22 @@ export const MonthHeatmap: React.FC<Props> = ({ monthData, month, year }) => {
 	}
 
 	const legendLevels = ['empty', 'level1', 'level2', 'level3', 'level4'];
+	const showVacationLegend = vacationDates && vacationDates.size > 0;
+	const totalLoggedSeconds = [...monthData.values()].reduce(
+		(sum, seconds) => sum + seconds,
+		0,
+	);
+	const loggedDaysCount = [...monthData.values()].filter((seconds) => seconds > 0)
+		.length;
 
 	return (
 		<div className={styles.container}>
 			<div className={styles.header}>
-				{MONTH_NAMES[month]} {year}
+				{monthLabel(year, month)}
+			</div>
+			<div className={styles.summary}>
+				<span>{formatHours(totalLoggedSeconds)} logged</span>
+				<span>{loggedDaysCount} active days</span>
 			</div>
 
 			<div className={styles.dayLabels}>
@@ -117,40 +121,55 @@ export const MonthHeatmap: React.FC<Props> = ({ monthData, month, year }) => {
 				))}
 			</div>
 
-			<div className={styles.grid}>
+			<ul
+				className={styles.grid}
+				aria-label={`Month heatmap for ${monthLabel(year, month)}`}
+			>
 				{cells.map((cell) => {
 					if (cell.isPlaceholder) {
 						const placeholderClass = cellLevelMap.placeholder;
 						return (
-							<div
+							<li
 								key={cell.dateStr}
 								className={`${styles.cell} ${placeholderClass}`}
+								aria-hidden="true"
 							/>
 						);
 					}
 
-					const level = getLevel(cell.seconds);
+					const isVacation = vacationDates?.has(cell.dateStr);
+					const level = isVacation ? 'vacation' : getLevel(cell.seconds);
 					const levelClass = cellLevelMap[level] ?? cellLevelMap.empty;
 					const weekendClass = cell.isWeekend ? styles.cellWeekend : '';
 					const hours = cell.seconds / 3600;
-					const title =
-						hours > 0
+					const title = isVacation
+						? `${cell.dateStr}: vacation/absence`
+						: hours > 0
 							? `${cell.dateStr}: ${formatHours(cell.seconds)}`
 							: `${cell.dateStr}: no time logged`;
 
 					return (
-						<div
+						<li
 							key={cell.dateStr}
 							className={`${styles.cell} ${levelClass} ${weekendClass}`}
 							title={title}
+							aria-label={title}
 						>
 							{cell.day}
-						</div>
+						</li>
 					);
 				})}
-			</div>
+			</ul>
 
 			<div className={styles.footer}>
+				{showVacationLegend && (
+					<>
+						<div
+							className={`${styles.legendCell} ${styles.legendCellVacation}`}
+						/>
+						<span className={styles.legendLabel}>Vacation</span>
+					</>
+				)}
 				<span className={styles.legendLabel}>Less</span>
 				<div className={styles.legendCells}>
 					{legendLevels.map((level) => {

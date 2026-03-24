@@ -1,8 +1,10 @@
+import { parseIsoDateLocal } from './date';
+
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function formatWeekRange(weekStart: string, weekEnd: string): string {
-	const s = new Date(weekStart);
-	const e = new Date(weekEnd);
+	const s = parseIsoDateLocal(weekStart);
+	const e = parseIsoDateLocal(weekEnd);
 	const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
 	const startStr = s.toLocaleDateString('en-US', opts);
 	const endStr = e.toLocaleDateString('en-US', {
@@ -71,8 +73,16 @@ export function generateWeeklySummary(
 	}
 
 	let weekTotalSeconds = 0;
+	const dayTotals = new Map<string, number>();
 
-	for (const [issueKey, entry] of issueMap) {
+	const sortedIssues = [...issueMap.entries()].sort(([, a], [, b]) => {
+		if (b.totalSeconds !== a.totalSeconds) {
+			return b.totalSeconds - a.totalSeconds;
+		}
+		return 0;
+	});
+
+	for (const [issueKey, entry] of sortedIssues) {
 		const title = entry.summary
 			? `### ${issueKey} - ${entry.summary}`
 			: `### ${issueKey}`;
@@ -84,9 +94,10 @@ export function generateWeeklySummary(
 		);
 
 		for (const [date, seconds] of sortedDays) {
-			const d = new Date(date);
+			const d = parseIsoDateLocal(date);
 			const dayLabel = DAY_LABELS[d.getDay()];
 			lines.push(`- ${dayLabel}: ${formatDuration(seconds)}`);
+			dayTotals.set(date, (dayTotals.get(date) ?? 0) + seconds);
 		}
 
 		lines.push(`- **Total: ${formatDuration(entry.totalSeconds)}**`);
@@ -99,6 +110,15 @@ export function generateWeeklySummary(
 	// Replace trailing --- with the week total
 	lines.pop();
 	lines.push(`**Week Total: ${formatDuration(weekTotalSeconds)} / 40h**`);
+	lines.push('');
+	lines.push('### Daily Totals');
+
+	for (const [date, seconds] of [...dayTotals.entries()].sort(([a], [b]) =>
+		a.localeCompare(b),
+	)) {
+		const d = parseIsoDateLocal(date);
+		lines.push(`- ${DAY_LABELS[d.getDay()]} (${date}): ${formatDuration(seconds)}`);
+	}
 
 	return lines.join('\n');
 }

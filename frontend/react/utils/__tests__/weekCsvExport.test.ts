@@ -10,10 +10,12 @@ describe('generateWeeklyCsv', () => {
 		const result = generateWeeklyCsv(weekStart, weekEnd, []);
 		const lines = result.split('\n');
 
-		expect(lines).toHaveLength(1);
-		expect(lines[0]).toBe(
+		expect(lines).toHaveLength(3);
+		expect(lines[0]).toBe(`Week Range;${weekStart} to ${weekEnd}`);
+		expect(lines[1]).toBe(
 			'Date;Day;Issue Key;Issue Summary;Time Spent (hours);Time Spent (formatted)',
 		);
+		expect(lines[2]).toBe('Week Total;;;;0.00;0h');
 	});
 
 	it('should export a single worklog correctly', () => {
@@ -29,8 +31,9 @@ describe('generateWeeklyCsv', () => {
 		const result = generateWeeklyCsv(weekStart, weekEnd, worklogs);
 		const lines = result.split('\n');
 
-		expect(lines).toHaveLength(2);
-		expect(lines[1]).toBe('2026-03-10;Tue;PROJ-100;Implement feature;2.00;2h');
+		expect(lines).toHaveLength(4);
+		expect(lines[2]).toBe('2026-03-10;Tue;PROJ-100;Implement feature;2.00;2h');
+		expect(lines[3]).toBe('Week Total;;;;2.00;2h');
 	});
 
 	it('should sort by date then issue key', () => {
@@ -58,10 +61,10 @@ describe('generateWeeklyCsv', () => {
 		const result = generateWeeklyCsv(weekStart, weekEnd, worklogs);
 		const lines = result.split('\n');
 
-		expect(lines).toHaveLength(4);
-		expect(lines[1]).toContain('PROJ-050');
-		expect(lines[2]).toContain('PROJ-100');
-		expect(lines[3]).toContain('PROJ-200');
+		expect(lines).toHaveLength(6);
+		expect(lines[2]).toContain('PROJ-050');
+		expect(lines[3]).toContain('PROJ-100');
+		expect(lines[4]).toContain('PROJ-200');
 	});
 
 	it('should handle CSV special characters in summaries', () => {
@@ -77,7 +80,7 @@ describe('generateWeeklyCsv', () => {
 		const result = generateWeeklyCsv(weekStart, weekEnd, worklogs);
 		const lines = result.split('\n');
 
-		expect(lines[1]).toBe(
+		expect(lines[2]).toBe(
 			'2026-03-10;Tue;PROJ-100;"Fix ""bug"" with; separator, and commas";1.00;1h',
 		);
 	});
@@ -94,7 +97,7 @@ describe('generateWeeklyCsv', () => {
 		const result = generateWeeklyCsv(weekStart, weekEnd, worklogs);
 		const lines = result.split('\n');
 
-		expect(lines[1]).toBe('2026-03-10;Tue;PROJ-100;;1.50;1h 30m');
+		expect(lines[2]).toBe('2026-03-10;Tue;PROJ-100;;1.50;1h 30m');
 	});
 
 	it('should format time correctly', () => {
@@ -117,7 +120,7 @@ describe('generateWeeklyCsv', () => {
 
 			const result = generateWeeklyCsv(weekStart, weekEnd, worklogs);
 			const lines = result.split('\n');
-			const fields = lines[1].split(';');
+			const fields = lines[2].split(';');
 
 			expect(fields[4]).toBe(tc.hours);
 			expect(fields[5]).toBe(tc.formatted);
@@ -135,9 +138,28 @@ describe('generateWeeklyCsv', () => {
 		];
 
 		const result = generateWeeklyCsv(weekStart, weekEnd, worklogs);
-		const headerLine = result.split('\n')[0];
+		const headerLine = result.split('\n')[1];
 		const semicolonCount = (headerLine.match(/;/g) || []).length;
 
 		expect(semicolonCount).toBe(5); // 6 columns = 5 semicolons
+	});
+
+	it('should append a week total footer', () => {
+		const result = generateWeeklyCsv(weekStart, weekEnd, [
+			{
+				date: '2026-03-10',
+				issueKey: 'PROJ-100',
+				issueSummary: 'Test',
+				timeSpentSeconds: 5400,
+			},
+			{
+				date: '2026-03-11',
+				issueKey: 'PROJ-200',
+				issueSummary: 'Test 2',
+				timeSpentSeconds: 1800,
+			},
+		]);
+
+		expect(result.split('\n').at(-1)).toBe('Week Total;;;;2.00;2h');
 	});
 });

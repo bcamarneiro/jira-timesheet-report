@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useMemo } from 'react';
-import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
+import type { EnrichedJiraWorklog } from '../../../../types/jira';
 import { isDateInMonth } from '../../utils/date';
 import { StatCard } from '../ui/StatCard';
 import * as styles from './TimesheetStatsCards.module.css';

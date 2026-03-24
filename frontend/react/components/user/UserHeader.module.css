@@ -17,6 +17,34 @@
 	min-width: 0;
 }
 
+.leftClickable {
+	display: flex;
+	align-items: center;
+	gap: var(--space-5);
+	flex: 1;
+	min-width: 0;
+	cursor: pointer;
+	border-radius: var(--radius-md);
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+}
+
+.leftClickable:hover {
+	opacity: 0.8;
+}
+
+.chevron {
+	font-size: var(--text-xs);
+	color: var(--color-text-tertiary);
+	flex-shrink: 0;
+	width: 12px;
+	text-align: center;
+}
+
 .userTitle {
 	font-size: var(--text-xl);
 	margin: 0;

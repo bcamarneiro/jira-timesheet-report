@@ -102,7 +102,6 @@ export function useWorklogOperations() {
 
 			const currentData = useTimesheetStore.getState().data;
 			queryClient.invalidateQueries({ queryKey: ['monthWorklogs'] });
-			queryClient.invalidateQueries({ queryKey: ['team'] });
 			setData([...(currentData || []), enrichedWorklog]);
 
 			return enrichedWorklog;
@@ -158,7 +157,6 @@ export function useWorklogOperations() {
 			});
 
 			queryClient.invalidateQueries({ queryKey: ['monthWorklogs'] });
-			queryClient.invalidateQueries({ queryKey: ['team'] });
 			setData(updatedData || null);
 
 			return updatedWorklog;
@@ -233,7 +231,6 @@ export function useWorklogOperations() {
 						enrichedWorklog,
 					];
 					queryClient.invalidateQueries({ queryKey: ['monthWorklogs'] });
-					queryClient.invalidateQueries({ queryKey: ['team'] });
 					setData(updatedData);
 
 					created.push({
@@ -272,7 +269,6 @@ export function useWorklogOperations() {
 			const currentData = useTimesheetStore.getState().data;
 			const updatedData = currentData?.filter((wl) => wl.id !== worklogId);
 			queryClient.invalidateQueries({ queryKey: ['monthWorklogs'] });
-			queryClient.invalidateQueries({ queryKey: ['team'] });
 			setData(updatedData || null);
 		} catch (err) {
 			const errorMessage =

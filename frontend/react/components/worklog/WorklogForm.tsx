@@ -1,5 +1,7 @@
 import type React from 'react';
 import { useState } from 'react';
+import { formatDateTimeLocalValue } from '../../utils/date';
+import { isValidTimeSpentFormat } from '../../utils/timeSpent';
 import { Button } from '../ui/Button';
 import { CommentPresets } from './CommentPresets';
 import * as styles from './WorklogForm.module.css';
@@ -33,7 +35,7 @@ export const WorklogForm: React.FC<Props> = ({
 	const [timeSpent, setTimeSpent] = useState(initialData?.timeSpent || '');
 	const [comment, setComment] = useState(initialData?.comment || '');
 	const [started, setStarted] = useState(
-		initialData?.started || new Date().toISOString().slice(0, 16),
+		initialData?.started || formatDateTimeLocalValue(new Date()),
 	);
 	const [error, setError] = useState<string | null>(null);
 
@@ -53,8 +55,7 @@ export const WorklogForm: React.FC<Props> = ({
 		}
 
 		// Validate time format (e.g., 1h, 30m, 1h 30m, 2d)
-		const timePattern = /^(\d+[wdhm]\s*)+$/i;
-		if (!timePattern.test(timeSpent.trim())) {
+		if (!isValidTimeSpentFormat(timeSpent)) {
 			setError(
 				'Invalid time format. Use formats like: 1h, 30m, 1h 30m, 2d, etc.',
 			);
@@ -91,6 +92,9 @@ export const WorklogForm: React.FC<Props> = ({
 					placeholder="e.g., PROJ-123"
 					disabled={isEdit || isLoading}
 					className={styles.input}
+					autoCapitalize="characters"
+					autoCorrect="off"
+					spellCheck={false}
 					required
 				/>
 				<small className={styles.hint}>
@@ -110,6 +114,9 @@ export const WorklogForm: React.FC<Props> = ({
 					placeholder="e.g., 1h 30m"
 					disabled={isLoading}
 					className={styles.input}
+					inputMode="text"
+					autoCorrect="off"
+					spellCheck={false}
 					required
 				/>
 				<small className={styles.hint}>Format: 1h, 30m, 1h 30m, 2d, etc.</small>

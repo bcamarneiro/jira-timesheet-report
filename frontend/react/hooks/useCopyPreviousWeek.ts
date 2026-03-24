@@ -7,15 +7,14 @@ import {
 } from '../../services/monthWorklogService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
+import { addDaysToIsoDate } from '../utils/date';
 import { monthWorklogsQueryKey } from './useMonthWorklogs';
 
 /**
  * Given a date string, shift it forward by 7 days and return the new date string.
  */
 function shiftDateByWeek(dateStr: string): string {
-	const d = new Date(dateStr);
-	d.setDate(d.getDate() + 7);
-	return d.toISOString().slice(0, 10);
+	return addDaysToIsoDate(dateStr, 7);
 }
 
 function formatTimeSpent(seconds: number): string {
@@ -32,15 +31,11 @@ function formatTimeSpent(seconds: number): string {
  * Get the Monday of the previous week given the current week's Monday.
  */
 function getPreviousWeekStart(weekStart: string): string {
-	const d = new Date(weekStart);
-	d.setDate(d.getDate() - 7);
-	return d.toISOString().slice(0, 10);
+	return addDaysToIsoDate(weekStart, -7);
 }
 
 function getPreviousWeekEnd(prevWeekStart: string): string {
-	const d = new Date(prevWeekStart);
-	d.setDate(d.getDate() + 6);
-	return d.toISOString().slice(0, 10);
+	return addDaysToIsoDate(prevWeekStart, 6);
 }
 
 /** Derive week worklogs from month data */
@@ -84,7 +79,7 @@ export function useCopyPreviousWeek() {
 	const queryClient = useQueryClient();
 
 	const copyPreviousWeek = async () => {
-		if (!config.jiraHost || !config.apiToken) return;
+		if (!config.jiraHost || !config.apiToken) return 0;
 
 		setIsLoading(true);
 		try {
@@ -96,15 +91,18 @@ export function useCopyPreviousWeek() {
 			const [endYear, endMonthStr] = prevEnd.split('-').map(Number);
 			const startMonth = startMonthStr - 1;
 			const endMonth = endMonthStr - 1;
-			const fetchOpts = { currentUserOnly: true };
+			const jqlFilter = config.jqlFilter?.trim() || '';
+			const fetchOpts = {
+				jqlFilter: jqlFilter || undefined,
+			};
 			const buildKey = (y: number, m: number) =>
 				monthWorklogsQueryKey(
 					y,
 					m,
 					config.jiraHost,
 					config.corsProxy,
-					true,
-					'',
+					false,
+					jqlFilter,
 				);
 
 			const month1Data = await queryClient.fetchQuery({
@@ -132,7 +130,7 @@ export function useCopyPreviousWeek() {
 				prevEnd,
 			);
 
-			if (prevWorklogs.length === 0) return;
+			if (prevWorklogs.length === 0) return 0;
 
 			// Group worklogs by (dayOfWeek, issueKey) and aggregate time
 			const grouped = new Map<
@@ -180,6 +178,7 @@ export function useCopyPreviousWeek() {
 			}
 
 			mergePreviousWeekSuggestions(suggestions);
+			return suggestions.length;
 		} finally {
 			setIsLoading(false);
 		}

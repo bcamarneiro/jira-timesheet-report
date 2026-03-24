@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
+import { toLocalDateString } from '../utils/date';
 
 const STORAGE_KEY = 'jira-timesheet-last-reminded-week';
 
@@ -81,7 +82,7 @@ export function useComplianceReminder(): ComplianceReminderResult {
 		if (daysWithGaps.length === 0) return;
 
 		const lastGapDay = daysWithGaps[daysWithGaps.length - 1];
-		const today = now.toISOString().slice(0, 10);
+		const today = toLocalDateString(now);
 		const isFriday = now.getDay() === 5;
 
 		// Show notification if today is the last gap day or it's Friday

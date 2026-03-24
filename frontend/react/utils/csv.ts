@@ -1,4 +1,5 @@
-import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
+import { sanitizeFilename } from './downloadFile';
+import type { EnrichedJiraWorklog } from '../../../types/jira';
 
 const SEP = ';';
 
@@ -159,9 +160,12 @@ export function download(filename: string, content: string) {
 		'href',
 		`data:text/csv;charset=utf-8,${encodeURIComponent(content)}`,
 	);
-	element.setAttribute('download', filename);
+	element.setAttribute('download', sanitizeFilename(filename));
 	element.style.display = 'none';
 	document.body.appendChild(element);
-	element.click();
-	document.body.removeChild(element);
+	try {
+		element.click();
+	} finally {
+		document.body.removeChild(element);
+	}
 }

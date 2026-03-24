@@ -18,11 +18,11 @@
 }
 
 .dotOk {
-	background: #22c55e;
+	background: var(--color-success);
 }
 
 .dotLoading {
-	background: #60a5fa;
+	background: var(--color-primary);
 	animation: pulse 1.5s ease-in-out infinite;
 }
 
@@ -41,8 +41,8 @@
 }
 
 .error {
-	background: #fee2e2;
-	color: #991b1b;
+	background: var(--color-error-bg);
+	color: var(--color-error);
 }
 
 @keyframes pulse {
@@ -52,16 +52,5 @@
 	}
 	50% {
 		opacity: 0.4;
-	}
-}
-
-@media (prefers-color-scheme: dark) {
-	.dotOk {
-		background: #4ade80;
-	}
-
-	.error {
-		background: #7f1d1d;
-		color: #fca5a5;
 	}
 }

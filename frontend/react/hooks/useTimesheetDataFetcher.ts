@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
-import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useMonthWorklogs } from './useMonthWorklogs';
 
@@ -10,46 +9,36 @@ import { useMonthWorklogs } from './useMonthWorklogs';
  *
  * TanStack Query handles caching, deduplication, and background refetching.
  */
-export function useTimesheetDataFetcher() {
+export function useTimesheetDataFetcher(options?: { enabled?: boolean }) {
+	const enabled = options?.enabled ?? true;
 	const currentYear = useTimesheetStore((state) => state.currentYear);
 	const currentMonth = useTimesheetStore((state) => state.currentMonth);
 	const setData = useTimesheetStore((state) => state.setData);
-	const setLoading = useTimesheetStore((state) => state.setLoading);
-	const setError = useTimesheetStore((state) => state.setError);
 	const jqlFilter = useConfigStore((state) => state.config.jqlFilter);
 
-	const { data, isLoading, error } = useMonthWorklogs(
+	const query = useMonthWorklogs(
 		currentYear,
 		currentMonth,
 		{
-			currentUserOnly: true,
 			jqlFilter: jqlFilter || undefined,
-			prefetchAdjacent: true,
+			prefetchAdjacent: enabled,
+			enabled,
 		},
 	);
 
-	// Sync loading state to store
-	useEffect(() => {
-		setLoading(isLoading);
-	}, [isLoading, setLoading]);
-
-	// Sync error state to store
-	useEffect(() => {
-		if (error) {
-			setError(
-				error instanceof Error
-					? `Failed to fetch data from Jira: ${error.message}`
-					: 'An unknown error occurred.',
-			);
-		} else {
-			setError(null);
-		}
-	}, [error, setError]);
-
 	// Sync data to store (cast to EnrichedJiraWorklog — same JSON shape)
 	useEffect(() => {
-		if (data) {
-			setData(data as unknown as EnrichedJiraWorklog[]);
+		if (query.data) {
+			setData(query.data);
 		}
-	}, [data, setData]);
+	}, [query.data, setData]);
+
+	return {
+		...query,
+		errorMessage: query.error
+			? query.error instanceof Error
+				? `Failed to fetch data from Jira: ${query.error.message}`
+				: 'An unknown error occurred.'
+			: null,
+	};
 }

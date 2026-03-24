@@ -11,14 +11,12 @@ test.describe('Navigation', () => {
 		await expect(page).toHaveTitle(/Timesheet/i);
 	});
 
-	test('should navigate to timesheet page', async ({ page }) => {
+	test('should navigate to reports page', async ({ page }) => {
 		await page.goto('/');
 
-		// Click on timesheet link (use exact match to avoid multiple matches)
-		await page.getByRole('link', { name: 'Timesheet', exact: true }).click();
+		await page.getByRole('link', { name: 'Reports' }).click();
 
-		// Verify URL changed
-		await expect(page).toHaveURL(/\/timesheet/);
+		await expect(page).toHaveURL(/\/reports/);
 	});
 
 	test('should navigate to settings page', async ({ page }) => {
@@ -34,8 +32,8 @@ test.describe('Navigation', () => {
 		await expect(page).toHaveURL(/\/settings/);
 	});
 
-	test('should navigate back to home from timesheet', async ({ page }) => {
-		await page.goto('/timesheet');
+	test('should navigate back to home from reports', async ({ page }) => {
+		await page.goto('/reports');
 
 		// Click on brand link to go home
 		await page.getByRole('link', { name: 'Jira Timesheet' }).click();

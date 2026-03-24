@@ -1,6 +1,10 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
+import {
+	isValidTimeSpentFormat,
+	parseTimeSpentToSeconds,
+} from '../../utils/timeSpent';
 import { Button } from '../ui/Button';
 import { IssueAutocomplete } from '../ui/IssueAutocomplete';
 import { Modal } from '../ui/Modal';
@@ -14,21 +18,6 @@ type Props = {
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DEFAULT_WEEKDAYS = [1, 2, 3, 4, 5]; // Mon-Fri
 
-function parseTimeToSeconds(time: string): number {
-	let total = 0;
-	const hours = time.match(/(\d+)\s*h/i);
-	const minutes = time.match(/(\d+)\s*m/i);
-	const days = time.match(/(\d+)\s*d/i);
-	const weeks = time.match(/(\d+)\s*w/i);
-
-	if (weeks) total += Number.parseInt(weeks[1], 10) * 5 * 8 * 3600;
-	if (days) total += Number.parseInt(days[1], 10) * 8 * 3600;
-	if (hours) total += Number.parseInt(hours[1], 10) * 3600;
-	if (minutes) total += Number.parseInt(minutes[1], 10) * 60;
-
-	return total;
-}
-
 export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 	const templates = useUserDataStore((s) => s.templates);
 	const addTemplate = useUserDataStore((s) => s.addTemplate);
@@ -41,6 +30,26 @@ export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 	const [comment, setComment] = useState('');
 	const [daysOfWeek, setDaysOfWeek] = useState<number[]>(DEFAULT_WEEKDAYS);
 	const [error, setError] = useState<string | null>(null);
+	const sortedTemplates = [...templates].sort((a, b) => {
+		if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
+		return a.issueKey.localeCompare(b.issueKey);
+	});
+	const canSubmit =
+		!!issueKey.trim() &&
+		!!timeSpent.trim() &&
+		isValidTimeSpentFormat(timeSpent) &&
+		daysOfWeek.length > 0;
+
+	useEffect(() => {
+		if (!isOpen) {
+			setIssueKey('');
+			setSummary('');
+			setTimeSpent('1h');
+			setComment('');
+			setDaysOfWeek(DEFAULT_WEEKDAYS);
+			setError(null);
+		}
+	}, [isOpen]);
 
 	const handleIssueSelect = (issue: { key: string; summary: string }) => {
 		setIssueKey(issue.key);
@@ -64,13 +73,12 @@ export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 		}
 
 		const time = timeSpent.trim();
-		const timePattern = /^(\d+[wdhm]\s*)+$/i;
-		if (!timePattern.test(time)) {
+		if (!isValidTimeSpentFormat(time)) {
 			setError('Invalid time format. Use formats like: 1h, 30m, 1h 30m');
 			return;
 		}
 
-		const seconds = parseTimeToSeconds(time);
+		const seconds = parseTimeSpentToSeconds(time);
 		if (seconds <= 0) {
 			setError('Time must be greater than zero');
 			return;
@@ -81,8 +89,21 @@ export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 			return;
 		}
 
+		if (
+			templates.some(
+				(t) =>
+					t.issueKey === key &&
+					t.timeSpent === time &&
+					t.comment === comment.trim() &&
+					t.daysOfWeek.join(',') === [...daysOfWeek].sort().join(','),
+			)
+		) {
+			setError('An identical template already exists');
+			return;
+		}
+
 		addTemplate({
-			id: `${key}-${Date.now()}`,
+			id: `${key}-${[...daysOfWeek].sort().join('-')}-${time}-${comment.trim() || 'no-comment'}`,
 			issueKey: key,
 			issueSummary: summary.trim() || undefined,
 			timeSpent: time,
@@ -154,6 +175,29 @@ export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 					</div>
 					<fieldset className={styles.dayFieldset}>
 						<legend className={styles.dayLegend}>Days of Week</legend>
+						<div className={styles.dayShortcuts}>
+							<button
+								type="button"
+								className={styles.shortcutButton}
+								onClick={() => setDaysOfWeek(DEFAULT_WEEKDAYS)}
+							>
+								Weekdays
+							</button>
+							<button
+								type="button"
+								className={styles.shortcutButton}
+								onClick={() => setDaysOfWeek([1, 3, 5])}
+							>
+								Mon/Wed/Fri
+							</button>
+							<button
+								type="button"
+								className={styles.shortcutButton}
+								onClick={() => setDaysOfWeek([])}
+							>
+								Clear
+							</button>
+						</div>
 						<div className={styles.dayPicker}>
 							{DAY_LABELS.map((label, index) => (
 								<label
@@ -172,13 +216,18 @@ export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 						</div>
 					</fieldset>
 					{error && <div className={styles.error}>{error}</div>}
-					<Button type="submit">Add Template</Button>
+					<Button type="submit" disabled={!canSubmit}>
+						Add Template
+					</Button>
 				</form>
 
 				{templates.length > 0 && (
 					<div className={styles.list}>
-						<h4 className={styles.listTitle}>Current Templates</h4>
-						{templates.map((tmpl) => (
+						<h4 className={styles.listTitle}>
+							Current Templates{' '}
+							<span className={styles.listCount}>{templates.length}</span>
+						</h4>
+						{sortedTemplates.map((tmpl) => (
 							<div
 								key={tmpl.id}
 								className={`${styles.item} ${!tmpl.enabled ? styles.itemDisabled : ''}`}
@@ -210,6 +259,7 @@ export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 										type="button"
 										className={styles.toggleButton}
 										onClick={() => toggleTemplate(tmpl.id)}
+										aria-label={`${tmpl.enabled ? 'Disable' : 'Enable'} template ${tmpl.issueKey}`}
 									>
 										{tmpl.enabled ? 'Disable' : 'Enable'}
 									</button>
@@ -225,6 +275,9 @@ export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 							</div>
 						))}
 					</div>
+				)}
+				{templates.length === 0 && (
+					<div className={styles.emptyState}>No recurring templates yet.</div>
 				)}
 			</div>
 		</Modal>

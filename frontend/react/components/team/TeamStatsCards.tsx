@@ -13,23 +13,26 @@ export const TeamStatsCards: React.FC<Props> = ({ teamMembers }) => {
 	if (count === 0) return null;
 
 	const totalSeconds = teamMembers.reduce((s, m) => s + m.totalSeconds, 0);
+	const hasTarget = teamMembers.some((m) => m.targetSeconds > 0);
 	const compliant = teamMembers.filter((m) => m.gapSeconds === 0).length;
-	const complianceRate = Math.round((compliant / count) * 100);
+	const complianceRate = hasTarget ? Math.round((compliant / count) * 100) : -1;
 	const avgSeconds = Math.round(totalSeconds / count);
 
 	const complianceColor =
-		complianceRate === 100
-			? 'var(--color-success)'
-			: complianceRate >= 50
-				? 'var(--color-warning)'
-				: 'var(--color-error)';
+		complianceRate < 0
+			? 'var(--color-text-tertiary)'
+			: complianceRate === 100
+				? 'var(--color-success)'
+				: complianceRate >= 50
+					? 'var(--color-warning)'
+					: 'var(--color-error)';
 
 	return (
 		<div className={styles.grid}>
 			<StatCard label="Total Hours" value={formatHours(totalSeconds)} />
 			<StatCard
 				label="Compliance"
-				value={`${complianceRate}%`}
+				value={complianceRate < 0 ? '\u2014' : `${complianceRate}%`}
 				valueColor={complianceColor}
 			/>
 			<StatCard label="Team Size" value={count} />

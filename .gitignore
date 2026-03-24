@@ -3,6 +3,8 @@ dist
 build
 coverage
 .env
+playwright-report
+test-results
 
 .vscode/settings.json
 bun.lock

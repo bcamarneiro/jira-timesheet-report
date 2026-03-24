@@ -4,6 +4,37 @@
 	gap: var(--space-8);
 }
 
+.hiddenInput {
+	display: none;
+}
+
+.formStatus {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	padding: var(--space-4) var(--space-5);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface-raised);
+}
+
+.formStatusText {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+}
+
+.formStatusText strong {
+	font-size: var(--text-sm);
+	color: var(--color-text);
+}
+
+.formStatusText span {
+	font-size: var(--text-xs);
+	color: var(--color-text-secondary);
+}
+
 .section {
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-lg);
@@ -74,6 +105,7 @@
 
 .buttonGroup {
 	display: flex;
+	flex-wrap: wrap;
 	gap: var(--space-3);
 }
 
@@ -124,6 +156,10 @@
 
 .calendarLabel {
 	flex: 0 0 140px;
+}
+
+.calendarType {
+	flex: 0 0 150px;
 }
 
 .calendarUrl {
@@ -214,4 +250,33 @@
 
 .testError {
 	color: var(--color-error);
+}
+
+@media (max-width: 720px) {
+	.formStatus {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.buttonGroup {
+		width: 100%;
+	}
+
+	.buttonGroup > * {
+		flex: 1;
+	}
+
+	.sectionHeader {
+		flex-wrap: wrap;
+	}
+
+	.calendarFeedRow {
+		flex-wrap: wrap;
+	}
+
+	.calendarLabel,
+	.calendarType,
+	.calendarUrl {
+		flex: 1 1 100%;
+	}
 }

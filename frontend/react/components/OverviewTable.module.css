@@ -46,6 +46,11 @@
 	cursor: pointer;
 }
 
+.clickableRow:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: -2px;
+}
+
 .userCell {
 	width: 30%;
 }
@@ -110,11 +115,21 @@
 }
 
 .sortableHeader {
-	cursor: pointer;
 	user-select: none;
 }
 
-.sortableHeader:hover {
+.sortButton {
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+}
+
+.sortButton:hover {
 	color: var(--color-text);
 }
 

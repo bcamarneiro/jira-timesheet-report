@@ -7,10 +7,14 @@ interface ConnectionStatus {
 }
 
 export function useConnectionStatus(): ConnectionStatus {
-	const [isOnline, setIsOnline] = useState(navigator.onLine);
+	const [isOnline, setIsOnline] = useState(() =>
+		typeof navigator === 'undefined' ? true : navigator.onLine,
+	);
 	const lastFetchedAtStr = useDashboardStore((s) => s.lastFetchedAt);
 
 	useEffect(() => {
+		if (typeof window === 'undefined') return;
+
 		const handleOnline = () => setIsOnline(true);
 		const handleOffline = () => setIsOnline(false);
 

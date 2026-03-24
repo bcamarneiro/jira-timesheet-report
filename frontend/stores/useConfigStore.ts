@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 export interface CalendarFeed {
 	label: string;
 	url: string;
+	type: 'suggestion' | 'absence';
 }
 
 export interface Config {
@@ -57,13 +58,23 @@ export const useConfigStore = create<ConfigState>()(
 			name: 'jira-timesheet-config',
 			merge: (persisted, current) => {
 				const persistedState = persisted as Partial<ConfigState> | undefined;
-				return {
+				const merged = {
 					...current,
 					config: {
 						...(current as ConfigState).config,
 						...persistedState?.config,
 					},
 				};
+				// Migrate legacy feeds without `type` → default to 'suggestion'
+				if (merged.config.calendarFeeds) {
+					merged.config.calendarFeeds = merged.config.calendarFeeds.map(
+						(feed: CalendarFeed & { type?: string }) => ({
+							...feed,
+							type: feed.type || 'suggestion',
+						}),
+					) as CalendarFeed[];
+				}
+				return merged;
 			},
 		},
 	),

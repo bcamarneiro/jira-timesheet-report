@@ -1,5 +1,10 @@
 import type React from 'react';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import {
+	Navigate,
+	Route,
+	BrowserRouter as Router,
+	Routes,
+} from 'react-router-dom';
 import * as styles from './App.module.css';
 
 import { Navigation } from './components/Navigation';
@@ -8,7 +13,6 @@ import { useTheme } from './hooks/useTheme';
 import { DashboardPage } from './pages/DashboardPage';
 import { HomePage } from './pages/HomePage';
 import { SettingsPage } from './pages/SettingsPage';
-import { TeamPage } from './pages/TeamPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 
 export const App: React.FC = () => {
@@ -18,13 +22,17 @@ export const App: React.FC = () => {
 		<Router>
 			<div className={styles.appContainer}>
 				<Navigation />
-				<Routes>
-					<Route path="/" element={<HomePage />} />
-					<Route path="/dashboard" element={<DashboardPage />} />
-					<Route path="/team" element={<TeamPage />} />
-					<Route path="/timesheet" element={<TimesheetPage />} />
-					<Route path="/settings" element={<SettingsPage />} />
-				</Routes>
+					<Routes>
+						<Route path="/" element={<HomePage />} />
+						<Route path="/dashboard" element={<DashboardPage />} />
+						<Route path="/reports" element={<TimesheetPage />} />
+						<Route path="/team" element={<Navigate to="/reports" replace />} />
+						<Route
+							path="/timesheet"
+							element={<Navigate to="/reports" replace />}
+						/>
+						<Route path="/settings" element={<SettingsPage />} />
+					</Routes>
 				<ToastContainer />
 			</div>
 		</Router>

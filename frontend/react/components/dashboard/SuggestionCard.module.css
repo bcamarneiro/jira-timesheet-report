@@ -83,38 +83,38 @@
 }
 
 .jiraActivity {
-	background: #e0e7ff;
-	color: #3730a3;
+	background: var(--color-info-bg);
+	color: var(--color-info);
 }
 
 .gitlab {
-	background: #dbeafe;
-	color: #1e40af;
+	background: var(--color-primary-light);
+	color: var(--color-primary);
 }
 
 .calendar {
-	background: #d1fae5;
-	color: #065f46;
+	background: var(--color-success-bg);
+	color: var(--color-success);
 }
 
 .rescuetime {
-	background: #fef3c7;
-	color: #92400e;
+	background: var(--color-warning-bg);
+	color: var(--color-warning);
 }
 
 .favorite {
-	background: #fce7f3;
-	color: #9d174d;
+	background: var(--color-surface-sunken);
+	color: var(--color-text-secondary);
 }
 
 .template {
-	background: #e0f2fe;
-	color: #075985;
+	background: var(--color-primary-light);
+	color: var(--color-primary);
 }
 
 .previousWeek {
-	background: #ede9fe;
-	color: #5b21b6;
+	background: var(--color-info-bg);
+	color: var(--color-info);
 }
 
 .confidence {
@@ -125,13 +125,13 @@
 }
 
 .high {
-	background: #dcfce7;
-	color: #166534;
+	background: var(--color-success-bg);
+	color: var(--color-success);
 }
 
 .medium {
-	background: #fef9c3;
-	color: #854d0e;
+	background: var(--color-warning-bg);
+	color: var(--color-warning);
 }
 
 .low {

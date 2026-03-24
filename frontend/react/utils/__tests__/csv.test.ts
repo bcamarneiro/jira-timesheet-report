@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { EnrichedJiraWorklog } from '../../../stores/useTimesheetStore';
+import type { EnrichedJiraWorklog } from '../../../../types/jira';
 import { buildCsvForUser } from '../csv';
+import { sanitizeFilename } from '../downloadFile';
 
 describe('buildCsvForUser', () => {
 	const mockIssue = {
@@ -191,5 +192,13 @@ describe('buildCsvForUser', () => {
 
 			expect(time).toBe(testCase.expected);
 		}
+	});
+});
+
+describe('sanitizeFilename', () => {
+	it('should replace unsafe filename characters', () => {
+		expect(sanitizeFilename('Sarah / QA: Sprint 1.csv')).toBe(
+			'Sarah-QA-Sprint-1.csv',
+		);
 	});
 });

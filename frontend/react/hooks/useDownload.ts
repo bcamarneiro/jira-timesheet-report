@@ -1,13 +1,14 @@
 import type {
 	EnrichedJiraWorklog,
 	GroupedWorklogs,
-} from '../../stores/useTimesheetStore';
+} from '../../../types/jira';
 import {
 	buildCsvForUser,
 	buildSummaryCsv,
 	download,
 	type UserSummary,
 } from '../utils/csv';
+import { sanitizeFilename } from '../utils/downloadFile';
 import { isDateInMonth } from '../utils/date';
 
 /**
@@ -67,7 +68,7 @@ export function useDownload() {
 		const userWorklogs = grouped[user] || {};
 		const filteredWorklogs = filterWorklogsByMonth(userWorklogs, year, month);
 		const csvContent = buildCsvForUser(filteredWorklogs, issueSummaries);
-		download(`${user}-${year}-${month + 1}.csv`, csvContent);
+		download(sanitizeFilename(`${user}-${year}-${month + 1}.csv`), csvContent);
 	};
 
 	const downloadAll = (
@@ -83,7 +84,10 @@ export function useDownload() {
 			const userWorklogs = grouped[user] || {};
 			const filteredWorklogs = filterWorklogsByMonth(userWorklogs, year, month);
 			const csvContent = buildCsvForUser(filteredWorklogs, issueSummaries);
-			download(`${user}-${year}-${month + 1}.csv`, csvContent);
+			download(
+				sanitizeFilename(`${user}-${year}-${month + 1}.csv`),
+				csvContent,
+			);
 
 			summaries.push(computeUserSummary(user, userWorklogs, year, month));
 		}
@@ -91,7 +95,7 @@ export function useDownload() {
 		// Download the summary CSV with all users
 		if (users.length > 1) {
 			const summaryCsv = buildSummaryCsv(summaries, year, month);
-			download(`summary-${year}-${month + 1}.csv`, summaryCsv);
+			download(sanitizeFilename(`summary-${year}-${month + 1}.csv`), summaryCsv);
 		}
 	};
 

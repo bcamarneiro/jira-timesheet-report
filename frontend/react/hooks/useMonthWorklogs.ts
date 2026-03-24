@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
 	fetchMonthWorklogs,
 	type WorklogItem,
@@ -41,6 +41,9 @@ export function useMonthWorklogs(
 ) {
 	const config = useConfigStore((s) => s.config);
 	const queryClient = useQueryClient();
+	const jiraHost = config.jiraHost;
+	const apiToken = config.apiToken;
+	const corsProxy = config.corsProxy;
 	const currentUserOnly = options?.currentUserOnly ?? false;
 	const jqlFilter = options?.jqlFilter ?? '';
 
@@ -48,8 +51,8 @@ export function useMonthWorklogs(
 		queryKey: monthWorklogsQueryKey(
 			year,
 			month,
-			config.jiraHost,
-			config.corsProxy,
+			jiraHost,
+			corsProxy,
 			currentUserOnly,
 			jqlFilter,
 		),
@@ -65,14 +68,23 @@ export function useMonthWorklogs(
 				signal,
 			),
 		enabled:
-			(options?.enabled ?? true) && !!config.jiraHost && !!config.apiToken,
+			(options?.enabled ?? true) && !!jiraHost && !!apiToken,
 		staleTime: 15 * 60 * 1000,
 	});
 
 	// Prefetch adjacent months in background (opt-in, useful for month navigation)
 	const prefetchAdjacent = options?.prefetchAdjacent ?? false;
+	const queryConfig = useMemo(
+		() => ({
+			...config,
+			jiraHost,
+			apiToken,
+			corsProxy,
+		}),
+		[config, jiraHost, apiToken, corsProxy],
+	);
 	useEffect(() => {
-		if (!prefetchAdjacent || !config.jiraHost || !config.apiToken) return;
+		if (!prefetchAdjacent || !jiraHost || !apiToken) return;
 
 		const prevMonth = month === 0 ? 11 : month - 1;
 		const prevYear = month === 0 ? year - 1 : year;
@@ -87,14 +99,14 @@ export function useMonthWorklogs(
 				queryKey: monthWorklogsQueryKey(
 					y,
 					m,
-					config.jiraHost,
-					config.corsProxy,
+					jiraHost,
+					corsProxy,
 					currentUserOnly,
 					jqlFilter,
 				),
 				queryFn: ({ signal }) =>
 					fetchMonthWorklogs(
-						config,
+						queryConfig,
 						y,
 						m,
 						{
@@ -110,7 +122,10 @@ export function useMonthWorklogs(
 		prefetchAdjacent,
 		year,
 		month,
-		config,
+		queryConfig,
+		jiraHost,
+		apiToken,
+		corsProxy,
 		currentUserOnly,
 		jqlFilter,
 		queryClient,

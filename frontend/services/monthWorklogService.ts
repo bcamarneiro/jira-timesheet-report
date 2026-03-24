@@ -1,34 +1,9 @@
+import { logger } from '../react/utils/logger';
+import type { EnrichedJiraWorklog, JiraUser } from '../../types/jira';
 import type { Config } from '../stores/useConfigStore';
 
-export interface WorklogAuthor {
-	self?: string;
-	accountId?: string;
-	emailAddress?: string;
-	displayName?: string;
-	active?: boolean;
-}
-
-export interface WorklogIssue {
-	id: string;
-	key: string;
-	self?: string;
-	fields: Record<string, unknown>;
-}
-
-export interface WorklogItem {
-	self?: string;
-	id?: string;
-	author?: WorklogAuthor;
-	updateAuthor?: WorklogAuthor;
-	comment?: string | Record<string, unknown>;
-	created?: string;
-	updated?: string;
-	started?: string;
-	timeSpent?: string;
-	timeSpentSeconds?: number;
-	issueId?: string;
-	issue: WorklogIssue;
-}
+export type WorklogAuthor = JiraUser;
+export type WorklogItem = EnrichedJiraWorklog;
 
 export interface FetchMonthOptions {
 	currentUserOnly?: boolean;
@@ -38,8 +13,8 @@ export interface FetchMonthOptions {
 interface EmbeddedWorklog {
 	self?: string;
 	id?: string;
-	author?: WorklogAuthor;
-	updateAuthor?: WorklogAuthor;
+	author?: JiraUser;
+	updateAuthor?: JiraUser;
 	comment?: string | Record<string, unknown>;
 	created?: string;
 	updated?: string;
@@ -53,7 +28,9 @@ interface SearchIssue {
 	id: string;
 	key: string;
 	self?: string;
-	fields: Record<string, unknown> & {
+	fields: {
+		summary?: string;
+		[key: string]: unknown;
 		worklog?: {
 			startAt: number;
 			maxResults: number;
@@ -107,7 +84,7 @@ export async function fetchMonthWorklogs(
 	// worklogs, we get everything from the search — no extra API call needed.
 	const issues: SearchIssue[] = [];
 	let startAt = 0;
-	const maxResults = 50;
+	const maxResults = 100;
 	const fields = 'key,summary,issuetype,parent,project,status,worklog';
 
 	while (true) {
@@ -156,13 +133,13 @@ export async function fetchMonthWorklogs(
 
 	// Step 3: Fetch full worklogs only for truncated issues (typically very few)
 	if (truncatedIssues.length > 0) {
-		console.log(
+		logger.debug(
 			`[MonthWorklogs] ${issues.length} issues: ${issues.length - truncatedIssues.length} complete from search, ${truncatedIssues.length} need separate fetch`,
 		);
 
 		const startMillis = new Date(year, month, 1).getTime();
 		const endMillis = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime();
-		const batchSize = 10;
+		const batchSize = 20;
 
 		for (let i = 0; i < truncatedIssues.length; i += batchSize) {
 			if (signal?.aborted) return [];
@@ -190,11 +167,11 @@ export async function fetchMonthWorklogs(
 			}
 		}
 	} else {
-		console.log(
+		logger.debug(
 			`[MonthWorklogs] ${issues.length} issues — all worklogs from search response (0 extra requests)`,
 		);
 	}
 
-	console.log(`[MonthWorklogs] Total: ${allWorklogs.length} worklogs`);
+	logger.debug(`[MonthWorklogs] Total: ${allWorklogs.length} worklogs`);
 	return allWorklogs;
 }

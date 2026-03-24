@@ -12,20 +12,31 @@ export function useTimesheetURLSync() {
 	const setCurrentMonth = useTimesheetStore((state) => state.setCurrentMonth);
 	const setSelectedUser = useTimesheetStore((state) => state.setSelectedUser);
 
-	// Initialize from URL params on mount
-	useEffect(() => {
+	const syncFromLocation = useCallback(() => {
 		const params = new URLSearchParams(window.location.search);
-		const user = params.get('user');
-		if (user) setSelectedUser(user);
+		const user = params.get('user') || '';
+		setSelectedUser(user);
 
 		const yearParam = Number.parseInt(params.get('year') || '', 10);
 		const monthParam = Number.parseInt(params.get('month') || '', 10);
-		if (Number.isFinite(yearParam) && yearParam > 1900) {
-			if (Number.isFinite(monthParam) && monthParam >= 1 && monthParam <= 12) {
-				setCurrentMonth(yearParam, monthParam - 1);
-			}
+		if (
+			Number.isFinite(yearParam) &&
+			yearParam > 1900 &&
+			Number.isFinite(monthParam) &&
+			monthParam >= 1 &&
+			monthParam <= 12
+		) {
+			setCurrentMonth(yearParam, monthParam - 1);
 		}
 	}, [setCurrentMonth, setSelectedUser]);
+
+	// Initialize from URL params on mount
+	useEffect(() => {
+		syncFromLocation();
+		const handlePopstate = () => syncFromLocation();
+		window.addEventListener('popstate', handlePopstate);
+		return () => window.removeEventListener('popstate', handlePopstate);
+	}, [syncFromLocation]);
 
 	// Sync store state to URL
 	useEffect(() => {
@@ -52,9 +63,11 @@ export function useTimesheetURLSync() {
 			} else {
 				url.searchParams.delete('user');
 			}
+			url.searchParams.set('year', String(currentYear));
+			url.searchParams.set('month', String(currentMonth + 1));
 			window.history.pushState({}, '', url.toString());
 		},
-		[setSelectedUser],
+		[currentMonth, currentYear, setSelectedUser],
 	);
 
 	// Handle month change with URL update
@@ -64,9 +77,12 @@ export function useTimesheetURLSync() {
 			const url = new URL(window.location.href);
 			url.searchParams.set('year', String(year));
 			url.searchParams.set('month', String(monthZeroIndexed + 1));
+			if (selectedUser) {
+				url.searchParams.set('user', selectedUser);
+			}
 			window.history.pushState({}, '', url.toString());
 		},
-		[setCurrentMonth],
+		[selectedUser, setCurrentMonth],
 	);
 
 	return {

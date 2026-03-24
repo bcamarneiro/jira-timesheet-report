@@ -1,8 +1,11 @@
 import type React from 'react';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { CalendarFeed } from '../../../stores/useConfigStore';
+import { useConfigStore } from '../../../stores/useConfigStore';
 import { useSettingsFormStore } from '../../../stores/useSettingsFormStore';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
+import { createSettingsBackup, parseSettingsBackup } from '../../utils/settingsBackup';
+import { downloadAsFile } from '../../utils/downloadFile';
 import { Button } from '../ui/Button';
 import { toast } from '../ui/Toast';
 import * as styles from './SettingsForm.module.css';
@@ -12,6 +15,7 @@ export const SettingsForm: React.FC = () => {
 	const integrationTests = useSettingsFormStore(
 		(state) => state.integrationTests,
 	);
+	const savedConfig = useConfigStore((state) => state.config);
 	const updateFormField = useSettingsFormStore(
 		(state) => state.updateFormField,
 	);
@@ -21,14 +25,20 @@ export const SettingsForm: React.FC = () => {
 	const testCalendar = useSettingsFormStore((state) => state.testCalendar);
 	const testRescueTime = useSettingsFormStore((state) => state.testRescueTime);
 	const loadFromConfig = useSettingsFormStore((state) => state.loadFromConfig);
+	const resetForm = useSettingsFormStore((state) => state.resetForm);
+	const replaceFormData = useSettingsFormStore((state) => state.replaceFormData);
 
 	const calendarMappings = useUserDataStore((s) => s.calendarMappings);
 	const addCalendarMapping = useUserDataStore((s) => s.addCalendarMapping);
 	const removeCalendarMapping = useUserDataStore(
 		(s) => s.removeCalendarMapping,
 	);
+	const replaceCalendarMappings = useUserDataStore(
+		(s) => s.replaceCalendarMappings,
+	);
 	const [newMappingPattern, setNewMappingPattern] = useState('');
 	const [newMappingIssueKey, setNewMappingIssueKey] = useState('');
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const handleAddMapping = () => {
 		const pattern = newMappingPattern.trim();
@@ -50,6 +60,15 @@ export const SettingsForm: React.FC = () => {
 	const rescueTimeKeyId = useId();
 	const timeRoundingId = useId();
 	const themeId = useId();
+	const isDirty = JSON.stringify(formData) !== JSON.stringify(savedConfig);
+	const canTestJira =
+		!!formData.jiraHost.trim() &&
+		!!formData.email.trim() &&
+		!!formData.apiToken.trim();
+	const canTestGitlab =
+		!!formData.gitlabHost.trim() && !!formData.gitlabToken.trim();
+	const canTestRescueTime = !!formData.rescueTimeApiKey.trim();
+	const hasCalendarFeeds = (formData.calendarFeeds ?? []).some((f) => f.url.trim());
 
 	useEffect(() => {
 		loadFromConfig();
@@ -71,12 +90,85 @@ export const SettingsForm: React.FC = () => {
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!isDirty) return;
 		saveSettings();
 		toast.success('Settings saved');
 	};
 
+	const handleExportSettings = () => {
+		const backup = createSettingsBackup(savedConfig, calendarMappings);
+		downloadAsFile(
+			`${JSON.stringify(backup, null, 2)}\n`,
+			'jira-timesheet-settings.json',
+			'application/json;charset=utf-8',
+		);
+		toast.success('Settings exported');
+	};
+
+	const handleImportClick = () => {
+		fileInputRef.current?.click();
+	};
+
+	const handleImportSettings = async (
+		e: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		try {
+			const content = await file.text();
+			const imported = parseSettingsBackup(content, savedConfig);
+			replaceFormData(imported.config);
+			replaceCalendarMappings(imported.calendarMappings);
+			toast.success('Settings imported into the form');
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to import settings',
+			);
+		} finally {
+			e.target.value = '';
+		}
+	};
+
 	return (
 		<form onSubmit={handleSubmit} className={styles.form}>
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept="application/json,.json"
+				className={styles.hiddenInput}
+				onChange={handleImportSettings}
+			/>
+			<div className={styles.formStatus} aria-live="polite">
+				<div className={styles.formStatusText}>
+					<strong>{isDirty ? 'Unsaved changes' : 'Settings up to date'}</strong>
+					<span>
+						{isDirty
+							? 'Review and save when you are ready.'
+							: 'The form matches your saved configuration.'}
+					</span>
+				</div>
+				<div className={styles.buttonGroup}>
+					<Button type="button" variant="secondary" onClick={handleExportSettings}>
+						Export
+					</Button>
+					<Button type="button" variant="secondary" onClick={handleImportClick}>
+						Import
+					</Button>
+					<Button
+						type="button"
+						variant="secondary"
+						onClick={resetForm}
+						disabled={!isDirty}
+					>
+						Discard
+					</Button>
+					<Button type="submit" disabled={!isDirty}>
+						Save
+					</Button>
+				</div>
+			</div>
+
 			<fieldset className={styles.section}>
 				<legend className={styles.sectionTitle}>
 					<div className={styles.sectionHeader}>
@@ -85,7 +177,7 @@ export const SettingsForm: React.FC = () => {
 							type="button"
 							className={styles.testButton}
 							onClick={testJira}
-							disabled={integrationTests.jira.loading}
+							disabled={integrationTests.jira.loading || !canTestJira}
 						>
 							{integrationTests.jira.loading ? 'Testing...' : 'Test'}
 						</button>
@@ -107,6 +199,9 @@ export const SettingsForm: React.FC = () => {
 						value={formData.jiraHost}
 						onChange={handleChange}
 						placeholder="your-company.atlassian.net"
+						autoCapitalize="off"
+						autoCorrect="off"
+						spellCheck={false}
 						required
 					/>
 				</div>
@@ -119,6 +214,9 @@ export const SettingsForm: React.FC = () => {
 						value={formData.email}
 						onChange={handleChange}
 						placeholder="your-email@example.com"
+						autoCapitalize="off"
+						autoCorrect="off"
+						spellCheck={false}
 						required
 					/>
 				</div>
@@ -144,6 +242,9 @@ export const SettingsForm: React.FC = () => {
 						value={formData.corsProxy}
 						onChange={handleChange}
 						placeholder="http://localhost:8081"
+						autoCapitalize="off"
+						autoCorrect="off"
+						spellCheck={false}
 					/>
 					<small>
 						Needed if your browser blocks direct Jira requests. Start with{' '}
@@ -247,7 +348,9 @@ export const SettingsForm: React.FC = () => {
 								type="button"
 								className={styles.testButton}
 								onClick={testGitlab}
-								disabled={integrationTests.gitlab.loading}
+								disabled={
+									integrationTests.gitlab.loading || !canTestGitlab
+								}
 							>
 								{integrationTests.gitlab.loading ? 'Testing...' : 'Test'}
 							</button>
@@ -260,6 +363,9 @@ export const SettingsForm: React.FC = () => {
 						value={formData.gitlabHost}
 						onChange={handleChange}
 						placeholder="gitlab.com or vcs.company.net"
+						autoCapitalize="off"
+						autoCorrect="off"
+						spellCheck={false}
 					/>
 					<small>Hostname only, without https://</small>
 				</div>
@@ -291,7 +397,9 @@ export const SettingsForm: React.FC = () => {
 								type="button"
 								className={styles.testButton}
 								onClick={testRescueTime}
-								disabled={integrationTests.rescuetime.loading}
+								disabled={
+									integrationTests.rescuetime.loading || !canTestRescueTime
+								}
 							>
 								{integrationTests.rescuetime.loading ? 'Testing...' : 'Test'}
 							</button>
@@ -317,22 +425,23 @@ export const SettingsForm: React.FC = () => {
 				<div className={styles.formGroup}>
 					<span className={styles.calendarHeading}>
 						Calendar Feeds (ICS/iCal)
-						{(formData.calendarFeeds ?? []).some((f) => f.url.trim()) && (
+						{hasCalendarFeeds && (
 							<button
 								type="button"
 								className={styles.testButton}
 								onClick={testCalendar}
 								disabled={integrationTests.calendar.loading}
-								style={{ marginLeft: 'var(--space-2)' }}
 							>
 								{integrationTests.calendar.loading ? 'Testing...' : 'Test'}
 							</button>
 						)}
 					</span>
 					<small>
-						Add calendar feed URLs to suggest worklogs from meetings. Works with
-						Google Calendar, Outlook, and Teams. Events with Jira issue keys in
-						their title or description will generate suggestions.
+						Add calendar feed URLs. <strong>Suggestions</strong>: generate
+						worklog suggestions from meetings (events with Jira keys).{' '}
+						<strong>Absence/Vacation</strong>: detect all-day events as vacation
+						days to reduce target hours. Works with Google Calendar, Outlook,
+						and Teams.
 					</small>
 					{(formData.calendarFeeds ?? []).map((feed, idx) => (
 						<div
@@ -350,6 +459,21 @@ export const SettingsForm: React.FC = () => {
 								placeholder="Label (e.g. Work, Personal)"
 								className={styles.calendarLabel}
 							/>
+							<select
+								value={feed.type || 'suggestion'}
+								onChange={(e) => {
+									const feeds = [...(formData.calendarFeeds ?? [])];
+									feeds[idx] = {
+										...feeds[idx],
+										type: e.target.value as 'suggestion' | 'absence',
+									};
+									updateFormField('calendarFeeds', feeds as never);
+								}}
+								className={styles.calendarType}
+							>
+								<option value="suggestion">Suggestions</option>
+								<option value="absence">Absence/Vacation</option>
+							</select>
 							<input
 								type="text"
 								value={feed.url}
@@ -382,7 +506,7 @@ export const SettingsForm: React.FC = () => {
 						onClick={() => {
 							const feeds: CalendarFeed[] = [
 								...(formData.calendarFeeds ?? []),
-								{ label: '', url: '' },
+								{ label: '', url: '', type: 'suggestion' },
 							];
 							updateFormField('calendarFeeds', feeds as never);
 						}}
@@ -498,10 +622,6 @@ export const SettingsForm: React.FC = () => {
 					<small>Round suggestion durations to the nearest interval</small>
 				</div>
 			</fieldset>
-
-			<div className={styles.buttonGroup}>
-				<Button type="submit">Save</Button>
-			</div>
 		</form>
 	);
 };

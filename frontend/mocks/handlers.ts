@@ -1,6 +1,8 @@
 import { HttpResponse, http } from 'msw';
 import type { JiraIssue } from '../../types/JiraIssue';
 import type { JiraWorklog } from '../../types/JiraWorklog';
+import { logger } from '../react/utils/logger';
+import { addDaysToIsoDate, parseIsoDateLocal, toLocalDateString } from '../react/utils/date';
 import MockIssueSummariesSimple from './MockIssueSummariesSimple';
 import MockWorklogsSimple from './MockWorklogsSimple';
 
@@ -24,23 +26,17 @@ function getMonday(date: Date): string {
 	const day = d.getDay();
 	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
 	d.setDate(diff);
-	return d.toISOString().slice(0, 10);
+	return toLocalDateString(d);
 }
 
 function getWeekdays(monday: string): string[] {
-	const days: string[] = [];
-	const d = new Date(monday);
-	for (let i = 0; i < 5; i++) {
-		days.push(d.toISOString().slice(0, 10));
-		d.setDate(d.getDate() + 1);
-	}
-	return days;
+	return Array.from({ length: 5 }, (_, index) => addDaysToIsoDate(monday, index));
 }
 
 function shiftWeek(monday: string, weeks: number): string {
-	const d = new Date(monday);
+	const d = parseIsoDateLocal(monday);
 	d.setDate(d.getDate() + weeks * 7);
-	return d.toISOString().slice(0, 10);
+	return toLocalDateString(d);
 }
 
 // ── Generate dev user worklogs for current & previous weeks ─────────
@@ -158,7 +154,7 @@ export const handlers = [
 		const jql = url.searchParams.get('jql') || '';
 		const fields = url.searchParams.get('fields') || '';
 
-		console.log('[MSW] Intercepted Jira issue search:', { jql, fields });
+		logger.debug('[MSW] Intercepted Jira issue search:', { jql, fields });
 
 		const filteredIssues = mockIssues.filter(
 			(issue) => worklogsByIssue[issue.key]?.length > 0,
@@ -185,7 +181,7 @@ export const handlers = [
 			};
 		});
 
-		console.log(
+		logger.debug(
 			`[MSW] Returning ${issues.length} issues (worklogs embedded: ${includeWorklogs})`,
 		);
 
@@ -206,7 +202,7 @@ export const handlers = [
 			const url = new URL(request.url);
 			const expand = url.searchParams.get('expand') || '';
 
-			console.log('[MSW] Intercepted issue detail:', {
+			logger.debug('[MSW] Intercepted issue detail:', {
 				issueKey,
 				expand,
 			});
@@ -277,7 +273,7 @@ export const handlers = [
 			const startedAfter = url.searchParams.get('startedAfter');
 			const startedBefore = url.searchParams.get('startedBefore');
 
-			console.log('[MSW] Intercepted worklog fetch for issue:', {
+			logger.debug('[MSW] Intercepted worklog fetch for issue:', {
 				issueKey,
 				startedAfter,
 				startedBefore,
@@ -300,7 +296,7 @@ export const handlers = [
 					return worklogMillis >= afterMillis && worklogMillis <= beforeMillis;
 				});
 
-				console.log(
+				logger.debug(
 					`[MSW] Filtered worklogs for ${issueKey}: ${worklogs.length} in date range`,
 				);
 			}
@@ -322,7 +318,7 @@ export const handlers = [
 			const body = (await request.json()) as Record<string, unknown>;
 			const id = (devWorklogId++).toString();
 
-			console.log('[MSW] Creating worklog for:', { issueKey, body });
+			logger.debug('[MSW] Creating worklog for:', { issueKey, body });
 
 			return HttpResponse.json({
 				self: `https://mock.atlassian.net/rest/api/2/issue/${issueKey}/worklog/${id}`,
@@ -347,7 +343,7 @@ export const handlers = [
 	http.delete(
 		'https://*.atlassian.net/rest/api/2/issue/:issueKey/worklog/:worklogId',
 		({ params }) => {
-			console.log('[MSW] Deleting worklog:', params);
+			logger.debug('[MSW] Deleting worklog:', params);
 			return new HttpResponse(null, { status: 204 });
 		},
 	),

@@ -1,4 +1,5 @@
 import type { WeekWorklogEntry } from '../../stores/useDashboardStore';
+import { parseIsoDateLocal } from './date';
 
 const SEP = ';';
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -24,8 +25,8 @@ function formatDuration(seconds: number): string {
 }
 
 export function generateWeeklyCsv(
-	_weekStart: string,
-	_weekEnd: string,
+	weekStart: string,
+	weekEnd: string,
 	worklogs: WeekWorklogEntry[],
 ): string {
 	const headers = [
@@ -36,6 +37,7 @@ export function generateWeeklyCsv(
 		'Time Spent (hours)',
 		'Time Spent (formatted)',
 	].join(SEP);
+	const metadata = [`Week Range`, `${weekStart} to ${weekEnd}`].join(SEP);
 
 	// Sort by date then issue key
 	const sorted = [...worklogs].sort((a, b) => {
@@ -45,7 +47,7 @@ export function generateWeeklyCsv(
 	});
 
 	const rows = sorted.map((entry) => {
-		const d = new Date(entry.date);
+		const d = parseIsoDateLocal(entry.date);
 		const dayLabel = DAY_LABELS[d.getDay()];
 		const hours = entry.timeSpentSeconds / 3600;
 		const formatted = formatDuration(entry.timeSpentSeconds);
@@ -60,5 +62,18 @@ export function generateWeeklyCsv(
 		].join(SEP);
 	});
 
-	return [headers, ...rows].join('\n');
+	const totalSeconds = sorted.reduce(
+		(sum, entry) => sum + entry.timeSpentSeconds,
+		0,
+	);
+	const totalRow = [
+		'Week Total',
+		'',
+		'',
+		'',
+		(totalSeconds / 3600).toFixed(2),
+		formatDuration(totalSeconds),
+	].join(SEP);
+
+	return [metadata, headers, ...rows, totalRow].join('\n');
 }

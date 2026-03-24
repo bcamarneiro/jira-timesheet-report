@@ -78,6 +78,25 @@
 	color: var(--color-primary);
 }
 
+.emptyWeek {
+	text-align: center;
+	padding: var(--space-8);
+	border: 1px dashed var(--color-border);
+	border-radius: var(--radius-lg);
+	color: var(--color-text-secondary);
+}
+
+.emptyWeek h3 {
+	margin: 0 0 var(--space-2);
+	color: var(--color-text);
+	font-size: var(--text-base);
+}
+
+.emptyWeek p {
+	margin: 0;
+	font-size: var(--text-sm);
+}
+
 .daysSection {
 	display: flex;
 	flex-direction: column;

@@ -2,10 +2,9 @@ import { expect, test } from '@playwright/test';
 
 test.describe('Timesheet Page', () => {
 	test.beforeEach(async ({ page }) => {
-		// Navigate to timesheet page
-		await page.goto('/timesheet');
-		// Wait for the page to fully load
+		await page.goto('/reports');
 		await page.waitForLoadState('networkidle');
+		await page.getByRole('button', { name: 'Monthly' }).click();
 	});
 
 	test('should display month navigation', async ({ page }) => {

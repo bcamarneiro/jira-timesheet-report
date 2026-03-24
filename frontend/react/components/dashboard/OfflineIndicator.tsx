@@ -27,7 +27,10 @@ export const OfflineIndicator: React.FC = () => {
 
 	if (showBackOnline) {
 		return (
-			<div className={`${styles.banner} ${styles.backOnline}`}>
+			<div
+				className={`${styles.banner} ${styles.backOnline}`}
+				aria-live="polite"
+			>
 				<span className={styles.message}>Back online!</span>
 			</div>
 		);
@@ -45,7 +48,10 @@ export const OfflineIndicator: React.FC = () => {
 		: null;
 
 	return (
-		<div className={`${styles.banner} ${styles.offline}`}>
+		<div
+			className={`${styles.banner} ${styles.offline}`}
+			aria-live="polite"
+		>
 			<span className={styles.message}>
 				You're offline.
 				{formattedTime && (
@@ -60,7 +66,7 @@ export const OfflineIndicator: React.FC = () => {
 				type="button"
 				className={styles.dismissButton}
 				onClick={() => setDismissed(true)}
-				aria-label="Dismiss"
+				aria-label="Dismiss offline indicator"
 			>
 				&times;
 			</button>

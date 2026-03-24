@@ -3,6 +3,13 @@
 	border-collapse: collapse;
 }
 
+.caption {
+	text-align: left;
+	font-size: var(--text-xs);
+	color: var(--color-text-tertiary);
+	margin-bottom: var(--space-2);
+}
+
 .table th,
 .table td {
 	text-align: left;

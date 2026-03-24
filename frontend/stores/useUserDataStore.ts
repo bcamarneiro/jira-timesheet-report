@@ -43,6 +43,61 @@ interface UserDataState {
 	addCalendarMapping: (mapping: CalendarMapping) => void;
 	removeCalendarMapping: (pattern: string) => void;
 	updateCalendarMapping: (pattern: string, updated: CalendarMapping) => void;
+	replaceCalendarMappings: (mappings: CalendarMapping[]) => void;
+}
+
+function normalizeIssueKey(issueKey: string): string {
+	return issueKey.trim().toUpperCase();
+}
+
+function normalizePattern(pattern: string): string {
+	return pattern.trim();
+}
+
+function normalizeFavorite(issue: FavoriteIssue): FavoriteIssue {
+	return {
+		...issue,
+		issueKey: normalizeIssueKey(issue.issueKey),
+		defaultTimeSpent: issue.defaultTimeSpent.trim(),
+		issueSummary: issue.issueSummary?.trim() || undefined,
+	};
+}
+
+function normalizeTemplate(template: RecurringTemplate): RecurringTemplate {
+	return {
+		...template,
+		issueKey: normalizeIssueKey(template.issueKey),
+		issueSummary: template.issueSummary?.trim() || undefined,
+		timeSpent: template.timeSpent.trim(),
+		comment: template.comment.trim(),
+		daysOfWeek: [...new Set(template.daysOfWeek)].sort((a, b) => a - b),
+	};
+}
+
+function normalizeCalendarMapping(mapping: CalendarMapping): CalendarMapping {
+	return {
+		...mapping,
+		pattern: normalizePattern(mapping.pattern),
+		issueKey: normalizeIssueKey(mapping.issueKey),
+		issueSummary: mapping.issueSummary?.trim() || undefined,
+	};
+}
+
+function dedupeByCaseInsensitive<T>(
+	items: T[],
+	getKey: (item: T) => string,
+): T[] {
+	const seen = new Set<string>();
+	const result: T[] = [];
+
+	for (const item of items) {
+		const key = getKey(item).trim().toLowerCase();
+		if (!key || seen.has(key)) continue;
+		seen.add(key);
+		result.push(item);
+	}
+
+	return result;
 }
 
 export const useUserDataStore = create<UserDataState>()(
@@ -56,21 +111,41 @@ export const useUserDataStore = create<UserDataState>()(
 
 			addFavorite: (issue) =>
 				set((state) => {
-					if (state.favorites.some((f) => f.issueKey === issue.issueKey)) {
+					const normalized = normalizeFavorite(issue);
+					if (
+						!normalized.issueKey ||
+						state.favorites.some((f) => f.issueKey === normalized.issueKey)
+					) {
 						return state;
 					}
-					return { favorites: [...state.favorites, issue] };
+					return { favorites: [...state.favorites, normalized] };
 				}),
 
 			removeFavorite: (issueKey) =>
 				set((state) => ({
-					favorites: state.favorites.filter((f) => f.issueKey !== issueKey),
+					favorites: state.favorites.filter(
+						(f) => f.issueKey !== normalizeIssueKey(issueKey),
+					),
 				})),
 
 			addTemplate: (template) =>
-				set((state) => ({
-					templates: [...state.templates, template],
-				})),
+				set((state) => {
+					const normalized = normalizeTemplate(template);
+					const duplicate = state.templates.some(
+						(existing) =>
+							existing.issueKey === normalized.issueKey &&
+							existing.timeSpent === normalized.timeSpent &&
+							existing.comment === normalized.comment &&
+							existing.enabled === normalized.enabled &&
+							existing.daysOfWeek.join(',') === normalized.daysOfWeek.join(','),
+					);
+					if (!normalized.issueKey || duplicate) {
+						return state;
+					}
+					return {
+						templates: [...state.templates, normalized],
+					};
+				}),
 
 			removeTemplate: (id) =>
 				set((state) => ({
@@ -87,7 +162,12 @@ export const useUserDataStore = create<UserDataState>()(
 			addCommentPreset: (preset) =>
 				set((state) => {
 					const trimmed = preset.trim();
-					if (!trimmed || state.commentPresets.includes(trimmed)) {
+					if (
+						!trimmed ||
+						state.commentPresets.some(
+							(existing) => existing.toLowerCase() === trimmed.toLowerCase(),
+						)
+					) {
 						return state;
 					}
 					return { commentPresets: [...state.commentPresets, trimmed] };
@@ -112,9 +192,11 @@ export const useUserDataStore = create<UserDataState>()(
 
 			addCalendarMapping: (mapping) =>
 				set((state) => {
-					const normalizedPattern = mapping.pattern.trim().toLowerCase();
+					const normalized = normalizeCalendarMapping(mapping);
+					const normalizedPattern = normalized.pattern.toLowerCase();
 					if (
-						!normalizedPattern ||
+						!normalized.pattern ||
+						!normalized.issueKey ||
 						state.calendarMappings.some(
 							(m) => m.pattern.toLowerCase() === normalizedPattern,
 						)
@@ -122,23 +204,48 @@ export const useUserDataStore = create<UserDataState>()(
 						return state;
 					}
 					return {
-						calendarMappings: [...state.calendarMappings, mapping],
+						calendarMappings: [...state.calendarMappings, normalized],
 					};
 				}),
 
 			removeCalendarMapping: (pattern) =>
 				set((state) => ({
 					calendarMappings: state.calendarMappings.filter(
-						(m) => m.pattern !== pattern,
+						(m) => m.pattern.toLowerCase() !== pattern.trim().toLowerCase(),
 					),
 				})),
 
 			updateCalendarMapping: (pattern, updated) =>
-				set((state) => ({
-					calendarMappings: state.calendarMappings.map((m) =>
-						m.pattern === pattern ? updated : m,
+				set((state) => {
+					const normalizedPattern = pattern.trim().toLowerCase();
+					const normalized = normalizeCalendarMapping(updated);
+					if (!normalized.pattern || !normalized.issueKey) {
+						return state;
+					}
+					const isDuplicate = state.calendarMappings.some(
+						(m) =>
+							m.pattern.toLowerCase() === normalized.pattern.toLowerCase() &&
+							m.pattern.toLowerCase() !== normalizedPattern,
+					);
+					if (isDuplicate) {
+						return state;
+					}
+					return {
+						calendarMappings: state.calendarMappings.map((m) =>
+							m.pattern.toLowerCase() === normalizedPattern ? normalized : m,
+						),
+					};
+				}),
+
+			replaceCalendarMappings: (mappings) =>
+				set({
+					calendarMappings: dedupeByCaseInsensitive(
+						mappings
+							.map(normalizeCalendarMapping)
+							.filter((mapping) => !!mapping.pattern && !!mapping.issueKey),
+						(mapping) => mapping.pattern,
 					),
-				})),
+				}),
 		}),
 		{
 			name: 'jira-timesheet-userdata',
@@ -146,18 +253,33 @@ export const useUserDataStore = create<UserDataState>()(
 				const persistedState = persisted as Partial<UserDataState> | undefined;
 				return {
 					...current,
-					favorites:
-						persistedState?.favorites ?? (current as UserDataState).favorites,
-					templates:
-						persistedState?.templates ?? (current as UserDataState).templates,
-					commentPresets:
+					favorites: dedupeByCaseInsensitive(
+						(persistedState?.favorites ?? (current as UserDataState).favorites)
+							.map(normalizeFavorite)
+							.filter((favorite) => !!favorite.issueKey),
+						(favorite) => favorite.issueKey,
+					),
+					templates: (
+						persistedState?.templates ?? (current as UserDataState).templates
+					)
+						.map(normalizeTemplate)
+						.filter((template) => !!template.issueKey),
+					commentPresets: dedupeByCaseInsensitive(
 						persistedState?.commentPresets ??
-						(current as UserDataState).commentPresets,
+							(current as UserDataState).commentPresets,
+						(preset) => preset,
+					),
 					dayNotes:
 						persistedState?.dayNotes ?? (current as UserDataState).dayNotes,
-					calendarMappings:
-						persistedState?.calendarMappings ??
-						(current as UserDataState).calendarMappings,
+					calendarMappings: dedupeByCaseInsensitive(
+						(
+							persistedState?.calendarMappings ??
+							(current as UserDataState).calendarMappings
+						)
+							.map(normalizeCalendarMapping)
+							.filter((mapping) => !!mapping.pattern && !!mapping.issueKey),
+						(mapping) => mapping.pattern,
+					),
 				};
 			},
 		},

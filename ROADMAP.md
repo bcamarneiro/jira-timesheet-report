@@ -1,164 +1,75 @@
-# Jira Timesheet Report - Roadmap
+# Jira Timesheet Report Roadmap
 
-This document outlines planned features and improvements for the Jira Timesheet Report application.
+This roadmap reflects the current product shape as of March 24, 2026.
 
-## Phase 1: Essential Features
+## Current Product Areas
 
-### 1. Worklog Management
-- **Create worklogs** from the calendar
-  - Click "+" button on any day to open a modal
-  - Fields: Issue key (with validation), time spent, description (optional), start date/time
-  - Validate that the issue exists before allowing creation
-  - Auto-refresh after successful creation
-- **Edit existing worklogs**
-  - Click on any worklog to open edit modal
-  - Modify time spent or description
-  - Save changes back to Jira
-- **Delete worklogs**
-  - Delete button with confirmation dialog
-  - Remove from both Jira and local state
+### Dashboard
+- Weekly gap-focused workflow
+- Suggestions from previous work and auxiliary sources
+- Templates and pinned items
+- Month heatmap and absence awareness
+- Markdown and CSV export
 
-### 2. Basic Filters
-- **Toggle weekends** visibility
-  - Show/hide weekend columns in calendar
-  - Preference saved in localStorage
-- **Filter by project**
-  - Dropdown to filter worklogs by Jira project
-  - Works alongside existing JQL filter
-- **Filter by component**
-  - Quick filter for specific components
-  - Complements the global JQL filter setting
+### Reports
+- Weekly team compliance table
+- Monthly calendar reporting
+- Per-user drill-down
+- Team and user CSV exports
 
-### 3. User Experience Improvements
-- Improved loading states for all operations
-- Clear error messages with recovery suggestions
-- Success notifications for create/edit/delete operations
+### Settings
+- Jira connection and permissions
+- JQL filtering
+- Theme and time rounding
+- Calendar feeds
+- Auxiliary source credentials
 
----
+## Near-Term Priorities
 
-## Phase 2: Nice to Have
+### 1. Product Coherence
+- Finish aligning copy, route names, and docs around **Dashboard** and **Reports**
+- Reduce leftover `team` vs `timesheet` naming drift in code and UI
+- Remove or consolidate obsolete page flows once replacement paths are stable
 
-### 1. Quick Actions
-- **Duplicate worklog**
-  - One-click duplicate to same or different day
-  - Modify time/description before saving
-- **Worklog templates**
-  - Save frequently used worklogs (e.g., "Daily standup - 15min")
-  - Quick-add from template library
-  - Manage templates in settings
-- **Copy day to another day**
-  - Copy all worklogs from one day to another
-  - Useful for repetitive work patterns
+### 2. Reporting Improvements
+- Better filtering within Reports
+  - project
+  - issue type
+  - component
+- More explicit saved/shareable report presets
+- Custom date-range exports beyond single week or month
 
-### 2. Statistics & Insights
-- **Time distribution charts**
-  - Pie chart: hours by project
-  - Bar chart: hours by day/week
-  - Issue breakdown: which issues consumed most time
-- **Summary metrics**
-  - Average hours per day/week
-  - Total hours by project this month
-  - Comparison: current month vs. previous month
-- **Top issues**
-  - List of issues where most time was spent
-  - Time tracking trends over weeks
+### 3. Dashboard Improvements
+- Smarter suggestion ranking
+- Better copy-previous-week review controls
+- More visible source-health diagnostics when feeds or APIs fail
 
-### 3. Keyboard Shortcuts
-- `←` / `→` - Navigate between months
-- `N` - Create new worklog
-- `Esc` - Close modals
-- `/` - Focus search/filter
-- `?` - Show keyboard shortcuts help
+### 4. Data Quality and Safety
+- Tighten typing around Jira worklog and issue shapes
+- Normalize comment handling across read and write flows
+- Add more coverage for service-layer edge cases and permission failures
 
----
+## Mid-Term Opportunities
 
-## Phase 3: Advanced Features
+### 1. Export Workflows
+- Richer CSV formats
+- Excel export
+- Printable summary layout
 
-### 1. Alternative Views
-- **Weekly view**
-  - See one week at a time instead of full month
-  - More compact for detailed review
-- **Issue-grouped view**
-  - Group all worklogs by issue instead of by day
-  - See total time per issue across the month
-- **List view**
-  - Flat list of all worklogs with sorting/filtering
-  - Better for searching specific entries
+### 2. Personal Workflow Features
+- Faster issue lookup and recent issue history
+- Better note/comment presets
+- Optional daily or weekly reminder scheduling controls
 
-### 2. Advanced Export
-- **Excel export (.xlsx)**
-  - Formatted spreadsheet with totals and formulas
-  - Multiple sheets: summary + detailed breakdown
-- **PDF export**
-  - Print-friendly format for reports
-  - Include charts and statistics
-- **Custom date ranges**
-  - Export specific date range, not just full month
-  - Multi-month exports
-- **Customizable templates**
-  - Define custom CSV/Excel column layouts
-  - Save export templates for reuse
+### 3. Team Reporting
+- Trend views across multiple weeks
+- Basic charts for compliance, gaps, and overtime
+- Role- or group-based filtering if Jira data supports it cleanly
 
-### 3. Theme & Personalization
-- **Dark mode**
-  - Toggle between light/dark themes
-  - Respect system preference option
-  - Saved in user preferences
-- **Color customization**
-  - Custom colors for different work states
-  - Personalize project/component colors
-- **Layout options**
-  - Compact vs. comfortable view density
-  - Configurable calendar start day (Sunday/Monday)
+## Explicitly De-Prioritized
 
-### 4. Enhanced Jira Integration
-- **Issue status inline**
-  - Show status badge on each worklog (To Do, In Progress, Done)
-  - Color-coded by status
-- **Epic/Parent visibility**
-  - Display epic or parent issue for each worklog
-  - Group by epic option
-- **Smart filtering**
-  - "My issues only" filter (assigned to current user)
-  - "Recent issues" quick filter
-  - Issue type filters (Bug, Story, Task, etc.)
+- Backend infrastructure
+- Real-time collaboration
+- Native mobile app
 
----
-
-## Features to Avoid (For Now)
-
-### External Calendar Integration
-- **Reason**: Too complex for current scope
-- **Alternative**: Manual time-off tracking works well enough
-- **Future consideration**: Could revisit if highly requested
-
-### Real-time Collaboration
-- **Reason**: Requires backend infrastructure
-- **Alternative**: Read-only sharing of exported reports
-- **Future consideration**: Needs architectural changes
-
-### Mobile App
-- **Reason**: Web-first approach is sufficient
-- **Alternative**: Responsive design works on mobile browsers
-- **Future consideration**: PWA (Progressive Web App) could be middle ground
-
----
-
-## Implementation Notes
-
-- All features should maintain the current architecture (client-side, no backend)
-- Preferences and settings stored in localStorage
-- All Jira operations use Version2Client with Bearer token authentication
-- Maintain backward compatibility with existing saved configurations
-- Follow existing styling patterns and component structure
-
----
-
-## Feedback & Contributions
-
-This roadmap is a living document. Features may be re-prioritized based on:
-- User feedback and requests
-- Technical constraints or opportunities
-- Time and resource availability
-
-Last updated: 2025-01-28
+The project should stay zero-backend unless a future feature clearly justifies changing that constraint.

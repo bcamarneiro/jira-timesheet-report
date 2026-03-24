@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+	addDaysToIsoDate,
+	formatDateTimeLocalValue,
 	getDaysInMonth,
 	getMonthStartWeekday,
 	isDateInMonth,
 	isoDateFromYMD,
 	monthLabel,
+	parseIsoDateLocal,
 	toLocalDateString,
 } from '../date';
 
@@ -136,5 +139,32 @@ describe('toLocalDateString', () => {
 		const date = new Date(2025, 9, 1); // October 1, 2025
 		const result = toLocalDateString(date);
 		expect(result).toBe('2025-10-01');
+	});
+});
+
+describe('parseIsoDateLocal', () => {
+	it('should create a local date without month drift', () => {
+		const result = parseIsoDateLocal('2025-10-15');
+		expect(result.getFullYear()).toBe(2025);
+		expect(result.getMonth()).toBe(9);
+		expect(result.getDate()).toBe(15);
+	});
+});
+
+describe('addDaysToIsoDate', () => {
+	it('should roll into the next month correctly', () => {
+		expect(addDaysToIsoDate('2025-10-31', 1)).toBe('2025-11-01');
+	});
+
+	it('should roll into the previous month correctly', () => {
+		expect(addDaysToIsoDate('2025-03-01', -1)).toBe('2025-02-28');
+	});
+});
+
+describe('formatDateTimeLocalValue', () => {
+	it('should format dates for datetime-local inputs', () => {
+		expect(formatDateTimeLocalValue(new Date(2025, 9, 15, 9, 30))).toBe(
+			'2025-10-15T09:30',
+		);
 	});
 });

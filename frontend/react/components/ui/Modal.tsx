@@ -22,10 +22,14 @@ export const Modal: React.FC<Props> = ({
 		if (!dialog) return;
 
 		if (isOpen) {
-			dialog.showModal();
+			if (!dialog.open) {
+				dialog.showModal();
+			}
 			document.body.style.overflow = 'hidden';
 		} else {
-			dialog.close();
+			if (dialog.open) {
+				dialog.close();
+			}
 			document.body.style.overflow = 'unset';
 		}
 

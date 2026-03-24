@@ -1,4 +1,5 @@
 import type { Config } from '../stores/useConfigStore';
+import { toLocalDateString } from '../react/utils/date';
 
 export interface TeamMemberSummary {
 	email: string;
@@ -127,7 +128,7 @@ export async function fetchTeamWorklogs(
 		if (embedded.total <= embedded.maxResults) {
 			// All worklogs are in the embedded response — filter by date in JS
 			for (const wl of embedded.worklogs) {
-				const day = wl.started.slice(0, 10);
+				const day = toLocalDateString(wl.started);
 				if (day >= weekStart && day <= weekEnd) {
 					allWorklogs.push(wl);
 				}
@@ -194,7 +195,7 @@ export async function fetchTeamWorklogs(
 		// Filter by allowed users if configured
 		if (allowedSet && !allowedSet.has(email)) continue;
 
-		const day = wl.started.slice(0, 10);
+		const day = toLocalDateString(wl.started);
 		if (day < weekStart || day > weekEnd) continue;
 
 		let member = memberMap.get(email);
@@ -235,12 +236,14 @@ export async function fetchTeamWorklogs(
 
 	for (const [email, member] of memberMap) {
 		const dailyHours = new Map<string, number>();
-		let totalSeconds = 0;
+		const totalSeconds = [...member.dailySeconds.values()].reduce(
+			(sum, seconds) => sum + seconds,
+			0,
+		);
 
 		for (const day of weekdays) {
 			const seconds = member.dailySeconds.get(day) || 0;
 			dailyHours.set(day, seconds / 3600);
-			totalSeconds += seconds;
 		}
 
 		const gapSeconds = Math.max(0, targetSeconds - totalSeconds);

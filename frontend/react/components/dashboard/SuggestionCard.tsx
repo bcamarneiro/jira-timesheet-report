@@ -58,6 +58,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 	const [mappingIssueKey, setMappingIssueKey] = useState('');
 	const [isReasonCollapsed, setIsReasonCollapsed] = useState(false);
 	const isLongReason = suggestion.reason.length > 80;
+	const canOpenIssue = !!jiraDomain && !!suggestion.issueKey;
 
 	const isUnmapped =
 		suggestion.source === 'calendar' &&
@@ -78,6 +79,10 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 	};
 
 	const handleLogIt = async () => {
+		if (!suggestion.issueKey) {
+			toast.error('This suggestion needs a Jira issue key before it can be logged');
+			return;
+		}
 		try {
 			const worklog = await createWorklog({
 				issueKey: suggestion.issueKey,
@@ -155,6 +160,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 						type="button"
 						className={`${styles.reason} ${styles.reasonButton} ${isReasonCollapsed ? styles.reasonTruncated : ''}`}
 						onClick={() => setIsReasonCollapsed(!isReasonCollapsed)}
+						aria-expanded={!isReasonCollapsed}
 					>
 						{suggestion.reason}
 					</button>
@@ -169,6 +175,9 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 							value={mappingIssueKey}
 							onChange={(e) => setMappingIssueKey(e.target.value)}
 							placeholder="PROJ-123"
+							autoCapitalize="characters"
+							autoCorrect="off"
+							spellCheck={false}
 							onKeyDown={(e) => {
 								if (e.key === 'Enter') handleMapToIssue();
 								if (e.key === 'Escape') setIsMappingOpen(false);
@@ -197,6 +206,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 							type="button"
 							className={styles.mapButton}
 							onClick={() => setIsMappingOpen(true)}
+							aria-label={`Map ${suggestion.calendarEventTitle} to a Jira issue`}
 						>
 							Map to Issue
 						</button>
@@ -204,6 +214,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 							type="button"
 							className={styles.dismissButton}
 							onClick={() => dismiss(suggestion.id)}
+							aria-label={`Dismiss suggestion for ${suggestion.calendarEventTitle}`}
 						>
 							Dismiss
 						</button>
@@ -218,14 +229,18 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 			<div className={`${styles.card} ${isFocused ? styles.focused : ''}`}>
 				<div className={styles.header}>
 					<div className={styles.issueInfo}>
-						<a
-							href={`https://${jiraDomain}/browse/${suggestion.issueKey}`}
-							target="_blank"
-							rel="noreferrer"
-							className={styles.issueKey}
-						>
-							{suggestion.issueKey}
-						</a>
+						{canOpenIssue ? (
+							<a
+								href={`https://${jiraDomain}/browse/${suggestion.issueKey}`}
+								target="_blank"
+								rel="noreferrer"
+								className={styles.issueKey}
+							>
+								{suggestion.issueKey}
+							</a>
+						) : (
+							<span className={styles.issueKey}>{suggestion.issueKey}</span>
+						)}
 						{suggestion.issueSummary && (
 							<span className={styles.issueSummary}>
 								{suggestion.issueSummary}
@@ -235,11 +250,13 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 					<div className={styles.meta}>
 						<span
 							className={`${styles.badge} ${SOURCE_STYLES[suggestion.source] ?? ''}`}
+							title={`Source: ${SOURCE_LABELS[suggestion.source]}`}
 						>
 							{SOURCE_LABELS[suggestion.source]}
 						</span>
 						<span
 							className={`${styles.confidence} ${CONFIDENCE_STYLES[suggestion.confidence] ?? ''}`}
+							title={`Confidence: ${suggestion.confidence}`}
 						>
 							{suggestion.confidence}
 						</span>
@@ -250,6 +267,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 						type="button"
 						className={`${styles.reason} ${styles.reasonButton} ${isReasonCollapsed ? styles.reasonTruncated : ''}`}
 						onClick={() => setIsReasonCollapsed(!isReasonCollapsed)}
+						aria-expanded={!isReasonCollapsed}
 					>
 						{suggestion.reason}
 					</button>
@@ -282,6 +300,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 						className={styles.logButton}
 						onClick={handleLogIt}
 						disabled={isLoading}
+						aria-label={`Log ${suggestion.suggestedTimeSpent} to ${suggestion.issueKey}`}
 					>
 						Log it
 					</button>
@@ -289,6 +308,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 						type="button"
 						className={styles.editButton}
 						onClick={() => setIsEditOpen(true)}
+						aria-label={`Edit and log suggestion for ${suggestion.issueKey}`}
 					>
 						Edit & Log
 					</button>
@@ -296,6 +316,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 						type="button"
 						className={styles.dismissButton}
 						onClick={() => dismiss(suggestion.id)}
+						aria-label={`Dismiss suggestion for ${suggestion.issueKey}`}
 					>
 						Dismiss
 					</button>

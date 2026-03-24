@@ -1,4 +1,5 @@
 import type { WorklogSuggestion } from '../../types/Suggestion';
+import { logger } from '../react/utils/logger';
 import type { CalendarFeed } from '../stores/useConfigStore';
 import type { CalendarMapping } from '../stores/useUserDataStore';
 
@@ -452,15 +453,15 @@ export async function fetchCalendarSuggestions(
 					allEvents.push({ label: result.value.label, event: occ });
 				}
 			}
-			console.log(
+			logger.debug(
 				`[Calendar] Feed "${result.value.label}": ${result.value.events.length} events, ${expandedCount} after expanding recurrences`,
 			);
 		} else {
-			console.warn('[Calendar] Feed failed:', result.reason);
+			logger.warn('[Calendar] Feed failed:', result.reason);
 		}
 	}
 
-	console.log(
+	logger.debug(
 		`[Calendar] Total events: ${allEvents.length}, weekStart=${weekStart}, weekEnd=${weekEnd}`,
 	);
 
@@ -478,7 +479,7 @@ export async function fetchCalendarSuggestions(
 		const end = parseIcsDateTime(event.dtend);
 		if (!start) {
 			skippedNoParse++;
-			console.warn(
+			logger.warn(
 				`[Calendar] Could not parse DTSTART: "${event.dtstart}" for "${event.summary}"`,
 			);
 			continue;
@@ -611,7 +612,7 @@ export async function fetchCalendarSuggestions(
 		});
 	}
 
-	console.log(
+	logger.debug(
 		`[Calendar] Summary: ${allEvents.length} total, ${skippedNoParse} unparseable, ${skippedOutOfRange} out-of-range, ${skippedAllDay} all-day, ${grouped.size} mapped, ${unmapped.size} unmapped → ${suggestions.length} suggestions`,
 	);
 

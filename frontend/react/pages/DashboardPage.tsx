@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
@@ -15,11 +15,13 @@ import { WeekOverview } from '../components/dashboard/WeekOverview';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { toast } from '../components/ui/Toast';
+import { useAbsenceDays } from '../hooks/useAbsenceDays';
 import { useComplianceReminder } from '../hooks/useComplianceReminder';
 import { useCopyPreviousWeek } from '../hooks/useCopyPreviousWeek';
 import { useDashboardDataFetcher } from '../hooks/useDashboardDataFetcher';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useMonthHeatmapData } from '../hooks/useMonthHeatmapData';
+import { addDaysToIsoDate } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
 import { generateWeeklyCsv } from '../utils/weekCsvExport';
 import { generateWeeklySummary } from '../utils/weekSummary';
@@ -51,6 +53,26 @@ export const DashboardPage: React.FC = () => {
 		useCopyPreviousWeek();
 	const monthHeatmap = useMonthHeatmapData();
 
+	// Fetch absence days for the heatmap month range
+	const heatmapMonthStart = `${monthHeatmap.year}-${String(monthHeatmap.month + 1).padStart(2, '0')}-01`;
+	const heatmapDaysInMonth = new Date(
+		monthHeatmap.year,
+		monthHeatmap.month + 1,
+		0,
+	).getDate();
+	const heatmapMonthEnd = addDaysToIsoDate(
+		heatmapMonthStart,
+		heatmapDaysInMonth - 1,
+	);
+	const { data: absenceDays } = useAbsenceDays(
+		heatmapMonthStart,
+		heatmapMonthEnd,
+	);
+	const vacationDates = useMemo(() => {
+		if (!absenceDays || absenceDays.size === 0) return undefined;
+		return new Set(absenceDays.keys());
+	}, [absenceDays]);
+
 	const handleExportMd = async () => {
 		const markdown = generateWeeklySummary(weekStart, weekEnd, weekWorklogs);
 		try {
@@ -70,8 +92,14 @@ export const DashboardPage: React.FC = () => {
 
 	const handleCopyPrevWeek = async () => {
 		try {
-			await copyPreviousWeek();
-			toast.success('Previous week worklogs copied as suggestions');
+			const copiedCount = await copyPreviousWeek();
+			if (copiedCount === 0) {
+				toast.error('No worklogs found in the previous week');
+				return;
+			}
+			toast.success(
+				`Copied ${copiedCount} suggestion${copiedCount === 1 ? '' : 's'} from the previous week`,
+			);
 		} catch {
 			toast.error('Failed to copy previous week');
 		}
@@ -159,6 +187,7 @@ export const DashboardPage: React.FC = () => {
 						type="button"
 						className={styles.helpButton}
 						onClick={() => setShowHelp(true)}
+						aria-label="Open keyboard shortcuts help"
 						title="Keyboard shortcuts (?)"
 					>
 						?
@@ -166,6 +195,15 @@ export const DashboardPage: React.FC = () => {
 					<SourceStatusBar />
 				</div>
 			</div>
+
+			{!isLoadingWorklogs && daySummaries.length === 0 && (
+				<div className={styles.emptyWeek}>
+					<h3>No worklogs found for this week</h3>
+					<p>
+						Try another week, adjust your filters, or check your Jira settings.
+					</p>
+				</div>
+			)}
 
 			{isLoadingWorklogs && daySummaries.length === 0 && (
 				<div className={styles.loading}>
@@ -196,6 +234,7 @@ export const DashboardPage: React.FC = () => {
 							monthData={monthHeatmap.data}
 							month={monthHeatmap.month}
 							year={monthHeatmap.year}
+							vacationDates={vacationDates}
 						/>
 					)}
 

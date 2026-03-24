@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { DaySummary, WorklogSuggestion } from '../../types/Suggestion';
+import { addDaysToIsoDate, parseIsoDateLocal, toLocalDateString } from '../react/utils/date';
 import { distributeSuggestionsToFillGap } from '../services/suggestionMerger';
 import { useConfigStore } from './useConfigStore';
 
@@ -18,19 +19,17 @@ function getMonday(date: Date): string {
 	const day = d.getDay();
 	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
 	d.setDate(diff);
-	return d.toISOString().slice(0, 10);
+	return toLocalDateString(d);
 }
 
 function getSunday(monday: string): string {
-	const d = new Date(monday);
-	d.setDate(d.getDate() + 6);
-	return d.toISOString().slice(0, 10);
+	return addDaysToIsoDate(monday, 6);
 }
 
 function shiftWeek(monday: string, weeks: number): string {
-	const d = new Date(monday);
+	const d = parseIsoDateLocal(monday);
 	d.setDate(d.getDate() + weeks * 7);
-	return d.toISOString().slice(0, 10);
+	return toLocalDateString(d);
 }
 
 const todayMonday = getMonday(new Date());

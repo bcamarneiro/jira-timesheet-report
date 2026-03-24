@@ -1,3 +1,5 @@
+import { logger } from '../react/utils/logger';
+
 export interface WorklogEntry {
 	date: string;
 	issueKey?: string;
@@ -121,7 +123,7 @@ async function fetchAllIssueWorklogs(
 
 	const res = await fetch(url, { headers, signal });
 	if (!res.ok) {
-		console.error(
+		logger.error(
 			`[worklogService] Failed to fetch worklogs for ${issueKey}: ${res.status}`,
 		);
 		return [];

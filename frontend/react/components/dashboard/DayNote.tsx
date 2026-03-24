@@ -26,11 +26,16 @@ export const DayNote: React.FC<Props> = ({ date }) => {
 		setIsEditing(false);
 	};
 
+	const cancel = () => {
+		setDraft(note);
+		setIsEditing(false);
+	};
+
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === 'Enter') {
 			save();
 		} else if (e.key === 'Escape') {
-			setIsEditing(false);
+			cancel();
 		}
 	};
 
@@ -48,6 +53,23 @@ export const DayNote: React.FC<Props> = ({ date }) => {
 					placeholder="Add a note..."
 					maxLength={100}
 				/>
+				<span className={styles.counter}>{draft.trim().length}/100</span>
+				<button type="button" className={styles.action} onMouseDown={cancel}>
+					Cancel
+				</button>
+				{note && (
+					<button
+						type="button"
+						className={styles.action}
+						onMouseDown={() => {
+							setDraft('');
+							setDayNote(date, '');
+							setIsEditing(false);
+						}}
+					>
+						Clear
+					</button>
+				)}
 			</div>
 		);
 	}
@@ -59,6 +81,7 @@ export const DayNote: React.FC<Props> = ({ date }) => {
 					type="button"
 					className={styles.noteText}
 					onClick={startEditing}
+					title="Edit note"
 				>
 					{note}
 				</button>

@@ -1,5 +1,6 @@
 import type React from 'react';
-import type { JiraWorklog } from '../../../types/JiraWorklog';
+import { useState } from 'react';
+import type { EnrichedJiraWorklog } from '../../../types/jira';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useCalendar } from '../hooks/useCalendar';
 import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
@@ -12,15 +13,20 @@ import { UserHeader } from './user/UserHeader';
 
 type Props = {
 	user: string;
-	days: Record<string, JiraWorklog[]>;
+	days: Record<string, EnrichedJiraWorklog[]>;
+	issueSummaries: Record<string, string>;
 	onDownloadUser: (user: string) => void;
+	defaultCollapsed?: boolean;
 };
 
 export const TimesheetGrid: React.FC<Props> = ({
 	user,
 	days,
+	issueSummaries,
 	onDownloadUser,
+	defaultCollapsed = false,
 }) => {
+	const [collapsed, setCollapsed] = useState(defaultCollapsed);
 	const year = useTimesheetStore((state) => state.currentYear);
 	const monthZeroIndexed = useTimesheetStore((state) => state.currentMonth);
 
@@ -62,6 +68,7 @@ export const TimesheetGrid: React.FC<Props> = ({
 				iso={iso}
 				dayNumber={d}
 				worklogs={worklogs}
+				issueSummaries={issueSummaries}
 				isWeekend={isWeekend}
 				isToday={iso === todayIso}
 			/>,
@@ -75,21 +82,30 @@ export const TimesheetGrid: React.FC<Props> = ({
 				totalSeconds={totalSeconds}
 				targetSeconds={targetSeconds}
 				onDownloadUser={onDownloadUser}
+				collapsed={collapsed}
+				onToggleCollapse={() => setCollapsed((c) => !c)}
 			/>
 
-			<CalendarGrid firstWeekday={firstWeekday} weekdayLabels={weekdayLabels}>
-				{cells}
-			</CalendarGrid>
+			{!collapsed && (
+				<>
+					<CalendarGrid
+						firstWeekday={firstWeekday}
+						weekdayLabels={weekdayLabels}
+					>
+						{cells}
+					</CalendarGrid>
 
-			<div className={styles.monthTotal}>
-				<div className={styles.monthTotalTop}>
-					<span className={styles.monthTotalLabel}>Month Total</span>
-					<span className={styles.monthTotalValue}>
-						{totalHours.toFixed(1)}h / {targetHours}h ({Math.round(pct)}%)
-					</span>
-				</div>
-				<ProgressBar value={pct} height={6} />
-			</div>
+					<div className={styles.monthTotal}>
+						<div className={styles.monthTotalTop}>
+							<span className={styles.monthTotalLabel}>Month Total</span>
+							<span className={styles.monthTotalValue}>
+								{totalHours.toFixed(1)}h / {targetHours}h ({Math.round(pct)}%)
+							</span>
+						</div>
+						<ProgressBar value={pct} height={6} />
+					</div>
+				</>
+			)}
 		</div>
 	);
 };

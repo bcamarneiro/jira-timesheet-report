@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
+import { useDashboardStore } from '../../stores/useDashboardStore';
+import { parseIsoDateLocal } from '../utils/date';
 import { useMonthWorklogs } from './useMonthWorklogs';
 
 interface MonthHeatmapResult {
@@ -10,13 +12,15 @@ interface MonthHeatmapResult {
 }
 
 export function useMonthHeatmapData(): MonthHeatmapResult {
-	const now = new Date();
-	const month = now.getMonth();
-	const year = now.getFullYear();
+	const weekStart = useDashboardStore((s) => s.weekStart);
 	const email = useConfigStore((s) => s.config.email);
+	const jqlFilter = useConfigStore((s) => s.config.jqlFilter);
+	const weekStartDate = parseIsoDateLocal(weekStart);
+	const month = weekStartDate.getMonth();
+	const year = weekStartDate.getFullYear();
 
 	const { data: worklogs, isLoading } = useMonthWorklogs(year, month, {
-		currentUserOnly: true,
+		jqlFilter: jqlFilter?.trim() || undefined,
 		prefetchAdjacent: true,
 	});
 

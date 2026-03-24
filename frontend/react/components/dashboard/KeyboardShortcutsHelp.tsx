@@ -21,6 +21,9 @@ export const KeyboardShortcutsHelp: React.FC<Props> = ({ isOpen, onClose }) => {
 	return (
 		<Modal isOpen={isOpen} onClose={onClose} title="Keyboard Shortcuts">
 			<table className={styles.table}>
+				<caption className={styles.caption}>
+					Quick actions available on the dashboard.
+				</caption>
 				<thead>
 					<tr>
 						<th>Shortcut</th>

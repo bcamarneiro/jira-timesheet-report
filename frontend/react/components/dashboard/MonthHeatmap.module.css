@@ -14,6 +14,15 @@
 	color: var(--color-text);
 }
 
+.summary {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	flex-wrap: wrap;
+	font-size: var(--text-xs);
+	color: var(--color-text-secondary);
+}
+
 .dayLabels {
 	display: grid;
 	grid-template-columns: repeat(7, 24px);
@@ -34,6 +43,9 @@
 	grid-template-columns: repeat(7, 24px);
 	gap: 3px;
 	justify-content: start;
+	list-style: none;
+	padding: 0;
+	margin: 0;
 }
 
 .cell {
@@ -68,23 +80,29 @@
 }
 
 .cellLevel1 {
-	background: #dcfce7;
-	color: #166534;
+	background: var(--color-success-bg);
+	color: var(--color-success);
 }
 
 .cellLevel2 {
-	background: #86efac;
-	color: #14532d;
+	background: var(--color-success-border);
+	color: var(--color-success);
 }
 
 .cellLevel3 {
-	background: #4ade80;
-	color: #052e16;
+	background: var(--color-success);
+	color: var(--color-text-inverse);
 }
 
 .cellLevel4 {
-	background: #16a34a;
-	color: #ffffff;
+	background: var(--color-primary);
+	color: var(--color-text-inverse);
+}
+
+.cellVacation {
+	background: var(--color-info-bg);
+	color: var(--color-info);
+	border: 1px dashed var(--color-info-border);
 }
 
 .cellWeekend {
@@ -122,55 +140,22 @@
 }
 
 .legendCellLevel1 {
-	background: #dcfce7;
+	background: var(--color-success-bg);
 }
 
 .legendCellLevel2 {
-	background: #86efac;
+	background: var(--color-success-border);
 }
 
 .legendCellLevel3 {
-	background: #4ade80;
+	background: var(--color-success);
 }
 
 .legendCellLevel4 {
-	background: #16a34a;
+	background: var(--color-primary);
 }
 
-@media (prefers-color-scheme: dark) {
-	.cellLevel1 {
-		background: #052e16;
-		color: #86efac;
-	}
-
-	.cellLevel2 {
-		background: #14532d;
-		color: #dcfce7;
-	}
-
-	.cellLevel3 {
-		background: #166534;
-		color: #f0fdf4;
-	}
-
-	.cellLevel4 {
-		background: #16a34a;
-		color: #ffffff;
-	}
-
-	.legendCellLevel1 {
-		background: #052e16;
-	}
-
-	.legendCellLevel2 {
-		background: #14532d;
-	}
-
-	.legendCellLevel3 {
-		background: #166534;
-	}
-
-	.legendCellLevel4 {
-		background: #16a34a;
-	}
+.legendCellVacation {
+	background: var(--color-info-bg);
+	border: 1px dashed var(--color-info-border);
 }

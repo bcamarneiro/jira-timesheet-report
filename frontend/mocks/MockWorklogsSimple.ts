@@ -1,3 +1,4 @@
+import { logger } from '../react/utils/logger';
 import type { JiraWorklog } from '../../types/JiraWorklog';
 
 /**
@@ -181,14 +182,14 @@ for (const loggedDay of mikeRetroactiveDays) {
 	worklogId++;
 }
 
-console.log('[MOCK DATA] Generated mock worklogs:');
-console.log(
+logger.debug('[MOCK DATA] Generated mock worklogs:');
+logger.debug(
 	`  - Alex: ${MockWorklogsSimple.filter((w) => w.author.displayName === 'Alex Thompson').length} worklogs (expected: 23 × 8h = 184h)`,
 );
-console.log(
+logger.debug(
 	`  - Sarah: ${MockWorklogsSimple.filter((w) => w.author.displayName === 'Sarah Johnson').length} worklogs (20 regular + 2 retroactive)`,
 );
-console.log(
+logger.debug(
 	`  - Mike: ${MockWorklogsSimple.filter((w) => w.author.displayName === 'Mike Chen').length} worklogs (19 regular + 3 retroactive)`,
 );
 

@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useMemo, useState } from 'react';
-import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
+import type { EnrichedJiraWorklog } from '../../../types/jira';
 import { getWorkingDaysInMonth, isDateInMonth } from '../utils/date';
 import { getInitials } from '../utils/text';
 import { ProgressBar } from './ui/ProgressBar';
@@ -98,31 +98,51 @@ export const OverviewTable: React.FC<Props> = ({
 			<table className={styles.table}>
 				<thead>
 					<tr>
-						<th
-							className={`${styles.userCell} ${styles.sortableHeader}`}
-							onClick={() => handleSort('user')}
-						>
-							User {sortArrow('user')}
-						</th>
+							<th
+								className={`${styles.userCell} ${styles.sortableHeader}`}
+							>
+								<button
+									type="button"
+									className={styles.sortButton}
+									onClick={() => handleSort('user')}
+								>
+									User {sortArrow('user')}
+								</button>
+							</th>
 						<th className={styles.progressCell}>Progress</th>
-						<th
-							className={`${styles.hoursCell} ${styles.sortableHeader}`}
-							onClick={() => handleSort('days')}
-						>
-							Days {sortArrow('days')}
-						</th>
-						<th
-							className={`${styles.hoursCell} ${styles.sortableHeader}`}
-							onClick={() => handleSort('entries')}
-						>
-							Entries {sortArrow('entries')}
-						</th>
-						<th
-							className={`${styles.hoursCell} ${styles.sortableHeader}`}
-							onClick={() => handleSort('hours')}
-						>
-							Hours {sortArrow('hours')}
-						</th>
+							<th
+								className={`${styles.hoursCell} ${styles.sortableHeader}`}
+							>
+								<button
+									type="button"
+									className={styles.sortButton}
+									onClick={() => handleSort('days')}
+								>
+									Days {sortArrow('days')}
+								</button>
+							</th>
+							<th
+								className={`${styles.hoursCell} ${styles.sortableHeader}`}
+							>
+								<button
+									type="button"
+									className={styles.sortButton}
+									onClick={() => handleSort('entries')}
+								>
+									Entries {sortArrow('entries')}
+								</button>
+							</th>
+							<th
+								className={`${styles.hoursCell} ${styles.sortableHeader}`}
+							>
+								<button
+									type="button"
+									className={styles.sortButton}
+									onClick={() => handleSort('hours')}
+								>
+									Hours {sortArrow('hours')}
+								</button>
+							</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -131,6 +151,16 @@ export const OverviewTable: React.FC<Props> = ({
 							key={row.user}
 							className={onUserClick ? styles.clickableRow : undefined}
 							onClick={() => onUserClick?.(row.user)}
+							onKeyDown={(event) => {
+								if (
+									onUserClick &&
+									(event.key === 'Enter' || event.key === ' ')
+								) {
+									event.preventDefault();
+									onUserClick(row.user);
+								}
+							}}
+							tabIndex={onUserClick ? 0 : undefined}
 						>
 							<td>
 								<div className={styles.userInfo}>

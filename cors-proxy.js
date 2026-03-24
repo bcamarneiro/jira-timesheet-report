@@ -19,9 +19,9 @@
  *   → proxied to https://jira.example.com/rest/api/2/myself
  */
 
-const http = require('http');
-const https = require('https');
-const { URL } = require('url');
+const http = require('node:http');
+const https = require('node:https');
+const { URL } = require('node:url');
 
 const host = process.env.CORS_PROXY_HOST || 'localhost';
 const port = process.env.CORS_PROXY_PORT || 8081;
@@ -112,7 +112,7 @@ function isJiraRequest(targetHost, incomingHeaders) {
 	if (incomingHeaders['x-atlassian-token']) return true;
 	// Bearer token auth (jira.js client uses this for self-hosted Jira)
 	const auth = incomingHeaders.authorization || incomingHeaders.Authorization;
-	if (auth && auth.startsWith('Bearer ')) return true;
+	if (auth?.startsWith('Bearer ')) return true;
 	// GitLab: browser sends PRIVATE-TOKEN
 	if (incomingHeaders['private-token']) return true;
 	return false;

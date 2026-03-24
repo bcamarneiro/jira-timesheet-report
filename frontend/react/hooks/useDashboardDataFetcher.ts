@@ -49,7 +49,16 @@ function deriveWeekWorklogs(
 }
 
 export function useDashboardDataFetcher() {
-	const config = useConfigStore((s) => s.config);
+	const jiraHost = useConfigStore((s) => s.config.jiraHost);
+	const email = useConfigStore((s) => s.config.email);
+	const apiToken = useConfigStore((s) => s.config.apiToken);
+	const corsProxy = useConfigStore((s) => s.config.corsProxy);
+	const jqlFilterValue = useConfigStore((s) => s.config.jqlFilter);
+	const gitlabToken = useConfigStore((s) => s.config.gitlabToken);
+	const gitlabHost = useConfigStore((s) => s.config.gitlabHost);
+	const rescueTimeApiKey = useConfigStore((s) => s.config.rescueTimeApiKey);
+	const calendarFeeds = useConfigStore((s) => s.config.calendarFeeds);
+	const timeRounding = useConfigStore((s) => s.config.timeRounding);
 	const weekStart = useDashboardStore((s) => s.weekStart);
 	const weekEnd = useDashboardStore((s) => s.weekEnd);
 	const setLoading = useDashboardStore((s) => s.setLoading);
@@ -60,10 +69,23 @@ export function useDashboardDataFetcher() {
 	const queryClient = useQueryClient();
 
 	useEffect(() => {
-		if (!config.jiraHost || !config.apiToken) return;
+		if (!jiraHost || !apiToken) return;
 
 		const controller = new AbortController();
 		const { signal } = controller;
+		const config = {
+			...useConfigStore.getState().config,
+			jiraHost,
+			email,
+			apiToken,
+			corsProxy,
+			jqlFilter: jqlFilterValue,
+			gitlabToken,
+			gitlabHost,
+			rescueTimeApiKey,
+			calendarFeeds,
+			timeRounding,
+		};
 
 		async function run() {
 			// Reset errors
@@ -76,11 +98,13 @@ export function useDashboardDataFetcher() {
 			// Set loading states
 			setLoading('worklogs', true);
 			setLoading('jira', true);
-			if (config.gitlabToken && config.gitlabHost) setLoading('gitlab', true);
-			const hasCalendar =
-				config.calendarFeeds && config.calendarFeeds.length > 0;
+			if (gitlabToken && gitlabHost) setLoading('gitlab', true);
+			const suggestionFeeds = (config.calendarFeeds ?? []).filter(
+				(f) => f.type !== 'absence',
+			);
+			const hasCalendar = suggestionFeeds.length > 0;
 			if (hasCalendar) setLoading('calendar', true);
-			if (config.rescueTimeApiKey) setLoading('rescuetime', true);
+			if (rescueTimeApiKey) setLoading('rescuetime', true);
 
 			// Determine which month(s) the week spans
 			const [startYear, startMonthStr] = weekStart.split('-').map(Number);
@@ -90,15 +114,18 @@ export function useDashboardDataFetcher() {
 			const spansMonths = startYear !== endYear || startMonth !== endMonth;
 
 			// Fetch worklogs via shared TanStack Query cache
-			const fetchOpts = { currentUserOnly: true };
+			const jqlFilter = jqlFilterValue?.trim() || '';
+			const fetchOpts = {
+				jqlFilter: jqlFilter || undefined,
+			};
 			const buildKey = (y: number, m: number) =>
 				monthWorklogsQueryKey(
 					y,
 					m,
 					config.jiraHost,
 					config.corsProxy,
-					true,
-					'',
+					false,
+					jqlFilter,
 				);
 
 			const [
@@ -131,7 +158,7 @@ export function useDashboardDataFetcher() {
 
 						return deriveWeekWorklogs(
 							allData,
-							config.email,
+							email,
 							weekStart,
 							weekEnd,
 						);
@@ -154,11 +181,11 @@ export function useDashboardDataFetcher() {
 					})
 					.finally(() => setLoading('jira', false)),
 
-				config.gitlabToken && config.gitlabHost
+				gitlabToken && gitlabHost
 					? fetchGitlabSuggestions(
-							config.gitlabToken,
-							config.gitlabHost,
-							config.corsProxy,
+							gitlabToken,
+							gitlabHost,
+							corsProxy,
 							weekStart,
 							weekEnd,
 							signal,
@@ -172,8 +199,8 @@ export function useDashboardDataFetcher() {
 
 				hasCalendar
 					? fetchCalendarSuggestions(
-							config.calendarFeeds,
-							config.corsProxy,
+							suggestionFeeds,
+							corsProxy,
 							weekStart,
 							weekEnd,
 							calendarMappings,
@@ -186,10 +213,10 @@ export function useDashboardDataFetcher() {
 							.finally(() => setLoading('calendar', false))
 					: Promise.resolve([]),
 
-				config.rescueTimeApiKey
+				rescueTimeApiKey
 					? fetchRescueTimeData(
-							config.rescueTimeApiKey,
-							config.corsProxy,
+							rescueTimeApiKey,
+							corsProxy,
 							weekStart,
 							weekEnd,
 							signal,
@@ -218,7 +245,7 @@ export function useDashboardDataFetcher() {
 				existingWorklogs: worklogs,
 				favorites,
 				templates,
-				timeRounding: config.timeRounding,
+				timeRounding,
 			});
 
 			// Batch all store updates together to avoid cascading re-renders
@@ -233,7 +260,16 @@ export function useDashboardDataFetcher() {
 
 		return () => controller.abort();
 	}, [
-		config,
+		jiraHost,
+		email,
+		apiToken,
+		corsProxy,
+		jqlFilterValue,
+		gitlabToken,
+		gitlabHost,
+		rescueTimeApiKey,
+		calendarFeeds,
+		timeRounding,
 		weekStart,
 		weekEnd,
 		setLoading,

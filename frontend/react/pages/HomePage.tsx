@@ -12,8 +12,8 @@ export const HomePage: React.FC = () => {
 			<div className={styles.hero}>
 				<h1 className={styles.title}>Jira Timesheet Report</h1>
 				<p className={styles.description}>
-					Track and manage your team's time tracking data from Jira. View
-					timesheets in a calendar view and export CSV reports.
+					A zero-backend Jira workspace for weekly gap triage, monthly reports,
+					and team-wide exports.
 				</p>
 				<div className={styles.buttonContainer}>
 					<Link
@@ -24,8 +24,8 @@ export const HomePage: React.FC = () => {
 					</Link>
 					{isConfigured && (
 						<>
-							<Link to="/timesheet" className={styles.secondaryButton}>
-								Team Timesheet
+							<Link to="/reports" className={styles.secondaryButton}>
+								Reports
 							</Link>
 							<Link to="/settings" className={styles.secondaryButton}>
 								Settings
@@ -38,18 +38,17 @@ export const HomePage: React.FC = () => {
 			<div className={styles.features}>
 				<div className={styles.featureItem}>
 					<div className={styles.featureIcon}>&#128197;</div>
-					<div className={styles.featureTitle}>Calendar View</div>
+					<div className={styles.featureTitle}>Monthly Reports</div>
 					<div className={styles.featureDescription}>
-						Visual calendar interface with color-coded day status for tracking
-						work hours
+						Calendar-based reporting with per-user drill-down and CSV exports
 					</div>
 				</div>
 				<div className={styles.featureItem}>
-					<div className={styles.featureIcon}>&#128101;</div>
-					<div className={styles.featureTitle}>Team Overview</div>
+					<div className={styles.featureIcon}>&#128200;</div>
+					<div className={styles.featureTitle}>Weekly Dashboard</div>
 					<div className={styles.featureDescription}>
-						Aggregated table showing days worked, entries, and total hours per
-						team member
+						Gap-focused week view with suggestions, templates, heatmap, and
+						clipboard exports
 					</div>
 				</div>
 				<div className={styles.featureItem}>
@@ -90,7 +89,8 @@ export const HomePage: React.FC = () => {
 						<li className={styles.step}>
 							<span className={styles.stepNumber}>3</span>
 							<span className={styles.stepText}>
-								Navigate to the Timesheet page to view your team's worklogs
+								Open Dashboard for your weekly workflow and Reports for team and
+								monthly views
 							</span>
 						</li>
 					</ol>

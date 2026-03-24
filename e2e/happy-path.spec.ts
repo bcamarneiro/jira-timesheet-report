@@ -15,9 +15,7 @@ test.describe('Home Page', () => {
 		await expect(
 			page.getByRole('link', { name: 'My Dashboard' }),
 		).toBeVisible();
-		await expect(
-			page.getByRole('link', { name: 'Team Timesheet' }),
-		).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Reports' })).toBeVisible();
 	});
 
 	test('shows feature cards', async ({ page }) => {
@@ -25,10 +23,10 @@ test.describe('Home Page', () => {
 		await page.waitForLoadState('networkidle');
 
 		await expect(
-			page.getByText('Calendar View', { exact: true }),
+			page.getByText('Monthly Reports', { exact: true }),
 		).toBeVisible();
 		await expect(
-			page.getByText('Team Overview', { exact: true }),
+			page.getByText('Weekly Dashboard', { exact: true }),
 		).toBeVisible();
 		await expect(page.getByText('CSV Export', { exact: true })).toBeVisible();
 		await expect(
@@ -51,10 +49,7 @@ test.describe('Navigation', () => {
 		await expect(nav).toBeVisible();
 
 		await expect(nav.getByRole('link', { name: 'Dashboard' })).toBeVisible();
-		await expect(nav.getByRole('link', { name: 'Team' })).toBeVisible();
-		await expect(
-			nav.getByRole('link', { name: 'Timesheet', exact: true }),
-		).toBeVisible();
+		await expect(nav.getByRole('link', { name: 'Reports' })).toBeVisible();
 		await expect(nav.getByRole('link', { name: 'Settings' })).toBeVisible();
 	});
 
@@ -69,15 +64,9 @@ test.describe('Navigation', () => {
 
 		await page
 			.getByRole('navigation')
-			.getByRole('link', { name: 'Team' })
+			.getByRole('link', { name: 'Reports' })
 			.click();
-		await expect(page).toHaveURL(/\/team/);
-
-		await page
-			.getByRole('navigation')
-			.getByRole('link', { name: 'Timesheet', exact: true })
-			.click();
-		await expect(page).toHaveURL(/\/timesheet/);
+		await expect(page).toHaveURL(/\/reports/);
 
 		await page
 			.getByRole('navigation')
@@ -248,7 +237,9 @@ test.describe('Dashboard Page', () => {
 	});
 
 	test('keyboard shortcuts help dialog opens and closes', async ({ page }) => {
-		await page.getByRole('button', { name: '?' }).click();
+		await page
+			.getByRole('button', { name: 'Open keyboard shortcuts help' })
+			.click();
 
 		const dialog = page.locator('dialog[open]');
 		await expect(dialog).toBeVisible();
@@ -273,6 +264,15 @@ test.describe('Dashboard Page', () => {
 
 		await dialog.getByRole('button', { name: 'Close' }).click();
 		await expect(dialog).not.toBeVisible();
+	});
+
+	test('copy previous week creates suggestions with feedback', async ({ page }) => {
+		await page.getByRole('button', { name: /Copy Prev Week/ }).click();
+
+		await expect(
+			page.getByText('Copied 5 suggestions from the previous week'),
+		).toBeVisible();
+		await expect(page.getByText('Prev Week').first()).toBeVisible();
 	});
 
 	test('templates modal opens and closes', async ({ page }) => {
@@ -317,9 +317,9 @@ test.describe('Dashboard — Day Notes', () => {
 });
 
 // ── Team Page ──────────────────────────────────────────────────────
-test.describe('Team Page', () => {
+test.describe('Reports Page', () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/team');
+		await page.goto('/reports');
 		await page.waitForLoadState('networkidle');
 		await page.waitForTimeout(2000);
 	});
@@ -368,11 +368,12 @@ test.describe('Team Page', () => {
 	});
 });
 
-// ── Timesheet Page ─────────────────────────────────────────────────
-test.describe('Timesheet Page', () => {
+// ── Reports Monthly View ───────────────────────────────────────────
+test.describe('Reports Monthly View', () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/timesheet');
+		await page.goto('/reports');
 		await page.waitForLoadState('networkidle');
+		await page.getByRole('button', { name: 'Monthly' }).click();
 	});
 
 	test('displays month navigation', async ({ page }) => {

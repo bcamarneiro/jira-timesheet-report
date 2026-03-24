@@ -19,7 +19,9 @@ export const SourceStatusBar: React.FC = () => {
 	const rescueTimeError = useDashboardStore((s) => s.rescueTimeError);
 
 	const hasGitlab = !!(config.gitlabToken && config.gitlabHost);
-	const hasCalendar = config.calendarFeeds && config.calendarFeeds.length > 0;
+	const hasCalendar = (config.calendarFeeds ?? []).some(
+		(feed) => feed.type !== 'absence' && feed.url.trim(),
+	);
 	const hasRescueTime = !!config.rescueTimeApiKey;
 
 	// Only show configured sources
@@ -50,9 +52,14 @@ export const SourceStatusBar: React.FC = () => {
 
 	const hasErrors = sources.some((s) => s.error);
 	const isAnyLoading = sources.some((s) => s.loading);
+	const tooltip = buildTooltip(sources);
 
 	return (
-		<div className={styles.container} title={buildTooltip(sources)}>
+		<output
+			className={styles.container}
+			title={tooltip}
+			aria-live="polite"
+		>
 			{hasErrors ? (
 				// Expanded: show error labels
 				sources
@@ -63,22 +70,23 @@ export const SourceStatusBar: React.FC = () => {
 							className={`${styles.pill} ${styles.error}`}
 							title={s.error || ''}
 						>
-							{s.label}
+							{s.label} error
 						</span>
 					))
 			) : (
 				// Compact: just dots
-				<div className={styles.dots}>
+				<div className={styles.dots} aria-hidden="true">
 					{sources.map((s) => (
 						<span
 							key={s.label}
 							className={`${styles.dot} ${s.loading ? styles.dotLoading : styles.dotOk}`}
+							title={`${s.label}: ${s.loading ? 'syncing' : 'connected'}`}
 						/>
 					))}
 					{isAnyLoading && <span className={styles.loadingLabel}>Syncing</span>}
 				</div>
 			)}
-		</div>
+		</output>
 	);
 };
 

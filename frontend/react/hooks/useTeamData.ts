@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import type { WorklogItem } from '../../services/monthWorklogService';
 import type { TeamMemberSummary } from '../../services/teamService';
 import { useConfigStore } from '../../stores/useConfigStore';
+import { logger } from '../utils/logger';
+import { toLocalDateString } from '../utils/date';
 import { useMonthWorklogs } from './useMonthWorklogs';
 
 const SECONDS_PER_DAY = 28800; // 8h
@@ -55,12 +57,22 @@ function deriveTeamSummaries(
 		{ displayName: string; dailySeconds: Map<string, number> }
 	>();
 
+	// Debug: collect per-user per-day breakdown for console inspection
+	const debugEntries: {
+		email: string;
+		displayName: string;
+		day: string;
+		issueKey: string;
+		timeSpent: string;
+		seconds: number;
+	}[] = [];
+
 	for (const wl of worklogs) {
 		const email = wl.author?.emailAddress?.toLowerCase();
 		if (!email) continue;
 		if (allowedSet && !allowedSet.has(email)) continue;
 
-		const day = (wl.started ?? '').slice(0, 10);
+		const day = toLocalDateString(wl.started ?? '');
 		if (day < weekStart || day > weekEnd) continue;
 
 		let member = memberMap.get(email);
@@ -74,6 +86,22 @@ function deriveTeamSummaries(
 
 		const existing = member.dailySeconds.get(day) || 0;
 		member.dailySeconds.set(day, existing + (wl.timeSpentSeconds ?? 0));
+
+		debugEntries.push({
+			email,
+			displayName: wl.author?.displayName || email,
+			day,
+			issueKey: wl.issue.key,
+			timeSpent: (wl.timeSpent as string) ?? '',
+			seconds: wl.timeSpentSeconds ?? 0,
+		});
+	}
+
+	if (debugEntries.length > 0) {
+		logger.groupCollapsed(
+			`[TeamData] ${debugEntries.length} worklogs for ${weekStart} – ${weekEnd}`,
+			() => logger.table(debugEntries),
+		);
 	}
 
 	// Ensure all allowed users appear even with zero hours
@@ -88,9 +116,14 @@ function deriveTeamSummaries(
 		}
 	}
 
-	// Cap target at today for current/future weeks
-	const today = toDateStr(new Date());
-	const effectiveEnd = weekEnd > today ? today : weekEnd;
+	// Cap target at yesterday for current/future weeks — today isn't over yet,
+	// so we can't expect people to have logged a full day.
+	const now = new Date();
+	const yesterday = new Date(now);
+	yesterday.setDate(yesterday.getDate() - 1);
+	const yesterdayStr = toDateStr(yesterday);
+	const todayStr = toDateStr(now);
+	const effectiveEnd = weekEnd >= todayStr ? yesterdayStr : weekEnd;
 	const weekdays = getWeekdaysBetween(weekStart, weekEnd);
 	const targetWeekdays = getWeekdaysBetween(weekStart, effectiveEnd);
 	const targetSeconds = targetWeekdays.length * SECONDS_PER_DAY;
@@ -99,12 +132,14 @@ function deriveTeamSummaries(
 
 	for (const [email, member] of memberMap) {
 		const dailyHours = new Map<string, number>();
-		let totalSeconds = 0;
+		const totalSeconds = [...member.dailySeconds.values()].reduce(
+			(sum, seconds) => sum + seconds,
+			0,
+		);
 
 		for (const day of weekdays) {
 			const seconds = member.dailySeconds.get(day) || 0;
 			dailyHours.set(day, seconds / 3600);
-			totalSeconds += seconds;
 		}
 
 		summaries.push({
@@ -121,7 +156,12 @@ function deriveTeamSummaries(
 	return summaries;
 }
 
-export function useTeamData(weekStart: string, weekEnd: string) {
+export function useTeamData(
+	weekStart: string,
+	weekEnd: string,
+	options?: { enabled?: boolean },
+) {
+	const enabled = options?.enabled ?? true;
 	const config = useConfigStore((s) => s.config);
 
 	// Determine which month(s) the week spans
@@ -132,11 +172,11 @@ export function useTeamData(weekStart: string, weekEnd: string) {
 	const spansMonths = startYear !== endYear || startMonth !== endMonth;
 
 	// Primary month query (no prefetch — team page navigates by week, not month)
-	const month1 = useMonthWorklogs(startYear, startMonth);
+	const month1 = useMonthWorklogs(startYear, startMonth, { enabled });
 
 	// Second month query (only when week spans two months)
 	const month2 = useMonthWorklogs(endYear, endMonth, {
-		enabled: spansMonths,
+		enabled: enabled && spansMonths,
 	});
 
 	const isLoading = month1.isLoading || (spansMonths && month2.isLoading);

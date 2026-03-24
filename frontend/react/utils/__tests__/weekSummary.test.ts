@@ -23,6 +23,8 @@ describe('generateWeeklySummary', () => {
 		expect(result).toContain('- Tue: 2h');
 		expect(result).toContain('- **Total: 2h**');
 		expect(result).toContain('**Week Total: 2h / 40h**');
+		expect(result).toContain('### Daily Totals');
+		expect(result).toContain('- Tue (2026-03-10): 2h');
 	});
 
 	it('should group worklogs by issueKey across multiple days', () => {
@@ -46,6 +48,8 @@ describe('generateWeeklySummary', () => {
 		expect(result).toContain('- Wed: 3h');
 		expect(result).toContain('- **Total: 5h**');
 		expect(result).toContain('**Week Total: 5h / 40h**');
+		expect(result).toContain('- Tue (2026-03-10): 2h');
+		expect(result).toContain('- Wed (2026-03-11): 3h');
 	});
 
 	it('should handle multiple issues', () => {
@@ -144,6 +148,25 @@ describe('generateWeeklySummary', () => {
 		const tueLine = result.indexOf('- Tue:');
 		const thuLine = result.indexOf('- Thu:');
 		expect(tueLine).toBeLessThan(thuLine);
+	});
+
+	it('should sort issues by total time descending', () => {
+		const result = generateWeeklySummary('2026-03-10', '2026-03-16', [
+			{
+				date: '2026-03-10',
+				issueKey: 'PROJ-LOW',
+				timeSpentSeconds: 1800,
+			},
+			{
+				date: '2026-03-10',
+				issueKey: 'PROJ-HIGH',
+				timeSpentSeconds: 7200,
+			},
+		]);
+
+		expect(result.indexOf('### PROJ-HIGH')).toBeLessThan(
+			result.indexOf('### PROJ-LOW'),
+		);
 	});
 
 	it('should include the week range in the header', () => {

@@ -54,16 +54,24 @@ export const useUIStore = create<UIState>()(
 			},
 
 			setSelectedProject: (project: string) => {
-				set({ selectedProject: project });
+				set({ selectedProject: project.trim().toUpperCase() });
 			},
 
 			toggleUserExpanded: (user: string) => {
-				set((state) => ({
-					expandedUsers: {
-						...state.expandedUsers,
-						[user]: !state.expandedUsers[user],
-					},
-				}));
+				set((state) => {
+					const next = !state.expandedUsers[user];
+					if (next) {
+						return {
+							expandedUsers: {
+								...state.expandedUsers,
+								[user]: true,
+							},
+						};
+					}
+					const expandedUsers = { ...state.expandedUsers };
+					delete expandedUsers[user];
+					return { expandedUsers };
+				});
 			},
 
 			resetPreferences: () => {
@@ -72,6 +80,11 @@ export const useUIStore = create<UIState>()(
 		}),
 		{
 			name: 'jira-timesheet-ui',
+			partialize: (state) => ({
+				preferences: state.preferences,
+				selectedProject: state.selectedProject,
+				expandedUsers: state.expandedUsers,
+			}),
 		},
 	),
 );

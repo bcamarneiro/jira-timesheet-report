@@ -1,3 +1,11 @@
+export function sanitizeFilename(filename: string): string {
+	return filename
+		.trim()
+		.replace(/[/\\?%*:|"<>]/g, '-')
+		.replace(/\s+/g, '-')
+		.replace(/-+/g, '-');
+}
+
 export function downloadAsFile(
 	content: string,
 	filename: string,
@@ -7,10 +15,13 @@ export function downloadAsFile(
 	const url = URL.createObjectURL(blob);
 	const anchor = document.createElement('a');
 	anchor.href = url;
-	anchor.download = filename;
+	anchor.download = sanitizeFilename(filename);
 	anchor.style.display = 'none';
 	document.body.appendChild(anchor);
-	anchor.click();
-	document.body.removeChild(anchor);
-	URL.revokeObjectURL(url);
+	try {
+		anchor.click();
+	} finally {
+		document.body.removeChild(anchor);
+		URL.revokeObjectURL(url);
+	}
 }

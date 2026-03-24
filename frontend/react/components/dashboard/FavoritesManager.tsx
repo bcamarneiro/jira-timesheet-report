@@ -1,6 +1,10 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
+import {
+	isValidTimeSpentFormat,
+	parseTimeSpentToSeconds,
+} from '../../utils/timeSpent';
 import { Button } from '../ui/Button';
 import { IssueAutocomplete } from '../ui/IssueAutocomplete';
 import { Modal } from '../ui/Modal';
@@ -11,21 +15,6 @@ type Props = {
 	onClose: () => void;
 };
 
-function parseTimeToSeconds(time: string): number {
-	let total = 0;
-	const hours = time.match(/(\d+)\s*h/i);
-	const minutes = time.match(/(\d+)\s*m/i);
-	const days = time.match(/(\d+)\s*d/i);
-	const weeks = time.match(/(\d+)\s*w/i);
-
-	if (weeks) total += Number.parseInt(weeks[1], 10) * 5 * 8 * 3600;
-	if (days) total += Number.parseInt(days[1], 10) * 8 * 3600;
-	if (hours) total += Number.parseInt(hours[1], 10) * 3600;
-	if (minutes) total += Number.parseInt(minutes[1], 10) * 60;
-
-	return total;
-}
-
 export const FavoritesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 	const favorites = useUserDataStore((s) => s.favorites);
 	const addFavorite = useUserDataStore((s) => s.addFavorite);
@@ -35,6 +24,20 @@ export const FavoritesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 	const [summary, setSummary] = useState('');
 	const [defaultTime, setDefaultTime] = useState('1h');
 	const [error, setError] = useState<string | null>(null);
+	const sortedFavorites = [...favorites].sort((a, b) =>
+		a.issueKey.localeCompare(b.issueKey),
+	);
+	const canSubmit =
+		!!issueKey.trim() && !!defaultTime.trim() && isValidTimeSpentFormat(defaultTime);
+
+	useEffect(() => {
+		if (!isOpen) {
+			setIssueKey('');
+			setSummary('');
+			setDefaultTime('1h');
+			setError(null);
+		}
+	}, [isOpen]);
 
 	const handleIssueSelect = (issue: { key: string; summary: string }) => {
 		setIssueKey(issue.key);
@@ -52,13 +55,12 @@ export const FavoritesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 		}
 
 		const time = defaultTime.trim();
-		const timePattern = /^(\d+[wdhm]\s*)+$/i;
-		if (!timePattern.test(time)) {
+		if (!isValidTimeSpentFormat(time)) {
 			setError('Invalid time format. Use formats like: 1h, 30m, 1h 30m');
 			return;
 		}
 
-		const seconds = parseTimeToSeconds(time);
+		const seconds = parseTimeSpentToSeconds(time);
 		if (seconds <= 0) {
 			setError('Time must be greater than zero');
 			return;
@@ -122,13 +124,17 @@ export const FavoritesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 						/>
 					</div>
 					{error && <div className={styles.error}>{error}</div>}
-					<Button type="submit">Add Pinned Issue</Button>
+					<Button type="submit" disabled={!canSubmit}>
+						Add Pinned Issue
+					</Button>
 				</form>
 
 				{favorites.length > 0 && (
 					<div className={styles.list}>
-						<h4 className={styles.listTitle}>Current Pins</h4>
-						{favorites.map((fav) => (
+						<h4 className={styles.listTitle}>
+							Current Pins <span className={styles.listCount}>{favorites.length}</span>
+						</h4>
+						{sortedFavorites.map((fav) => (
 							<div key={fav.issueKey} className={styles.item}>
 								<div className={styles.itemInfo}>
 									<span className={styles.itemKey}>{fav.issueKey}</span>
@@ -152,6 +158,9 @@ export const FavoritesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 							</div>
 						))}
 					</div>
+				)}
+				{favorites.length === 0 && (
+					<div className={styles.emptyState}>No pinned issues yet.</div>
 				)}
 			</div>
 		</Modal>

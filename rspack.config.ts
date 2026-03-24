@@ -15,6 +15,7 @@ const {
 
 const isOfflineMode =
 	process.env.NODE_ENV === 'development' && process.env.OFFLINE_MODE === 'true';
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
 const config: Configuration = {
 	entry: './frontend/main.tsx',
@@ -30,7 +31,7 @@ const config: Configuration = {
 		ignored: /node_modules/,
 		poll: 1000,
 	},
-	devtool: 'source-map',
+	devtool: isDevelopment ? 'eval-cheap-module-source-map' : 'source-map',
 	plugins: [
 		new HtmlWebpackPlugin({
 			template: './frontend/index.html', // your HTML template
@@ -50,6 +51,7 @@ const config: Configuration = {
 	],
 
 	devServer: {
+		host: '127.0.0.1',
 		static: [
 			{
 				directory: path.join(__dirname, 'dist'),
@@ -90,7 +92,7 @@ const config: Configuration = {
 			progress: true,
 			reconnect: 5,
 		},
-		open: true,
+		open: false,
 	},
 
 	module: {

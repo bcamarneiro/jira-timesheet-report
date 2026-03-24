@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { logger } from '../react/utils/logger';
+import { toLocalDateString } from '../react/utils/date';
 import type { Config } from './useConfigStore';
 import { useConfigStore } from './useConfigStore';
 
@@ -21,6 +23,7 @@ interface SettingsFormState {
 
 	// Actions
 	updateFormField: <K extends keyof Config>(field: K, value: Config[K]) => void;
+	replaceFormData: (config: Config) => void;
 	loadFromConfig: () => void;
 	saveSettings: () => void;
 	resetForm: () => void;
@@ -31,16 +34,19 @@ interface SettingsFormState {
 }
 
 const emptyTest: IntegrationTestResult = { loading: false, result: null };
+const resetIntegrationTests = () => ({
+	jira: { ...emptyTest },
+	gitlab: { ...emptyTest },
+	calendar: { ...emptyTest },
+	rescuetime: { ...emptyTest },
+});
 
 export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 	// Initialize form data from config store
 	formData: useConfigStore.getState().config,
 
 	integrationTests: {
-		jira: { ...emptyTest },
-		gitlab: { ...emptyTest },
-		calendar: { ...emptyTest },
-		rescuetime: { ...emptyTest },
+		...resetIntegrationTests(),
 	},
 
 	updateFormField: <K extends keyof Config>(field: K, value: Config[K]) => {
@@ -52,26 +58,26 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 		}));
 	},
 
+	replaceFormData: (config) => {
+		set({ formData: config, integrationTests: resetIntegrationTests() });
+	},
+
 	loadFromConfig: () => {
 		const config = useConfigStore.getState().config;
-		set({ formData: config });
+		set({ formData: config, integrationTests: resetIntegrationTests() });
 	},
 
 	saveSettings: () => {
 		const { formData } = get();
 		useConfigStore.getState().setConfig(formData);
+		set({ integrationTests: resetIntegrationTests() });
 	},
 
 	resetForm: () => {
 		const config = useConfigStore.getState().config;
 		set({
 			formData: config,
-			integrationTests: {
-				jira: { ...emptyTest },
-				gitlab: { ...emptyTest },
-				calendar: { ...emptyTest },
-				rescuetime: { ...emptyTest },
-			},
+			integrationTests: resetIntegrationTests(),
 		});
 	},
 
@@ -103,7 +109,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			}
 			const myself = (await myselfRes.json()) as { displayName?: string };
 			const duration = Math.round(performance.now() - startTime);
-			console.log(`[Test] Jira OK in ${duration}ms: ${myself.displayName}`);
+			logger.debug(`[Test] Jira OK in ${duration}ms: ${myself.displayName}`);
 
 			// Auto-detect worklog permissions
 			try {
@@ -153,7 +159,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				},
 			}));
 		} catch (error) {
-			console.error('[Test] Jira failed:', error);
+			logger.error('[Test] Jira failed:', error);
 			set((s) => ({
 				integrationTests: {
 					...s.integrationTests,
@@ -218,7 +224,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				},
 			}));
 		} catch (error) {
-			console.error('[Test] GitLab failed:', error);
+			logger.error('[Test] GitLab failed:', error);
 			set((s) => ({
 				integrationTests: {
 					...s.integrationTests,
@@ -286,7 +292,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				},
 			}));
 		} catch (error) {
-			console.error('[Test] Calendar failed:', error);
+			logger.error('[Test] Calendar failed:', error);
 			set((s) => ({
 				integrationTests: {
 					...s.integrationTests,
@@ -317,7 +323,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				throw new Error('RescueTime API key is required');
 			}
 
-			const today = new Date().toISOString().slice(0, 10);
+			const today = toLocalDateString(new Date());
 			const params = new URLSearchParams({
 				key: formData.rescueTimeApiKey,
 				perspective: 'interval',
@@ -353,7 +359,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				},
 			}));
 		} catch (error) {
-			console.error('[Test] RescueTime failed:', error);
+			logger.error('[Test] RescueTime failed:', error);
 			set((s) => ({
 				integrationTests: {
 					...s.integrationTests,

@@ -1,3 +1,4 @@
+import { parseIsoDateLocal } from '../../utils/date';
 import type React from 'react';
 import * as styles from './WeekNavigator.module.css';
 
@@ -10,8 +11,8 @@ type Props = {
 };
 
 function formatWeekLabel(start: string, end: string): string {
-	const s = new Date(start);
-	const e = new Date(end);
+	const s = parseIsoDateLocal(start);
+	const e = parseIsoDateLocal(end);
 	const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
 	const startStr = s.toLocaleDateString('en-US', opts);
 	const endStr = e.toLocaleDateString('en-US', {
@@ -35,6 +36,7 @@ export const WeekNavigator: React.FC<Props> = ({
 				className={styles.navButton}
 				onClick={onPrev}
 				title="Previous week"
+				aria-label="Previous week"
 			>
 				&#8249;
 			</button>
@@ -46,6 +48,7 @@ export const WeekNavigator: React.FC<Props> = ({
 				className={styles.navButton}
 				onClick={onNext}
 				title="Next week"
+				aria-label="Next week"
 			>
 				&#8250;
 			</button>

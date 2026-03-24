@@ -1,42 +1,7 @@
 import { create } from 'zustand';
-import { toLocalDateString } from '../react/utils/date';
-import { useConfigStore } from './useConfigStore';
+import type { EnrichedJiraWorklog } from '../../types/jira';
 
-// Minimal Jira types covering the fields we actually use
-export interface JiraUser {
-	displayName?: string;
-	emailAddress?: string;
-	accountId?: string;
-	active?: boolean;
-}
-
-export interface JiraIssue {
-	id: string;
-	key: string;
-	fields: {
-		summary: string;
-		[key: string]: unknown;
-	};
-}
-
-export interface JiraWorklog {
-	id?: string;
-	started?: string;
-	timeSpentSeconds?: number;
-	author?: JiraUser;
-	comment?: string | object;
-	[key: string]: unknown;
-}
-
-// Create an enriched type that includes the parent issue
-export type EnrichedJiraWorklog = JiraWorklog & {
-	issue: JiraIssue;
-};
-
-export type GroupedWorklogs = Record<
-	string,
-	Record<string, EnrichedJiraWorklog[]>
->;
+export type { EnrichedJiraWorklog, GroupedWorklogs } from '../../types/jira';
 
 interface TimesheetState {
 	// Navigation state
@@ -46,14 +11,6 @@ interface TimesheetState {
 
 	// Data state
 	data: EnrichedJiraWorklog[] | null;
-	isLoading: boolean;
-	error: string | null;
-
-	// Computed/derived state (cached)
-	issueSummaries: Record<string, string>;
-	users: string[];
-	grouped: GroupedWorklogs;
-	visibleEntries: [string, Record<string, EnrichedJiraWorklog[]>][];
 
 	// Navigation actions
 	setCurrentMonth: (year: number, monthZeroIndexed: number) => void;
@@ -63,80 +20,12 @@ interface TimesheetState {
 
 	// Data actions
 	setData: (data: EnrichedJiraWorklog[] | null) => void;
-	setLoading: (isLoading: boolean) => void;
-	setError: (error: string | null) => void;
-
-	// Helper to recompute derived state
-	recomputeDerived: () => void;
 }
 
-const computeDerivedState = (
-	data: EnrichedJiraWorklog[] | null,
-	selectedUser: string,
-	allowedUsersConfig: string,
-) => {
-	// Parse allowed users from comma-separated emails
-	const allowedEmails = allowedUsersConfig
-		? allowedUsersConfig
-				.split(',')
-				.map((email) => email.trim().toLowerCase())
-				.filter(Boolean)
-		: [];
-
-	// Compute issueSummaries
-	const issueSummaries: Record<string, string> = {};
-	if (data) {
-		for (const wl of data) {
-			if (wl.issue) {
-				issueSummaries[wl.issue.id] = wl.issue.fields.summary;
-			}
-		}
-	}
-
-	// Helper to check if a user is allowed
-	const isUserAllowed = (worklog: EnrichedJiraWorklog): boolean => {
-		if (allowedEmails.length === 0) return true; // No filter, allow all
-		const emailAddress = worklog.author?.emailAddress?.toLowerCase();
-		return emailAddress ? allowedEmails.includes(emailAddress) : false;
-	};
-
-	// Compute users (filtered by allowed list)
-	const users: string[] = [];
-	if (data) {
-		const unique: Record<string, true> = {};
-		for (const wl of data) {
-			if (wl.author?.displayName && isUserAllowed(wl)) {
-				unique[wl.author.displayName] = true;
-			}
-		}
-		users.push(...Object.keys(unique).sort((a, b) => a.localeCompare(b)));
-	}
-
-	// Compute grouped (filtered by allowed list)
-	const grouped: GroupedWorklogs = {};
-	for (const wl of data || []) {
-		if (wl.author?.displayName && isUserAllowed(wl)) {
-			const user = wl.author.displayName;
-			// Use local date to avoid timezone conversion issues
-			const date = toLocalDateString(wl.started as string);
-			if (!grouped[user]) grouped[user] = {};
-			if (!grouped[user][date]) grouped[user][date] = [];
-			grouped[user][date].push(wl);
-		}
-	}
-
-	// Compute visibleEntries
-	const visibleEntries = Object.entries(grouped).filter(
-		([user]) => selectedUser === '' || user === selectedUser,
-	);
-
-	return { issueSummaries, users, grouped, visibleEntries };
-};
-
 export const useTimesheetStore = create<TimesheetState>((set, get) => {
-	const nowUtc = new Date();
-	const initialYear = nowUtc.getUTCFullYear();
-	const initialMonth = nowUtc.getUTCMonth();
+	const now = new Date();
+	const initialYear = now.getFullYear();
+	const initialMonth = now.getMonth();
 
 	return {
 		// Initial navigation state
@@ -146,14 +35,6 @@ export const useTimesheetStore = create<TimesheetState>((set, get) => {
 
 		// Initial data state
 		data: null,
-		isLoading: false,
-		error: null,
-
-		// Initial derived state
-		issueSummaries: {},
-		users: [],
-		grouped: {},
-		visibleEntries: [],
 
 		// Navigation actions
 		setCurrentMonth: (year: number, monthZeroIndexed: number) => {
@@ -175,34 +56,12 @@ export const useTimesheetStore = create<TimesheetState>((set, get) => {
 		},
 
 		setSelectedUser: (user: string) => {
-			const { data } = get();
-			const allowedUsers = useConfigStore.getState().config.allowedUsers;
-			const derived = computeDerivedState(data, user, allowedUsers);
-			set({ selectedUser: user, ...derived });
+			set({ selectedUser: user });
 		},
 
 		// Data actions
 		setData: (data: EnrichedJiraWorklog[] | null) => {
-			const { selectedUser } = get();
-			const allowedUsers = useConfigStore.getState().config.allowedUsers;
-			const derived = computeDerivedState(data, selectedUser, allowedUsers);
-			set({ data, ...derived });
-		},
-
-		setLoading: (isLoading: boolean) => {
-			set({ isLoading });
-		},
-
-		setError: (error: string | null) => {
-			set({ error });
-		},
-
-		// Recompute derived state (useful after manual data updates)
-		recomputeDerived: () => {
-			const { data, selectedUser } = get();
-			const allowedUsers = useConfigStore.getState().config.allowedUsers;
-			const derived = computeDerivedState(data, selectedUser, allowedUsers);
-			set(derived);
+			set({ data });
 		},
 	};
 });

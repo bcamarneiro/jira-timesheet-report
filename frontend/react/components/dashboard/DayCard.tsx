@@ -2,6 +2,7 @@ import { memo, useState } from 'react';
 import type { DaySummary } from '../../../../types/Suggestion';
 import { useDashboardStore } from '../../../stores/useDashboardStore';
 import { useWorklogOperations } from '../../hooks/useWorklogOperations';
+import { parseIsoDateLocal, toLocalDateString } from '../../utils/date';
 import { formatHours } from '../../utils/format';
 import { toast } from '../ui/Toast';
 import * as styles from './DayCard.module.css';
@@ -25,7 +26,7 @@ const DAY_NAMES = [
 ];
 
 function formatDate(dateStr: string): string {
-	const d = new Date(dateStr);
+	const d = parseIsoDateLocal(dateStr);
 	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -50,26 +51,32 @@ export const DayCard = memo<Props>(function DayCard({
 	const { createMultipleWorklogs, deleteWorklog } = useWorklogOperations();
 	const [isBatchLogging, setIsBatchLogging] = useState(false);
 	const activeSuggestions = day.suggestions.filter((s) => !s.logged);
+	const loggableSuggestions = activeSuggestions.filter((s) => !!s.issueKey);
 	const loggedSuggestions = day.suggestions.filter((s) => s.logged);
-	const isToday = day.date === new Date().toISOString().slice(0, 10);
+	const isToday = day.date === toLocalDateString(new Date());
 	const rt = day.rescueTime;
 	const showFillButton = day.gapSeconds > 0 && activeSuggestions.length > 0;
 
 	const handleLogAll = async () => {
 		setIsBatchLogging(true);
 		try {
-			const params = activeSuggestions.map((s) => ({
+			const params = loggableSuggestions.map((s) => ({
 				issueKey: s.issueKey,
 				timeSpent: s.suggestedTimeSpent,
 				comment: '',
 				started: `${s.date}T09:00`,
 			}));
 
+			if (params.length === 0) {
+				toast.error('No mapped suggestions available to log');
+				return;
+			}
+
 			const result = await createMultipleWorklogs(params);
 
 			// Mark successful suggestions as logged
 			const failedKeys = new Set(result.failed);
-			const successIds = activeSuggestions
+			const successIds = loggableSuggestions
 				.filter((s) => !failedKeys.has(s.issueKey))
 				.map((s) => s.id);
 
@@ -137,6 +144,7 @@ export const DayCard = memo<Props>(function DayCard({
 							type="button"
 							className={styles.fillButton}
 							onClick={() => fillDayGap(day.date)}
+							aria-label={`Fill remaining gap for ${DAY_NAMES[day.dayOfWeek]}`}
 						>
 							Fill day
 						</button>
@@ -146,7 +154,13 @@ export const DayCard = memo<Props>(function DayCard({
 							type="button"
 							className={styles.logAllButton}
 							onClick={handleLogAll}
-							disabled={isBatchLogging}
+							disabled={isBatchLogging || loggableSuggestions.length === 0}
+							aria-label={`Log all mapped suggestions for ${DAY_NAMES[day.dayOfWeek]}`}
+							title={
+								loggableSuggestions.length === 0
+									? 'Map suggestions to Jira issues before logging all'
+									: undefined
+							}
 						>
 							{isBatchLogging ? 'Logging...' : 'Log All'}
 						</button>

@@ -1,9 +1,8 @@
 import type React from 'react';
 import { useState } from 'react';
 
-import type { JiraWorklog } from '../../../types/JiraWorklog';
+import type { EnrichedJiraWorklog } from '../../../types/jira';
 import { useConfigStore } from '../../stores/useConfigStore';
-import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useDayCalculation } from '../hooks/useDayCalculation';
 import { useWorklogOperations } from '../hooks/useWorklogOperations';
 import * as styles from './DayCell.module.css';
@@ -17,7 +16,8 @@ import { WorklogForm } from './worklog/WorklogForm';
 type Props = {
 	iso: string;
 	dayNumber: number;
-	worklogs: JiraWorklog[];
+	worklogs: EnrichedJiraWorklog[];
+	issueSummaries: Record<string, string>;
 	isWeekend: boolean;
 	isToday: boolean;
 };
@@ -26,6 +26,7 @@ export const DayCell: React.FC<Props> = ({
 	iso,
 	dayNumber,
 	worklogs,
+	issueSummaries,
 	isWeekend,
 	isToday,
 }) => {
@@ -143,6 +144,7 @@ export const DayCell: React.FC<Props> = ({
 				</div>
 				<WorklogList
 					worklogs={worklogs}
+					issueSummaries={issueSummaries}
 					onEdit={canEdit ? handleEditWorklog : undefined}
 					onDelete={canDelete ? (wl) => setWorklogToDelete(wl) : undefined}
 				/>

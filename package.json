@@ -1,7 +1,7 @@
 {
-	"name": "timetracking",
+	"name": "jira-timesheet-report",
 	"version": "1.0.0",
-	"description": "",
+	"description": "Zero-backend Jira dashboard for personal worklog triage, team reporting, and exports.",
 	"main": "frontend/main.ts",
 	"scripts": {
 		"start": "rspack dev",
