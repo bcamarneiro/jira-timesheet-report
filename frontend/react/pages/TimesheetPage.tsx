@@ -1,12 +1,16 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { TeamMemberSummary } from '../../services/teamService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTeamStore } from '../../stores/useTeamStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
+import { useUserDataStore, type ReportPreset } from '../../stores/useUserDataStore';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
+import { ManagerInsightsPanel } from '../components/reports/ManagerInsightsPanel';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { OverviewTable } from '../components/OverviewTable';
+import { ReportsControlPanel } from '../components/reports/ReportsControlPanel';
 import { TimesheetGrid } from '../components/TimesheetGrid';
 import { TeamStatsCards } from '../components/team/TeamStatsCards';
 import { TimesheetStatsCards } from '../components/timesheet/TimesheetStatsCards';
@@ -15,15 +19,24 @@ import { Button } from '../components/ui/Button';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { Spinner } from '../components/ui/Spinner';
+import { toast } from '../components/ui/Toast';
+import { useReportsURLState } from '../hooks/useReportsURLState';
 import { useDownload } from '../hooks/useDownload';
+import { useReportsTrendData } from '../hooks/useReportsTrendData';
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
-import { useTimesheetURLSync } from '../hooks/useTimesheetURLSync';
 import { addDaysToIsoDate, monthLabel, parseIsoDateLocal } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
 import { formatHours } from '../utils/format';
 import { deriveMonthlyReportState } from '../utils/monthlyReport';
+import { validateReportsConsistency } from '../utils/reportConsistency';
+import {
+	buildReportsSnapshotHtml,
+	buildReportsSnapshotMarkdown,
+} from '../utils/reportSnapshots';
 import { buildTeamCsv } from '../utils/teamCsvExport';
+import { monthWorklogsQueryKey } from '../hooks/useMonthWorklogs';
+import { fetchMonthWorklogs } from '../../services/monthWorklogService';
 import * as styles from './TimesheetPage.module.css';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
 
@@ -94,6 +107,44 @@ function sumMonthlyHours(
 type SortField = 'name' | 'total' | 'gap';
 type SortDirection = 'asc' | 'desc';
 type ViewMode = 'monthly' | 'weekly';
+type ReportsValidationState = {
+	status: 'idle' | 'checking' | 'consistent' | 'inconsistent' | 'error';
+	message: string;
+	checkedAt: string | null;
+	mismatches: Array<{
+		displayName: string;
+		weeklySeconds: number;
+		monthlySeconds: number;
+	}>;
+};
+
+function slugifyLabel(value: string): string {
+	return value
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+}
+
+function includesSearch(haystack: string, query: string): boolean {
+	return haystack.toLowerCase().includes(query);
+}
+
+function buildIdleValidationState(
+	viewMode: ViewMode,
+	weekStart: string,
+	weekEnd: string,
+): ReportsValidationState {
+	return {
+		status: 'idle',
+		message:
+			viewMode === 'weekly'
+				? `Ready to validate ${weekStart} to ${weekEnd} against the monthly worklog source.`
+				: 'Switch to the Weekly view to validate the current week against monthly totals.',
+		checkedAt: null,
+		mismatches: [],
+	};
+}
 
 function TeamMemberRow({
 	member,
@@ -200,25 +251,31 @@ function SortIndicator({
 // --- Main component ---
 
 export const TimesheetPage: React.FC = () => {
+	const queryClient = useQueryClient();
 	const [viewMode, setViewMode] = useState<ViewMode>('weekly');
 	const [sortField, setSortField] = useState<SortField>('name');
 	const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+	const [searchQuery, setSearchQuery] = useState('');
+	const [onlyAttentionNeeded, setOnlyAttentionNeeded] = useState(false);
+	const [managerMode, setManagerMode] = useState(false);
+	const [trendWeeks, setTrendWeeks] = useState(6);
 
 	// Only fetch data for the active view
 	const { isLoading, errorMessage } = useTimesheetDataFetcher({
 		enabled: viewMode === 'monthly',
 	});
 
-	const { handleSetSelectedUser } = useTimesheetURLSync();
-
 	// Monthly view state
 	const currentYear = useTimesheetStore((state) => state.currentYear);
 	const currentMonth = useTimesheetStore((state) => state.currentMonth);
 	const selectedUser = useTimesheetStore((state) => state.selectedUser);
+	const setSelectedUser = useTimesheetStore((state) => state.setSelectedUser);
 	const data = useTimesheetStore((state) => state.data);
 	const goPrevMonth = useTimesheetStore((state) => state.goPrevMonth);
 	const goNextMonth = useTimesheetStore((state) => state.goNextMonth);
-	const allowedUsers = useConfigStore((state) => state.config.allowedUsers);
+	const config = useConfigStore((state) => state.config);
+	const jiraDomain = config.jiraHost;
+	const allowedUsers = config.allowedUsers;
 
 	// Weekly view state
 	const weekStart = useTeamStore((s) => s.weekStart);
@@ -233,18 +290,89 @@ export const TimesheetPage: React.FC = () => {
 		error: teamError,
 	} = useTeamData(weekStart, weekEnd, { enabled: viewMode === 'weekly' });
 
-	const jiraDomain = useConfigStore((state) => state.config.jiraHost);
-
 	const { downloadUser, downloadAll } = useDownload();
+	const reportPresets = useUserDataStore((state) => state.reportPresets);
+	const saveReportPreset = useUserDataStore((state) => state.saveReportPreset);
+	const removeReportPreset = useUserDataStore((state) => state.removeReportPreset);
 	const { issueSummaries, users, grouped, visibleEntries } = useMemo(
 		() => deriveMonthlyReportState(data, selectedUser, allowedUsers),
 		[data, selectedUser, allowedUsers],
 	);
+	const [validationState, setValidationState] = useState<ReportsValidationState>(
+		() => buildIdleValidationState(viewMode, weekStart, weekEnd),
+	);
+
+	useReportsURLState({
+		viewMode,
+		setViewMode,
+		searchQuery,
+		setSearchQuery,
+		onlyAttentionNeeded,
+		setOnlyAttentionNeeded,
+		managerMode,
+		setManagerMode,
+		trendWeeks,
+		setTrendWeeks,
+		sortField,
+		setSortField,
+		sortDirection,
+		setSortDirection,
+	});
+	const {
+		data: trendModel,
+		isLoading: trendsLoading,
+		error: trendsError,
+	} = useReportsTrendData(weekStart, trendWeeks, {
+		enabled: viewMode === 'weekly' && managerMode,
+	});
 
 	const weekdays = getWeekdays(weekStart);
+	const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+	const allMonthlyEntries = useMemo(
+		() => Object.entries(grouped),
+		[grouped],
+	);
+	const filteredTeamMembers = useMemo(
+		() =>
+			teamMembers.filter((member) => {
+				const matchesQuery =
+					normalizedSearchQuery.length === 0 ||
+					includesSearch(member.displayName, normalizedSearchQuery) ||
+					includesSearch(member.email, normalizedSearchQuery);
+				if (!matchesQuery) return false;
+				if (onlyAttentionNeeded && member.gapSeconds === 0) return false;
+				return true;
+			}),
+		[teamMembers, normalizedSearchQuery, onlyAttentionNeeded],
+	);
+	const isValidUser = selectedUser !== '' && users.includes(selectedUser);
+	const filteredUsers = useMemo(() => {
+		if (normalizedSearchQuery.length === 0) return users;
+		return users.filter((user) => includesSearch(user, normalizedSearchQuery));
+	}, [users, normalizedSearchQuery]);
+	const selectableUsers = useMemo(() => {
+		if (isValidUser && !filteredUsers.includes(selectedUser)) {
+			return [selectedUser, ...filteredUsers];
+		}
+		return filteredUsers;
+	}, [filteredUsers, isValidUser, selectedUser]);
+	const filteredVisibleEntries = useMemo(() => {
+		if (isValidUser) {
+			return visibleEntries;
+		}
+
+		if (normalizedSearchQuery.length === 0) {
+			return allMonthlyEntries;
+		}
+
+		return allMonthlyEntries.filter(([user]) =>
+			includesSearch(user, normalizedSearchQuery),
+		);
+	}, [allMonthlyEntries, isValidUser, normalizedSearchQuery, visibleEntries]);
+	const selectedEntry = isValidUser ? grouped[selectedUser] : undefined;
 
 	const sortedMembers = useMemo(() => {
-		const sorted = [...teamMembers];
+		const sorted = [...filteredTeamMembers];
 		sorted.sort((a, b) => {
 			let cmp: number;
 			switch (sortField) {
@@ -260,7 +388,7 @@ export const TimesheetPage: React.FC = () => {
 			return sortDirection === 'desc' ? -cmp : cmp;
 		});
 		return sorted;
-	}, [teamMembers, sortField, sortDirection]);
+	}, [filteredTeamMembers, sortField, sortDirection]);
 
 	const handleSort = (field: SortField) => {
 		if (sortField === field) {
@@ -272,11 +400,11 @@ export const TimesheetPage: React.FC = () => {
 	};
 
 	const handleUserChange = (value: string) => {
-		handleSetSelectedUser(value);
+		setSelectedUser(value);
 	};
 
 	const handleMemberClick = (name: string) => {
-		handleSetSelectedUser(name);
+		setSelectedUser(name);
 		setViewMode('monthly');
 	};
 
@@ -286,7 +414,7 @@ export const TimesheetPage: React.FC = () => {
 
 	const handleDownloadAll = () => {
 		downloadAll(
-			visibleEntries.map(([user]) => user),
+			filteredVisibleEntries.map(([user]) => user),
 			grouped,
 			issueSummaries,
 			currentYear,
@@ -298,6 +426,7 @@ export const TimesheetPage: React.FC = () => {
 		const csv = buildTeamCsv(sortedMembers, weekdays);
 		const filename = `team-report-${weekStart}.csv`;
 		downloadAsFile(csv, filename, 'text/csv;charset=utf-8');
+		toast.success('Weekly report exported');
 	};
 
 	// Keyboard shortcuts for month navigation (only in monthly view)
@@ -332,29 +461,234 @@ export const TimesheetPage: React.FC = () => {
 		return () => window.removeEventListener('keydown', handleKeyDown);
 	}, [handleKeyDown]);
 
-	const isValidUser = selectedUser !== '' && users.includes(selectedUser);
-	const selectedEntry = visibleEntries.find(([user]) => user === selectedUser);
-	const hasNoData = !isLoading && data && visibleEntries.length === 0;
+	useEffect(() => {
+		setValidationState(buildIdleValidationState(viewMode, weekStart, weekEnd));
+	}, [viewMode, weekStart, weekEnd]);
+
+	const handleClearFilters = () => {
+		setSearchQuery('');
+		setOnlyAttentionNeeded(false);
+		setManagerMode(false);
+		setTrendWeeks(6);
+		setSortField('name');
+		setSortDirection('asc');
+		setSelectedUser('');
+		toast.info('Reports filters cleared');
+	};
+
+	const handleSavePreset = (label: string) => {
+		const trimmedLabel = label.trim();
+		if (!trimmedLabel) return;
+
+		saveReportPreset({
+			id: `${slugifyLabel(trimmedLabel) || 'preset'}-${Date.now().toString(36)}`,
+			label: trimmedLabel,
+			viewMode,
+			searchQuery,
+			onlyAttentionNeeded,
+			managerMode,
+			trendWeeks,
+			sortField,
+			sortDirection,
+			selectedUser,
+		});
+		toast.success(`Saved preset "${trimmedLabel}"`);
+	};
+
+	const handleApplyPreset = (preset: ReportPreset) => {
+		setViewMode(preset.viewMode);
+		setSearchQuery(preset.searchQuery);
+		setOnlyAttentionNeeded(preset.onlyAttentionNeeded);
+		setManagerMode(preset.managerMode);
+		setTrendWeeks(preset.trendWeeks);
+		setSortField(preset.sortField);
+		setSortDirection(preset.sortDirection);
+		setSelectedUser(preset.selectedUser);
+		toast.success(`Applied preset "${preset.label}"`);
+	};
+
+	const handleRemovePreset = (id: string) => {
+		const preset = reportPresets.find((item) => item.id === id);
+		removeReportPreset(id);
+		toast.success(
+			preset ? `Removed preset "${preset.label}"` : 'Removed report preset',
+		);
+	};
+
+	const handleCopyShareLink = async () => {
+		try {
+			await navigator.clipboard.writeText(window.location.href);
+			toast.success('Share link copied to clipboard');
+		} catch {
+			toast.error('Failed to copy share link');
+		}
+	};
+
+	const buildSnapshotInput = () =>
+		viewMode === 'weekly'
+			? {
+					viewMode: 'weekly' as const,
+					jiraHost: jiraDomain,
+					weekStart,
+					weekEnd,
+					searchQuery,
+					onlyAttentionNeeded,
+					managerMode,
+					trendWeeks,
+					sortField,
+					sortDirection,
+					members: sortedMembers,
+					validationState,
+					trendModel,
+				}
+			: {
+					viewMode: 'monthly' as const,
+					jiraHost: jiraDomain,
+					monthLabel: monthLabel(currentYear, currentMonth),
+					year: currentYear,
+					monthZeroIndexed: currentMonth,
+					searchQuery,
+					selectedUser,
+					entries: filteredVisibleEntries,
+				};
+
+	const handleExportSnapshotHtml = () => {
+		const html = buildReportsSnapshotHtml(buildSnapshotInput());
+		const filename =
+			viewMode === 'weekly'
+				? `reports-snapshot-week-${weekStart}.html`
+				: `reports-snapshot-month-${currentYear}-${String(currentMonth + 1).padStart(2, '0')}.html`;
+		downloadAsFile(html, filename, 'text/html;charset=utf-8');
+		toast.success('Read-only HTML snapshot exported');
+	};
+
+	const handleExportSnapshotMarkdown = () => {
+		const markdown = buildReportsSnapshotMarkdown(buildSnapshotInput());
+		const filename =
+			viewMode === 'weekly'
+				? `reports-snapshot-week-${weekStart}.md`
+				: `reports-snapshot-month-${currentYear}-${String(currentMonth + 1).padStart(2, '0')}.md`;
+		downloadAsFile(markdown, filename, 'text/markdown;charset=utf-8');
+		toast.success('Read-only Markdown snapshot exported');
+	};
+
+	const handleValidateConsistency = async () => {
+		if (viewMode !== 'weekly') {
+			toast.info('Switch to Weekly to validate weekly and monthly totals');
+			return;
+		}
+
+		setValidationState({
+			status: 'checking',
+			message: `Validating ${weekStart} to ${weekEnd} against monthly worklogs...`,
+			checkedAt: null,
+			mismatches: [],
+		});
+
+		try {
+			const [startYear, startMonthStr] = weekStart.split('-').map(Number);
+			const [endYear, endMonthStr] = weekEnd.split('-').map(Number);
+			const monthPairs = new Map<string, { year: number; month: number }>();
+
+			for (const [year, month] of [
+				[startYear, startMonthStr - 1],
+				[endYear, endMonthStr - 1],
+			]) {
+				monthPairs.set(`${year}-${month}`, { year, month });
+			}
+
+			const results = await Promise.all(
+				[...monthPairs.values()].map(({ year, month }) =>
+					queryClient.fetchQuery({
+						queryKey: monthWorklogsQueryKey(
+							year,
+							month,
+							config.jiraHost,
+							config.corsProxy,
+							false,
+							'',
+						),
+						queryFn: ({ signal }) =>
+							fetchMonthWorklogs(config, year, month, {}, signal),
+						staleTime: 15 * 60 * 1000,
+					}),
+				),
+			);
+			const result = validateReportsConsistency(
+				teamMembers,
+				results.flat(),
+				weekStart,
+				weekEnd,
+				allowedUsers,
+			);
+			const checkedAt = new Date().toLocaleString();
+
+			if (result.matches) {
+				setValidationState({
+					status: 'consistent',
+					message: `Weekly and monthly totals matched for ${result.checkedUsers} user${result.checkedUsers === 1 ? '' : 's'}.`,
+					checkedAt,
+					mismatches: [],
+				});
+				toast.success('Weekly and monthly totals are consistent');
+				return;
+			}
+
+			setValidationState({
+				status: 'inconsistent',
+				message: `Found ${result.mismatches.length} mismatch${result.mismatches.length === 1 ? '' : 'es'} between weekly and monthly totals.`,
+				checkedAt,
+				mismatches: result.mismatches,
+			});
+			toast.error('Reports validation found mismatched totals');
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : 'Validation failed';
+			setValidationState({
+				status: 'error',
+				message,
+				checkedAt: new Date().toLocaleString(),
+				mismatches: [],
+			});
+			toast.error(message);
+		}
+	};
+
+	const hasNoData = !isLoading && data && allMonthlyEntries.length === 0;
+	const hasNoFilteredMonthlyResults =
+		!isLoading &&
+		!!data &&
+		allMonthlyEntries.length > 0 &&
+		filteredVisibleEntries.length === 0;
+	const hasNoFilteredWeeklyResults =
+		!teamLoading &&
+		!teamError &&
+		teamMembers.length > 0 &&
+		sortedMembers.length === 0;
 	const monthlySummary = useMemo(() => {
 		if (!data || viewMode !== 'monthly') return null;
 		return {
-			userCount: visibleEntries.length,
-			totalSeconds: sumMonthlyHours(visibleEntries, currentYear, currentMonth),
+			userCount: filteredVisibleEntries.length,
+			totalSeconds: sumMonthlyHours(
+				filteredVisibleEntries,
+				currentYear,
+				currentMonth,
+			),
 		};
-	}, [data, viewMode, visibleEntries, currentYear, currentMonth]);
+	}, [data, viewMode, filteredVisibleEntries, currentYear, currentMonth]);
 	const weeklySummary = useMemo(() => {
-		if (viewMode !== 'weekly' || teamMembers.length === 0) return null;
+		if (viewMode !== 'weekly' || sortedMembers.length === 0) return null;
 		return {
-			totalSeconds: teamMembers.reduce(
+			totalSeconds: sortedMembers.reduce(
 				(sum, member) => sum + member.totalSeconds,
 				0,
 			),
-			totalGapSeconds: teamMembers.reduce(
+			totalGapSeconds: sortedMembers.reduce(
 				(sum, member) => sum + member.gapSeconds,
 				0,
 			),
 		};
-	}, [viewMode, teamMembers]);
+	}, [viewMode, sortedMembers]);
 
 	if (errorMessage && viewMode === 'monthly') {
 		return (
@@ -412,8 +746,8 @@ export const TimesheetPage: React.FC = () => {
 				{viewMode === 'monthly' ? (
 					<>
 						<UserSelector
-							users={users}
-							value={selectedUser}
+							users={selectableUsers}
+							value={isValidUser ? selectedUser : ''}
 							onChange={handleUserChange}
 						/>
 						<MonthNavigator
@@ -434,18 +768,54 @@ export const TimesheetPage: React.FC = () => {
 
 				<div className={styles.toolbarRight}>
 					{jiraDomain && <span className={styles.context}>{jiraDomain}</span>}
-					{viewMode === 'monthly' && visibleEntries.length > 0 && (
+					{viewMode === 'monthly' && filteredVisibleEntries.length > 0 && (
 						<Button variant="secondary" onClick={handleDownloadAll}>
 							Export All
 						</Button>
 					)}
-					{viewMode === 'weekly' && teamMembers.length > 0 && (
+					{viewMode === 'weekly' && sortedMembers.length > 0 && (
 						<Button variant="secondary" onClick={handleExportTeamCsv}>
 							Export CSV
 						</Button>
 					)}
 				</div>
 			</div>
+
+			<ReportsControlPanel
+				viewMode={viewMode}
+				searchQuery={searchQuery}
+				onlyAttentionNeeded={onlyAttentionNeeded}
+				managerMode={managerMode}
+				trendWeeks={trendWeeks}
+				sortField={sortField}
+				sortDirection={sortDirection}
+				presets={reportPresets}
+				onSearchChange={setSearchQuery}
+				onOnlyAttentionNeededChange={setOnlyAttentionNeeded}
+				onManagerModeChange={setManagerMode}
+				onTrendWeeksChange={setTrendWeeks}
+				onClearFilters={handleClearFilters}
+				onSavePreset={handleSavePreset}
+				onApplyPreset={handleApplyPreset}
+				onRemovePreset={handleRemovePreset}
+				onCopyShareLink={handleCopyShareLink}
+				onExportSnapshotHtml={handleExportSnapshotHtml}
+				onExportSnapshotMarkdown={handleExportSnapshotMarkdown}
+				onValidateConsistency={handleValidateConsistency}
+				validationState={validationState}
+				canValidate={
+					viewMode === 'weekly' &&
+					!!config.jiraHost &&
+					!!config.apiToken &&
+					!teamLoading &&
+					!teamError
+				}
+				canExportSnapshot={
+					viewMode === 'weekly'
+						? sortedMembers.length > 0
+						: filteredVisibleEntries.length > 0
+				}
+			/>
 
 			{/* ---- WEEKLY VIEW ---- */}
 			{viewMode === 'weekly' && (
@@ -489,7 +859,31 @@ export const TimesheetPage: React.FC = () => {
 						</div>
 					)}
 
-					{teamMembers.length > 0 && (
+					{managerMode && teamMembers.length > 0 ? (
+						<ManagerInsightsPanel
+							trendWeeks={trendWeeks}
+							onTrendWeeksChange={setTrendWeeks}
+							currentMembers={teamMembers}
+							model={trendModel}
+							isLoading={trendsLoading}
+							errorMessage={
+								trendsError instanceof Error ? trendsError.message : undefined
+							}
+						/>
+					) : null}
+
+					{hasNoFilteredWeeklyResults && (
+						<div className={styles.emptyState}>
+							<div className={styles.emptyIcon}>&#128269;</div>
+							<div className={styles.emptyTitle}>No team members match these filters</div>
+							<div className={styles.emptyDescription}>
+								Try clearing the people filter or disable attention-only mode to
+								see the full weekly report again.
+							</div>
+						</div>
+					)}
+
+					{teamMembers.length > 0 && !hasNoFilteredWeeklyResults && (
 						<>
 							{teamLoading && (
 								<div className={styles.refetching}>
@@ -497,7 +891,7 @@ export const TimesheetPage: React.FC = () => {
 									<span>Updating...</span>
 								</div>
 							)}
-							<TeamStatsCards teamMembers={teamMembers} />
+							<TeamStatsCards teamMembers={sortedMembers} />
 
 							<div className={styles.tableWrapper}>
 								<table className={styles.table}>
@@ -564,14 +958,14 @@ export const TimesheetPage: React.FC = () => {
 												weekdays={weekdays}
 												onMemberClick={handleMemberClick}
 											/>
-										))}
-										<SummaryRow members={teamMembers} weekdays={weekdays} />
+											))}
+										<SummaryRow members={sortedMembers} weekdays={weekdays} />
 									</tbody>
 								</table>
 							</div>
 
-							{teamMembers.some((m) => m.targetSeconds > 0) &&
-								teamMembers.every((m) => m.gapSeconds === 0) && (
+							{sortedMembers.some((m) => m.targetSeconds > 0) &&
+								sortedMembers.every((m) => m.gapSeconds === 0) && (
 									<div className={styles.allCompliant}>
 										<div className={styles.allCompliantIcon}>&#10003;</div>
 										<div className={styles.allCompliantTitle}>
@@ -630,15 +1024,27 @@ export const TimesheetPage: React.FC = () => {
 						</div>
 					)}
 
+					{hasNoFilteredMonthlyResults && (
+						<div className={styles.emptyState}>
+							<div className={styles.emptyIcon}>&#128269;</div>
+							<div className={styles.emptyTitle}>No monthly users match this filter</div>
+							<div className={styles.emptyDescription}>
+								Try clearing the people filter or pick a different user to bring
+								results back into view.
+							</div>
+						</div>
+					)}
+
 					{data &&
 						!hasNoData &&
+						!hasNoFilteredMonthlyResults &&
 						(isValidUser ? (
 							<ErrorBoundary fallbackMessage="Failed to render this user's timesheet.">
 								{selectedEntry ? (
 									<TimesheetGrid
-										key={selectedEntry[0]}
-										user={selectedEntry[0]}
-										days={selectedEntry[1]}
+										key={selectedUser}
+										user={selectedUser}
+										days={selectedEntry}
 										issueSummaries={issueSummaries}
 										onDownloadUser={handleDownloadUser}
 									/>
@@ -655,19 +1061,19 @@ export const TimesheetPage: React.FC = () => {
 						) : (
 							<>
 								<TimesheetStatsCards
-									entries={visibleEntries}
+									entries={filteredVisibleEntries}
 									year={currentYear}
 									monthZeroIndexed={currentMonth}
 								/>
-								{visibleEntries.length > 1 && (
+								{filteredVisibleEntries.length > 1 && (
 									<OverviewTable
-										entries={visibleEntries}
+										entries={filteredVisibleEntries}
 										year={currentYear}
 										monthZeroIndexed={currentMonth}
 										onUserClick={handleUserChange}
 									/>
 								)}
-								{visibleEntries.map(([user, days]) => (
+								{filteredVisibleEntries.map(([user, days]) => (
 									<ErrorBoundary
 										key={user}
 										fallbackMessage={`Failed to render timesheet for ${user}.`}

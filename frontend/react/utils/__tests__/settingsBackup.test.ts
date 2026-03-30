@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createSettingsBackup, parseSettingsBackup } from '../settingsBackup';
+import {
+	createSettingsBackup,
+	createSettingsSharePack,
+	parseSettingsBackup,
+} from '../settingsBackup';
 
 const defaultConfig = {
 	jiraHost: '',
@@ -26,7 +30,8 @@ describe('settingsBackup', () => {
 			{ pattern: 'Standup', issueKey: 'PROJ-1' },
 		]);
 
-		expect(backup.version).toBe(1);
+		expect(backup.version).toBe(2);
+		expect(backup.kind).toBe('full-backup');
 		expect(backup.config).toEqual(defaultConfig);
 		expect(backup.calendarMappings).toEqual([
 			{ pattern: 'Standup', issueKey: 'PROJ-1' },
@@ -35,7 +40,8 @@ describe('settingsBackup', () => {
 
 	it('parses and normalizes imported backups', () => {
 		const raw = JSON.stringify({
-			version: 1,
+			version: 2,
+			kind: 'full-backup',
 			config: {
 				jiraHost: ' jira.example.com ',
 				email: ' user@example.com ',
@@ -58,6 +64,7 @@ describe('settingsBackup', () => {
 
 		const parsed = parseSettingsBackup(raw, defaultConfig);
 
+		expect(parsed.kind).toBe('full-backup');
 		expect(parsed.config.jiraHost).toBe('jira.example.com');
 		expect(parsed.config.email).toBe('user@example.com');
 		expect(parsed.config.apiToken).toBe('secret');
@@ -71,6 +78,47 @@ describe('settingsBackup', () => {
 		]);
 		expect(parsed.calendarMappings).toEqual([
 			{ pattern: 'Standup', issueKey: 'PROJ-10', issueSummary: undefined },
+		]);
+	});
+
+	it('creates share packs without secrets and preserves local secrets on import', () => {
+		const currentConfig = {
+			...defaultConfig,
+			email: 'me@example.com',
+			apiToken: 'jira-token',
+			corsProxy: 'http://localhost:8081',
+			jiraHost: 'jira.example.com',
+			jqlFilter: 'project = APP',
+			allowedUsers: 'one@example.com',
+			gitlabHost: 'gitlab.example.com',
+			gitlabToken: 'gitlab-token',
+			rescueTimeApiKey: 'rescue-token',
+			theme: 'dark' as const,
+			timeRounding: '30m' as const,
+		};
+		const sharePack = createSettingsSharePack(currentConfig, [
+			{ pattern: 'Standup', issueKey: 'APP-1' },
+		]);
+
+		expect(sharePack.kind).toBe('share-pack');
+		expect(sharePack.config).toEqual({
+			jiraHost: 'jira.example.com',
+			jqlFilter: 'project = APP',
+			allowedUsers: 'one@example.com',
+			gitlabHost: 'gitlab.example.com',
+			calendarFeeds: [],
+		});
+
+		const parsed = parseSettingsBackup(JSON.stringify(sharePack), currentConfig);
+
+		expect(parsed.kind).toBe('share-pack');
+		expect(parsed.config.email).toBe('me@example.com');
+		expect(parsed.config.apiToken).toBe('jira-token');
+		expect(parsed.config.corsProxy).toBe('http://localhost:8081');
+		expect(parsed.config.theme).toBe('dark');
+		expect(parsed.config.jqlFilter).toBe('project = APP');
+		expect(parsed.calendarMappings).toEqual([
+			{ pattern: 'Standup', issueKey: 'APP-1', issueSummary: undefined },
 		]);
 	});
 

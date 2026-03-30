@@ -1,12 +1,31 @@
-import type { CalendarFeed, Config } from '../../stores/useConfigStore';
+import {
+	createDefaultConfig,
+	normalizeConfig,
+	type CalendarFeed,
+	type Config,
+} from '../../stores/useConfigStore';
 import type { CalendarMapping } from '../../stores/useUserDataStore';
 
-export interface SettingsBackup {
-	version: 1;
+type SettingsTransferKind = 'full-backup' | 'share-pack';
+
+interface SettingsTransferBase {
+	version: 2;
+	kind: SettingsTransferKind;
 	exportedAt: string;
-	config: Config;
 	calendarMappings: CalendarMapping[];
 }
+
+export interface SettingsBackup extends SettingsTransferBase {
+	kind: 'full-backup';
+	config: Config;
+}
+
+export interface SettingsSharePack extends SettingsTransferBase {
+	kind: 'share-pack';
+	config: Partial<Config>;
+}
+
+export type SettingsTransferFile = SettingsBackup | SettingsSharePack;
 
 function normalizeCalendarFeed(
 	feed: Partial<CalendarFeed>,
@@ -42,14 +61,38 @@ function normalizeCalendarMapping(
 	};
 }
 
+function createSharePackConfig(config: Config): Partial<Config> {
+	return {
+		jiraHost: config.jiraHost,
+		jqlFilter: config.jqlFilter,
+		allowedUsers: config.allowedUsers,
+		gitlabHost: config.gitlabHost,
+		calendarFeeds: config.calendarFeeds,
+	};
+}
+
 export function createSettingsBackup(
 	config: Config,
 	calendarMappings: CalendarMapping[],
 ): SettingsBackup {
 	return {
-		version: 1,
+		version: 2,
+		kind: 'full-backup',
 		exportedAt: new Date().toISOString(),
 		config,
+		calendarMappings,
+	};
+}
+
+export function createSettingsSharePack(
+	config: Config,
+	calendarMappings: CalendarMapping[],
+): SettingsSharePack {
+	return {
+		version: 2,
+		kind: 'share-pack',
+		exportedAt: new Date().toISOString(),
+		config: createSharePackConfig(config),
 		calendarMappings,
 	};
 }
@@ -57,7 +100,11 @@ export function createSettingsBackup(
 export function parseSettingsBackup(
 	raw: string,
 	defaultConfig: Config,
-): { config: Config; calendarMappings: CalendarMapping[] } {
+): {
+	config: Config;
+	calendarMappings: CalendarMapping[];
+	kind: SettingsTransferKind;
+} {
 	let parsed: unknown;
 
 	try {
@@ -70,88 +117,37 @@ export function parseSettingsBackup(
 		throw new Error('Settings backup must be a JSON object');
 	}
 
-	const data = parsed as Partial<SettingsBackup> & {
-		config?: Partial<Config>;
-		calendarMappings?: Partial<CalendarMapping>[];
-	};
+	const data = parsed as
+		| (Partial<SettingsTransferFile> & {
+				config?: Partial<Config>;
+				calendarMappings?: Partial<CalendarMapping>[];
+		  })
+		| (Partial<SettingsBackup> & {
+				config?: Partial<Config>;
+				calendarMappings?: Partial<CalendarMapping>[];
+				version?: 1;
+		  });
 
 	if (!data.config || typeof data.config !== 'object') {
 		throw new Error('Settings backup is missing a valid config object');
 	}
 
-	const config: Config = {
-		...defaultConfig,
-		...data.config,
-		jiraHost:
-			typeof data.config.jiraHost === 'string'
-				? data.config.jiraHost.trim()
-				: defaultConfig.jiraHost,
-		email:
-			typeof data.config.email === 'string'
-				? data.config.email.trim()
-				: defaultConfig.email,
-		apiToken:
-			typeof data.config.apiToken === 'string'
-				? data.config.apiToken.trim()
-				: defaultConfig.apiToken,
-		corsProxy:
-			typeof data.config.corsProxy === 'string'
-				? data.config.corsProxy.trim()
-				: defaultConfig.corsProxy,
-		jqlFilter:
-			typeof data.config.jqlFilter === 'string'
-				? data.config.jqlFilter.trim()
-				: defaultConfig.jqlFilter,
-		allowedUsers:
-			typeof data.config.allowedUsers === 'string'
-				? data.config.allowedUsers.trim()
-				: defaultConfig.allowedUsers,
-		gitlabToken:
-			typeof data.config.gitlabToken === 'string'
-				? data.config.gitlabToken.trim()
-				: defaultConfig.gitlabToken,
-		gitlabHost:
-			typeof data.config.gitlabHost === 'string'
-				? data.config.gitlabHost.trim()
-				: defaultConfig.gitlabHost,
-		rescueTimeApiKey:
-			typeof data.config.rescueTimeApiKey === 'string'
-				? data.config.rescueTimeApiKey.trim()
-				: defaultConfig.rescueTimeApiKey,
-		calendarFeeds: Array.isArray(data.config.calendarFeeds)
-			? data.config.calendarFeeds
-					.map(normalizeCalendarFeed)
-					.filter((feed): feed is CalendarFeed => feed !== null)
-			: defaultConfig.calendarFeeds,
-		complianceReminderEnabled:
-			typeof data.config.complianceReminderEnabled === 'boolean'
-				? data.config.complianceReminderEnabled
-				: defaultConfig.complianceReminderEnabled,
-		canAddWorklogs:
-			typeof data.config.canAddWorklogs === 'boolean'
-				? data.config.canAddWorklogs
-				: defaultConfig.canAddWorklogs,
-		canEditWorklogs:
-			typeof data.config.canEditWorklogs === 'boolean'
-				? data.config.canEditWorklogs
-				: defaultConfig.canEditWorklogs,
-		canDeleteWorklogs:
-			typeof data.config.canDeleteWorklogs === 'boolean'
-				? data.config.canDeleteWorklogs
-				: defaultConfig.canDeleteWorklogs,
-		theme:
-			data.config.theme === 'light' ||
-			data.config.theme === 'dark' ||
-			data.config.theme === 'system'
-				? data.config.theme
-				: defaultConfig.theme,
-		timeRounding:
-			data.config.timeRounding === '15m' ||
-			data.config.timeRounding === '30m' ||
-			data.config.timeRounding === 'off'
-				? data.config.timeRounding
-				: defaultConfig.timeRounding,
-	};
+	const kind: SettingsTransferKind =
+		data.kind === 'share-pack' ? 'share-pack' : 'full-backup';
+	const fallbackConfig =
+		kind === 'share-pack' ? defaultConfig : createDefaultConfig();
+
+	const config = normalizeConfig(
+		{
+			...data.config,
+			calendarFeeds: Array.isArray(data.config.calendarFeeds)
+				? data.config.calendarFeeds
+						.map(normalizeCalendarFeed)
+						.filter((feed): feed is CalendarFeed => feed !== null)
+				: fallbackConfig.calendarFeeds,
+		},
+		fallbackConfig,
+	);
 
 	const calendarMappings = Array.isArray(data.calendarMappings)
 		? data.calendarMappings
@@ -159,5 +155,5 @@ export function parseSettingsBackup(
 				.filter((mapping): mapping is CalendarMapping => mapping !== null)
 		: [];
 
-	return { config, calendarMappings };
+	return { config, calendarMappings, kind };
 }

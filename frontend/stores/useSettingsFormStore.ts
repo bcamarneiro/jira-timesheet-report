@@ -1,12 +1,18 @@
 import { create } from 'zustand';
 import { logger } from '../react/utils/logger';
 import { toLocalDateString } from '../react/utils/date';
-import type { Config } from './useConfigStore';
-import { useConfigStore } from './useConfigStore';
+import { normalizeConfig, type Config, useConfigStore } from './useConfigStore';
 
-interface IntegrationTestResult {
+export interface IntegrationTestResult {
 	loading: boolean;
 	result: { success: boolean; message: string } | null;
+}
+
+export interface SettingsIntegrationTests {
+	jira: IntegrationTestResult;
+	gitlab: IntegrationTestResult;
+	calendar: IntegrationTestResult;
+	rescuetime: IntegrationTestResult;
 }
 
 interface SettingsFormState {
@@ -14,12 +20,7 @@ interface SettingsFormState {
 	formData: Config;
 
 	// Per-integration test state
-	integrationTests: {
-		jira: IntegrationTestResult;
-		gitlab: IntegrationTestResult;
-		calendar: IntegrationTestResult;
-		rescuetime: IntegrationTestResult;
-	};
+	integrationTests: SettingsIntegrationTests;
 
 	// Actions
 	updateFormField: <K extends keyof Config>(field: K, value: Config[K]) => void;
@@ -69,8 +70,12 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 
 	saveSettings: () => {
 		const { formData } = get();
-		useConfigStore.getState().setConfig(formData);
-		set({ integrationTests: resetIntegrationTests() });
+		const normalizedConfig = normalizeConfig(formData);
+		useConfigStore.getState().setConfig(normalizedConfig);
+		set({
+			formData: normalizedConfig,
+			integrationTests: resetIntegrationTests(),
+		});
 	},
 
 	resetForm: () => {
@@ -91,13 +96,14 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 
 		try {
 			const { formData } = get();
+			const normalizedConfig = normalizeConfig(formData);
 
-			const host = formData.corsProxy
-				? `${formData.corsProxy.replace(/\/$/, '')}/https://${formData.jiraHost}`
-				: `https://${formData.jiraHost}`;
+			const host = normalizedConfig.corsProxy
+				? `${normalizedConfig.corsProxy.replace(/\/$/, '')}/https://${normalizedConfig.jiraHost}`
+				: `https://${normalizedConfig.jiraHost}`;
 
 			const headers: HeadersInit = {
-				Authorization: `Bearer ${formData.apiToken}`,
+				Authorization: `Bearer ${normalizedConfig.apiToken}`,
 				Accept: 'application/json',
 				'X-Atlassian-Token': 'no-check',
 			};
@@ -186,21 +192,22 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 
 		try {
 			const { formData } = get();
-			if (!formData.gitlabToken || !formData.gitlabHost) {
+			const normalizedConfig = normalizeConfig(formData);
+			if (!normalizedConfig.gitlabToken || !normalizedConfig.gitlabHost) {
 				throw new Error('GitLab host and token are required');
 			}
 
-			const cleanHost = formData.gitlabHost
+			const cleanHost = normalizedConfig.gitlabHost
 				.replace(/^https?:\/\//, '')
 				.replace(/\/$/, '');
 			const gitlabOrigin = `https://${cleanHost}`;
-			const baseUrl = formData.corsProxy
-				? `${formData.corsProxy.replace(/\/$/, '')}/${gitlabOrigin}`
+			const baseUrl = normalizedConfig.corsProxy
+				? `${normalizedConfig.corsProxy.replace(/\/$/, '')}/${gitlabOrigin}`
 				: gitlabOrigin;
 
 			const res = await fetch(`${baseUrl}/api/v4/user`, {
 				headers: {
-					'PRIVATE-TOKEN': formData.gitlabToken,
+					'PRIVATE-TOKEN': normalizedConfig.gitlabToken,
 					Accept: 'application/json',
 				},
 			});
@@ -251,15 +258,18 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 
 		try {
 			const { formData } = get();
-			const feeds = (formData.calendarFeeds ?? []).filter((f) => f.url.trim());
+			const normalizedConfig = normalizeConfig(formData);
+			const feeds = (normalizedConfig.calendarFeeds ?? []).filter((f) =>
+				f.url.trim(),
+			);
 			if (feeds.length === 0) {
 				throw new Error('No calendar feeds configured');
 			}
 
 			const results: string[] = [];
 			for (const feed of feeds) {
-				const url = formData.corsProxy
-					? `${formData.corsProxy.replace(/\/$/, '')}/${feed.url}`
+				const url = normalizedConfig.corsProxy
+					? `${normalizedConfig.corsProxy.replace(/\/$/, '')}/${feed.url}`
 					: feed.url;
 				const res = await fetch(url);
 				if (!res.ok) {
@@ -319,13 +329,14 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 
 		try {
 			const { formData } = get();
-			if (!formData.rescueTimeApiKey) {
+			const normalizedConfig = normalizeConfig(formData);
+			if (!normalizedConfig.rescueTimeApiKey) {
 				throw new Error('RescueTime API key is required');
 			}
 
 			const today = toLocalDateString(new Date());
 			const params = new URLSearchParams({
-				key: formData.rescueTimeApiKey,
+				key: normalizedConfig.rescueTimeApiKey,
 				perspective: 'interval',
 				restrict_kind: 'activity',
 				resolution_time: 'day',
@@ -335,8 +346,8 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			});
 
 			const baseUrl = 'https://www.rescuetime.com/anapi/data';
-			const url = formData.corsProxy
-				? `${formData.corsProxy.replace(/\/$/, '')}/${baseUrl}?${params}`
+			const url = normalizedConfig.corsProxy
+				? `${normalizedConfig.corsProxy.replace(/\/$/, '')}/${baseUrl}?${params}`
 				: `${baseUrl}?${params}`;
 
 			const res = await fetch(url);

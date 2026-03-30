@@ -1,5 +1,9 @@
 const path = require('node:path');
-const { DefinePlugin, ProvidePlugin } = require('@rspack/core');
+const {
+	CopyRspackPlugin,
+	DefinePlugin,
+	ProvidePlugin,
+} = require('@rspack/core');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const stdLibBrowser = require('node-stdlib-browser');
 const {
@@ -9,13 +13,29 @@ const {
 const isOfflineMode =
 	process.env.NODE_ENV === 'development' && process.env.OFFLINE_MODE === 'true';
 const isDevelopment = process.env.NODE_ENV !== 'production';
+const appBasePath = normalizeBasePath(process.env.APP_BASE_PATH || '/');
+const usesRelativeAssetPaths =
+	process.env.APP_ROUTER_MODE === 'hash' && appBasePath !== '/';
+
+function normalizeBasePath(basePath) {
+	const trimmed = basePath.trim();
+	if (!trimmed || trimmed === '/') {
+		return '/';
+	}
+
+	return `/${trimmed.replace(/^\/+|\/+$/g, '')}/`;
+}
 
 /** @type {import('@rspack/core').Configuration} */
 module.exports = {
 	entry: './frontend/main.tsx',
 	output: {
 		path: path.resolve(__dirname, 'dist'),
-		filename: 'bundle.js',
+		filename: isDevelopment ? '[name].js' : '[name].[contenthash:8].js',
+		chunkFilename: isDevelopment
+			? '[name].chunk.js'
+			: '[name].[contenthash:8].chunk.js',
+		publicPath: usesRelativeAssetPaths ? '' : appBasePath,
 	},
 	experiments: {
 		css: true,
@@ -29,12 +49,24 @@ module.exports = {
 		new HtmlWebpackPlugin({
 			template: './frontend/index.html',
 		}),
+		new CopyRspackPlugin({
+			patterns: [
+				{
+					from: path.resolve(__dirname, 'frontend/public'),
+					to: path.resolve(__dirname, 'dist'),
+				},
+			],
+		}),
 		new DefinePlugin({
 			'process.env.NODE_ENV': JSON.stringify(
 				process.env.NODE_ENV || 'development',
 			),
 			'process.env.OFFLINE_MODE': JSON.stringify(
 				process.env.OFFLINE_MODE || 'false',
+			),
+			'process.env.APP_BASE_PATH': JSON.stringify(appBasePath),
+			'process.env.APP_ROUTER_MODE': JSON.stringify(
+				process.env.APP_ROUTER_MODE || 'browser',
 			),
 		}),
 		new NodeProtocolUrlPlugin(),
@@ -136,5 +168,11 @@ module.exports = {
 		alias: {
 			...stdLibBrowser,
 		},
+	},
+	optimization: {
+		splitChunks: {
+			chunks: 'all',
+		},
+		runtimeChunk: 'single',
 	},
 };

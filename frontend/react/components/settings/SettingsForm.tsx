@@ -6,8 +6,10 @@ import { useSettingsFormStore } from '../../../stores/useSettingsFormStore';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
 import {
 	createSettingsBackup,
+	createSettingsSharePack,
 	parseSettingsBackup,
 } from '../../utils/settingsBackup';
+import { SETTINGS_SECTION_IDS } from '../../constants/settingsSections';
 import { downloadAsFile } from '../../utils/downloadFile';
 import { Button } from '../ui/Button';
 import { toast } from '../ui/Toast';
@@ -112,6 +114,16 @@ export const SettingsForm: React.FC = () => {
 		toast.success('Settings exported');
 	};
 
+	const handleExportSharePack = () => {
+		const sharePack = createSettingsSharePack(savedConfig, calendarMappings);
+		downloadAsFile(
+			`${JSON.stringify(sharePack, null, 2)}\n`,
+			'jira-timesheet-share-pack.json',
+			'application/json;charset=utf-8',
+		);
+		toast.success('Share pack exported without local secrets');
+	};
+
 	const handleImportClick = () => {
 		fileInputRef.current?.click();
 	};
@@ -127,7 +139,11 @@ export const SettingsForm: React.FC = () => {
 			const imported = parseSettingsBackup(content, savedConfig);
 			replaceFormData(imported.config);
 			replaceCalendarMappings(imported.calendarMappings);
-			toast.success('Settings imported into the form');
+			toast.success(
+				imported.kind === 'share-pack'
+					? 'Share pack imported into the form'
+					: 'Settings backup imported into the form',
+			);
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : 'Failed to import settings',
@@ -138,7 +154,11 @@ export const SettingsForm: React.FC = () => {
 	};
 
 	return (
-		<form onSubmit={handleSubmit} className={styles.form}>
+		<form
+			id={SETTINGS_SECTION_IDS.form}
+			onSubmit={handleSubmit}
+			className={styles.form}
+		>
 			<input
 				ref={fileInputRef}
 				type="file"
@@ -161,7 +181,14 @@ export const SettingsForm: React.FC = () => {
 						variant="secondary"
 						onClick={handleExportSettings}
 					>
-						Export
+						Backup
+					</Button>
+					<Button
+						type="button"
+						variant="secondary"
+						onClick={handleExportSharePack}
+					>
+						Share Pack
 					</Button>
 					<Button type="button" variant="secondary" onClick={handleImportClick}>
 						Import
@@ -180,7 +207,7 @@ export const SettingsForm: React.FC = () => {
 				</div>
 			</div>
 
-			<fieldset className={styles.section}>
+			<fieldset id={SETTINGS_SECTION_IDS.connection} className={styles.section}>
 				<legend className={styles.sectionTitle}>
 					<div className={styles.sectionHeader}>
 						<span>Connection</span>
@@ -215,6 +242,10 @@ export const SettingsForm: React.FC = () => {
 						spellCheck={false}
 						required
 					/>
+					<small>
+						Hostname only is ideal, but pasted <code>https://</code> URLs are
+						normalized for you
+					</small>
 				</div>
 				<div className={styles.formGroup}>
 					<label htmlFor={emailId}>Email</label>
@@ -264,7 +295,7 @@ export const SettingsForm: React.FC = () => {
 				</div>
 			</fieldset>
 
-			<fieldset className={styles.section}>
+			<fieldset id={SETTINGS_SECTION_IDS.scope} className={styles.section}>
 				<legend className={styles.sectionTitle}>Filters</legend>
 				<div className={styles.formGroup}>
 					<label htmlFor={jqlFilterId}>
@@ -296,7 +327,10 @@ export const SettingsForm: React.FC = () => {
 				</div>
 			</fieldset>
 
-			<fieldset className={styles.section}>
+			<fieldset
+				id={SETTINGS_SECTION_IDS.permissions}
+				className={styles.section}
+			>
 				<legend className={styles.sectionTitle}>Worklog Permissions</legend>
 				<small className={styles.permissionsHint}>
 					Auto-detected when you test the connection. Override manually if
@@ -340,7 +374,10 @@ export const SettingsForm: React.FC = () => {
 				</label>
 			</fieldset>
 
-			<fieldset className={styles.section}>
+			<fieldset
+				id={SETTINGS_SECTION_IDS.integrations}
+				className={styles.section}
+			>
 				<legend className={styles.sectionTitle}>
 					<div className={styles.sectionHeader}>
 						<span>
@@ -376,7 +413,10 @@ export const SettingsForm: React.FC = () => {
 						autoCorrect="off"
 						spellCheck={false}
 					/>
-					<small>Hostname only, without https://</small>
+					<small>
+						Hostname only is ideal, but pasted <code>https://</code> URLs are
+						normalized for you
+					</small>
 				</div>
 				<div className={styles.formGroup}>
 					<label htmlFor={gitlabTokenId}>GitLab Token</label>
@@ -534,7 +574,10 @@ export const SettingsForm: React.FC = () => {
 
 			{calendarMappings.length > 0 ||
 			(formData.calendarFeeds ?? []).length > 0 ? (
-				<fieldset className={styles.section}>
+				<fieldset
+					id={SETTINGS_SECTION_IDS.calendarMappings}
+					className={styles.section}
+				>
 					<legend className={styles.sectionTitle}>Calendar Mappings</legend>
 					<small className={styles.permissionsHint}>
 						Map calendar event titles to Jira issues. Events matching these
@@ -600,7 +643,10 @@ export const SettingsForm: React.FC = () => {
 				</fieldset>
 			) : null}
 
-			<fieldset className={styles.section}>
+			<fieldset
+				id={SETTINGS_SECTION_IDS.preferences}
+				className={styles.section}
+			>
 				<legend className={styles.sectionTitle}>Preferences</legend>
 				<div className={styles.formGroup}>
 					<label htmlFor={themeId}>Theme</label>

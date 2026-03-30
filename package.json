@@ -8,6 +8,7 @@
 		"dev": "NODE_ENV=development rspack dev",
 		"dev:offline": "NODE_ENV=development OFFLINE_MODE=true rspack dev",
 		"build": "rspack build",
+		"build:pages": "APP_ROUTER_MODE=hash rspack build",
 		"test": "vitest",
 		"test:ui": "vitest --ui",
 		"test:run": "vitest run",

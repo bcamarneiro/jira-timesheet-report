@@ -4,3 +4,13 @@
 	background-color: var(--color-bg);
 	color: var(--color-text);
 }
+
+.routeLoader {
+	min-height: calc(100vh - 120px);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-3);
+	color: var(--color-text-secondary);
+}

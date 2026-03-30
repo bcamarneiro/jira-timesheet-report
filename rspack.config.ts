@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Configuration } from '@rspack/core';
-import { DefinePlugin, ProvidePlugin } from '@rspack/core';
+import { CopyRspackPlugin, DefinePlugin, ProvidePlugin } from '@rspack/core';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import stdLibBrowser from 'node-stdlib-browser';
 
@@ -16,12 +16,28 @@ const {
 const isOfflineMode =
 	process.env.NODE_ENV === 'development' && process.env.OFFLINE_MODE === 'true';
 const isDevelopment = process.env.NODE_ENV !== 'production';
+const appBasePath = normalizeBasePath(process.env.APP_BASE_PATH || '/');
+const usesRelativeAssetPaths =
+	process.env.APP_ROUTER_MODE === 'hash' && appBasePath !== '/';
+
+function normalizeBasePath(basePath: string): string {
+	const trimmed = basePath.trim();
+	if (!trimmed || trimmed === '/') {
+		return '/';
+	}
+
+	return `/${trimmed.replace(/^\/+|\/+$/g, '')}/`;
+}
 
 const config: Configuration = {
 	entry: './frontend/main.tsx',
 	output: {
 		path: path.resolve(__dirname, 'dist'),
-		filename: 'bundle.js',
+		filename: isDevelopment ? '[name].js' : '[name].[contenthash:8].js',
+		chunkFilename: isDevelopment
+			? '[name].chunk.js'
+			: '[name].[contenthash:8].chunk.js',
+		publicPath: usesRelativeAssetPaths ? '' : appBasePath,
 	},
 	experiments: {
 		css: true,
@@ -34,7 +50,15 @@ const config: Configuration = {
 	devtool: isDevelopment ? 'eval-cheap-module-source-map' : 'source-map',
 	plugins: [
 		new HtmlWebpackPlugin({
-			template: './frontend/index.html', // your HTML template
+			template: './frontend/index.html',
+		}),
+		new CopyRspackPlugin({
+			patterns: [
+				{
+					from: path.resolve(__dirname, 'frontend/public'),
+					to: path.resolve(__dirname, 'dist'),
+				},
+			],
 		}),
 		new DefinePlugin({
 			'process.env.NODE_ENV': JSON.stringify(
@@ -42,6 +66,10 @@ const config: Configuration = {
 			),
 			'process.env.OFFLINE_MODE': JSON.stringify(
 				process.env.OFFLINE_MODE || 'false',
+			),
+			'process.env.APP_BASE_PATH': JSON.stringify(appBasePath),
+			'process.env.APP_ROUTER_MODE': JSON.stringify(
+				process.env.APP_ROUTER_MODE || 'browser',
 			),
 		}),
 		new NodeProtocolUrlPlugin(),
@@ -147,6 +175,12 @@ const config: Configuration = {
 		alias: {
 			...stdLibBrowser,
 		},
+	},
+	optimization: {
+		splitChunks: {
+			chunks: 'all',
+		},
+		runtimeChunk: 'single',
 	},
 };
 

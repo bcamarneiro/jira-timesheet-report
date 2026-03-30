@@ -1,75 +1,61 @@
 # Jira Timesheet Report Roadmap
 
-This roadmap reflects the current product shape as of March 24, 2026.
+This roadmap reflects the current product direction as of March 25, 2026.
 
-## Current Product Areas
+The next step is not "more screens". It is making the app easier to adopt, easier to trust, and more obviously valuable on a weekly basis.
 
-### Dashboard
-- Weekly gap-focused workflow
-- Suggestions from previous work and auxiliary sources
-- Templates and pinned items
-- Month heatmap and absence awareness
-- Markdown and CSV export
+## Product Direction
 
-### Reports
-- Weekly team compliance table
-- Monthly calendar reporting
-- Per-user drill-down
-- Team and user CSV exports
+Jira Timesheet Report should be treated as a **zero-backend Jira worklog companion** with two clear surfaces:
 
-### Settings
-- Jira connection and permissions
-- JQL filtering
-- Theme and time rounding
-- Calendar feeds
-- Auxiliary source credentials
+- **Dashboard** for personal weekly close and worklog triage
+- **Reports** for team visibility and monthly reporting
 
-## Near-Term Priorities
+Settings and diagnostics should support those two surfaces, not compete with them.
 
-### 1. Product Coherence
-- Finish aligning copy, route names, and docs around **Dashboard** and **Reports**
-- Reduce leftover `team` vs `timesheet` naming drift in code and UI
-- Remove or consolidate obsolete page flows once replacement paths are stable
+## Roadmap Phases
 
-### 2. Reporting Improvements
-- Better filtering within Reports
-  - project
-  - issue type
-  - component
-- More explicit saved/shareable report presets
-- Custom date-range exports beyond single week or month
+## Phase 1: Adoptability
 
-### 3. Dashboard Improvements
-- Smarter suggestion ranking
-- Better copy-previous-week review controls
-- More visible source-health diagnostics when feeds or APIs fail
+- GitHub Pages deployment
+- landing page refresh
+- first-run setup wizard
+- connection diagnostics and permission checks
+- PWA installability
+- visible one-click demo path
 
-### 4. Data Quality and Safety
-- Tighten typing around Jira worklog and issue shapes
-- Normalize comment handling across read and write flows
-- Add more coverage for service-layer edge cases and permission failures
+## Phase 2: Daily Value
 
-## Mid-Term Opportunities
+- weekly close assistant
+- suggestion explainability
+- recent issue history and reuse flows
+- reports filters, presets, and shareable URLs
+- secret-safe config share packs
+- richer exports
 
-### 1. Export Workflows
-- Richer CSV formats
-- Excel export
-- Printable summary layout
+## Phase 3: Team Trust
 
-### 2. Personal Workflow Features
-- Faster issue lookup and recent issue history
-- Better note/comment presets
-- Optional daily or weekly reminder scheduling controls
+- in-app consistency validation
+- multi-week trend and manager views
+- read-only snapshots for sharing
+- better source-health and validation feedback
+- expanded trust-oriented test coverage
 
-### 3. Team Reporting
-- Trend views across multiple weeks
-- Basic charts for compliance, gaps, and overtime
-- Role- or group-based filtering if Jira data supports it cleanly
+## Architecture Direction
 
-## Explicitly De-Prioritized
+- Keep **TanStack Query** responsible for remote data and cache
+- Keep **Zustand** responsible for workflow state, drafts, and local preferences
+- Keep derived calculations in pure helpers and selectors
+- Introduce stronger boundaries around `jira`, `dashboard`, `reports`, `settings`, `diagnostics`, and `exports`
+- Version persisted config and backup formats
 
-- Backend infrastructure
-- Real-time collaboration
-- Native mobile app
+## Delivery Notes
 
-The project should stay zero-backend unless a future feature clearly justifies changing that constraint.
+- Prefer static hosting and zero-backend constraints
+- Favor onboarding and trust improvements over niche feature growth
+- Treat cross-view data consistency as a product feature, not just a test concern
+
+## Reference Documents
+
+- Product plan: `docs/product-plan.md`
+- Linear-ready issue drafts: `docs/linear-issue-drafts.md`

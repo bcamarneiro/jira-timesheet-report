@@ -28,9 +28,10 @@ Credentials stay in `localStorage`, and API requests go directly to Jira, option
 
 ## Current Product Areas
 
-- **Dashboard**: weekly gap-focused workflow with suggestions, templates, pinned items, heatmap, reminders, and Markdown/CSV export
-- **Reports**: weekly team table plus monthly calendar reporting with per-user drill-down
-- **Settings**: Jira connection, permissions, JQL, theme, rounding, calendar feeds, auxiliary source credentials, and JSON import/export
+- **Dashboard**: weekly gap-focused workflow with suggestions, templates, pinned items, heatmap, a weekly close assistant, reminders, and Markdown/CSV export
+- **Reports**: weekly team table plus monthly calendar reporting with local people filters, saved presets, shareable URLs, read-only HTML/Markdown snapshots, an in-app weekly-vs-monthly consistency check, and manager mode with multi-week trend signals
+- **Settings**: guided setup wizard, diagnostics for trust/readiness, normalized host/proxy config, permissions, JQL, theme, rounding, calendar feeds, auxiliary source credentials, full backups, and secret-safe share packs
+- **Installability**: PWA manifest plus install prompt support for static hosting and GitHub Pages
 - **Offline mode**: mock data via MSW on port `5174`
 
 ## Tech Stack
@@ -75,14 +76,21 @@ npm run dev:offline
 
 Open `http://localhost:5174`.
 
+## Rollout And Onboarding Docs
+
+- Maintainer rollout guide: `docs/rollout-guide.md`
+- Teammate onboarding guide: `docs/teammate-onboarding.md`
+
 ## Configure Jira
 
 1. Open `Settings`
-2. Fill in Jira host, email, and API token
-3. Optionally set a local CORS proxy URL
-4. Test the connection
-5. Use `Dashboard` for your weekly workflow and `Reports` for team/month views
-6. Use `Export` / `Import` in `Settings` to back up or restore config plus calendar mappings
+2. Use the setup wizard to fill in Jira host, email, and API token
+3. Optionally set a local CORS proxy URL and reporting scope
+4. Run the built-in diagnostics and Jira connection test
+5. Save once the setup is marked ready
+6. Use `Dashboard` for your weekly workflow and `Reports` for team/month views
+7. Use `Backup`, `Share Pack`, and `Import` in `Settings` to move between full local restores and teammate-friendly setup packs
+8. Use `Reports` presets and share links when you want to reuse or hand off the same reporting slice
 
 ## CORS Proxy
 
@@ -107,6 +115,7 @@ npm run cors-proxy:socks
 | `npm run dev` | Start the app against real Jira |
 | `npm run dev:offline` | Start the app with MSW mock data |
 | `npm run build` | Build production assets |
+| `npm run build:pages` | Build the GitHub Pages variant with hash routing |
 | `npm run test` | Run Vitest in watch mode |
 | `npm run test:run` | Run Vitest once |
 | `npm run test:coverage` | Run tests with coverage |
@@ -116,7 +125,15 @@ npm run cors-proxy:socks
 | `npm run cors-proxy` | Start the local CORS proxy |
 | `npm run cors-proxy:socks` | Start the local CORS proxy through SOCKS5 |
 
+GitHub Pages deployment is automated via `.github/workflows/deploy-pages.yml` and uses hash routing plus a repository base path so direct links remain reliable on static hosting.
+
+The Pages build also ships a manifest and service worker so the app can be installed as a lightweight PWA on supported browsers.
+
+Route-level lazy loading and chunk splitting are enabled so static deployments do not ship the full workspace on first paint.
+
 ## Real-Data Validation
+
+For a quick product-level check, the `Reports` page can validate the current weekly table against the monthly source directly in the UI.
 
 For consistency checks against a real exported settings backup, use:
 

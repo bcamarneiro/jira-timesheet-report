@@ -11,6 +11,7 @@ import { OfflineIndicator } from '../components/dashboard/OfflineIndicator';
 import { SourceStatusBar } from '../components/dashboard/SourceStatusBar';
 import { TemplatesManager } from '../components/dashboard/TemplatesManager';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
+import { WeeklyCloseAssistant } from '../components/dashboard/WeeklyCloseAssistant';
 import { WeekOverview } from '../components/dashboard/WeekOverview';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
@@ -24,8 +25,11 @@ import { useMonthHeatmapData } from '../hooks/useMonthHeatmapData';
 import { addDaysToIsoDate } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
 import { generateWeeklyCsv } from '../utils/weekCsvExport';
+import { buildWeeklyCloseAssistantModel } from '../utils/weeklyCloseAssistant';
 import { generateWeeklySummary } from '../utils/weekSummary';
 import * as styles from './DashboardPage.module.css';
+
+const GAP_DAYS_SECTION_ID = 'dashboard-gap-days';
 
 export const DashboardPage: React.FC = () => {
 	useDashboardDataFetcher();
@@ -72,6 +76,17 @@ export const DashboardPage: React.FC = () => {
 		if (!absenceDays || absenceDays.size === 0) return undefined;
 		return new Set(absenceDays.keys());
 	}, [absenceDays]);
+	const closeAssistantModel = useMemo(
+		() =>
+			buildWeeklyCloseAssistantModel({
+				days: daySummaries,
+				weekWorklogs,
+				canRemind,
+				reminderEnabled,
+				totalGapHours,
+			}),
+		[daySummaries, weekWorklogs, canRemind, reminderEnabled, totalGapHours],
+	);
 
 	const handleExportMd = async () => {
 		const markdown = generateWeeklySummary(weekStart, weekEnd, weekWorklogs);
@@ -143,6 +158,12 @@ export const DashboardPage: React.FC = () => {
 	}
 
 	const hasGaps = weekdays.some((d) => d.gapSeconds > 0);
+	const jumpToGapDays = () => {
+		document.getElementById(GAP_DAYS_SECTION_ID)?.scrollIntoView({
+			behavior: 'smooth',
+			block: 'start',
+		});
+	};
 
 	return (
 		<div className={styles.container}>
@@ -221,6 +242,17 @@ export const DashboardPage: React.FC = () => {
 						</div>
 					)}
 
+					<WeeklyCloseAssistant
+						model={closeAssistantModel}
+						canExport={weekWorklogs.length > 0}
+						isCopyingPrevWeek={isCopyingPrevWeek}
+						onJumpToGapDays={jumpToGapDays}
+						onCopyPrevWeek={handleCopyPrevWeek}
+						onCopySummary={handleExportMd}
+						onExportCsv={handleExportCsv}
+						onEnableReminders={enableReminder}
+					/>
+
 					<WeekOverview days={daySummaries} />
 
 					{monthHeatmap.isLoading && monthHeatmap.data.size === 0 && (
@@ -239,7 +271,7 @@ export const DashboardPage: React.FC = () => {
 					)}
 
 					{hasGaps && (
-						<div className={styles.daysSection}>
+						<div id={GAP_DAYS_SECTION_ID} className={styles.daysSection}>
 							<h3 className={styles.sectionTitle}>Days to fill</h3>
 							{weekdays
 								.filter((d) => d.gapSeconds > 0)
@@ -266,19 +298,6 @@ export const DashboardPage: React.FC = () => {
 						</div>
 					)}
 				</>
-			)}
-
-			{canRemind && !reminderEnabled && totalGapHours > 0 && (
-				<div className={styles.reminderBanner}>
-					<span>{totalGapHours.toFixed(1)}h remaining this week.</span>
-					<button
-						type="button"
-						className={styles.reminderButton}
-						onClick={enableReminder}
-					>
-						Enable reminders
-					</button>
-				</div>
 			)}
 
 			<FavoritesManager

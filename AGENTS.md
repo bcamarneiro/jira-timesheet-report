@@ -7,7 +7,7 @@ This file provides context for AI coding agents working on this codebase.
 Jira Timesheet Report is a zero-backend, browser-based Jira workspace with two main surfaces:
 
 - **Dashboard** for weekly gap triage, suggestions, reminders, and quick exports
-- **Reports** for weekly team compliance and monthly calendar-based reporting
+- **Reports** for weekly team compliance, manager-mode trend review, read-only snapshots, and monthly calendar-based reporting
 
 Everything runs client-side. Credentials and preferences are stored in `localStorage`, and API calls go directly to Jira, optionally through a local CORS proxy.
 
@@ -47,6 +47,7 @@ e2e/               Playwright specs
 - **useTimesheetStore**: monthly reporting state and derived grouped entries
 - **useDashboardStore**: weekly dashboard state and derived day summaries
 - **useTeamStore**: weekly team-report navigation state
+- **useUserDataStore**: persisted personal helpers such as favorites, templates, calendar mappings, day notes, and report presets
 - **useSettingsFormStore**: editable settings form state before save
 - **useUIStore**: persisted UI preferences
 
@@ -88,6 +89,7 @@ npm run build
 - Use `scripts/validate-real-data-consistency.cjs` when you need to compare Dashboard and Reports with a real exported settings backup
 - The validator supports SOCKS5 proxies, compares per-user weekly totals, and excludes partial boundary weeks from the main verdict
 - It writes Markdown and CSV summaries so the result can be reviewed without digging through raw JSON
+- The `Reports` page also has an in-app weekly-vs-monthly consistency check for the currently selected week
 
 ## Common Tasks
 
@@ -106,6 +108,8 @@ npm run build
 - `TimesheetPage` is the current Reports page
 - Monthly mode uses `useTimesheetStore` and `useTimesheetDataFetcher`
 - Calendar rendering goes through `TimesheetGrid` and `DayCell`
+- Reports filters, presets, and shareable URLs flow through `useReportsURLState` plus `useUserDataStore`
+- Read-only report snapshots are generated from `frontend/react/utils/reportSnapshots.ts`
 
 ## Repository Hygiene
 

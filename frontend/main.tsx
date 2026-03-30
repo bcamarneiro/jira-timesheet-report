@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { App } from './react/App';
 import { queryClient } from './react/queryClient';
 import { logger } from './react/utils/logger';
+import { registerAppServiceWorker } from './react/utils/pwa';
+import { withBasePath } from './react/utils/runtimeConfig';
 import './react/styles/global.css';
-import { useConfigStore } from './stores/useConfigStore';
+import { createDefaultConfig, useConfigStore } from './stores/useConfigStore';
 
 // Start MSW only in offline mode
 async function startApp() {
@@ -14,7 +16,7 @@ async function startApp() {
 			await worker.start({
 				onUnhandledRequest: 'bypass', // Don't warn about unhandled requests
 				serviceWorker: {
-					url: '/mockServiceWorker.js',
+					url: withBasePath('/mockServiceWorker.js'),
 				},
 			});
 			logger.debug('[OFFLINE MODE] MSW started successfully');
@@ -22,22 +24,10 @@ async function startApp() {
 			// Set up default configuration for offline mode
 			const { setConfig } = useConfigStore.getState();
 			setConfig({
+				...createDefaultConfig(),
 				jiraHost: 'mock.atlassian.net',
 				email: 'dev@example.com',
 				apiToken: 'mock-token',
-				corsProxy: '',
-				allowedUsers: '',
-				jqlFilter: '',
-				canAddWorklogs: true,
-				canEditWorklogs: true,
-				canDeleteWorklogs: true,
-				gitlabToken: '',
-				gitlabHost: '',
-				rescueTimeApiKey: '',
-				calendarFeeds: [],
-				complianceReminderEnabled: false,
-				theme: 'system',
-				timeRounding: 'off',
 			});
 			logger.debug('[OFFLINE MODE] Default configuration set');
 
@@ -58,6 +48,10 @@ async function startApp() {
 				<App />
 			</QueryClientProvider>,
 		);
+	}
+
+	if (process.env.NODE_ENV === 'production') {
+		await registerAppServiceWorker();
 	}
 }
 

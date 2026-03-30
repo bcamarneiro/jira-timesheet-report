@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { getPersistStorage } from './persistStorage';
 
 export interface FavoriteIssue {
 	issueKey: string;
@@ -26,12 +27,26 @@ export interface RecurringTemplate {
 	enabled: boolean;
 }
 
+export interface ReportPreset {
+	id: string;
+	label: string;
+	viewMode: 'weekly' | 'monthly';
+	searchQuery: string;
+	onlyAttentionNeeded: boolean;
+	managerMode: boolean;
+	trendWeeks: number;
+	sortField: 'name' | 'total' | 'gap';
+	sortDirection: 'asc' | 'desc';
+	selectedUser: string;
+}
+
 interface UserDataState {
 	favorites: FavoriteIssue[];
 	templates: RecurringTemplate[];
 	commentPresets: string[];
 	dayNotes: Record<string, string>;
 	calendarMappings: CalendarMapping[];
+	reportPresets: ReportPreset[];
 	addFavorite: (issue: FavoriteIssue) => void;
 	removeFavorite: (issueKey: string) => void;
 	addTemplate: (template: RecurringTemplate) => void;
@@ -44,6 +59,8 @@ interface UserDataState {
 	removeCalendarMapping: (pattern: string) => void;
 	updateCalendarMapping: (pattern: string, updated: CalendarMapping) => void;
 	replaceCalendarMappings: (mappings: CalendarMapping[]) => void;
+	saveReportPreset: (preset: ReportPreset) => void;
+	removeReportPreset: (id: string) => void;
 }
 
 function normalizeIssueKey(issueKey: string): string {
@@ -83,6 +100,27 @@ function normalizeCalendarMapping(mapping: CalendarMapping): CalendarMapping {
 	};
 }
 
+function normalizeReportPreset(preset: ReportPreset): ReportPreset {
+	return {
+		...preset,
+		id: preset.id.trim(),
+		label: preset.label.trim(),
+		viewMode: preset.viewMode === 'monthly' ? 'monthly' : 'weekly',
+		searchQuery: preset.searchQuery.trim(),
+		onlyAttentionNeeded: preset.onlyAttentionNeeded,
+		managerMode: preset.managerMode,
+		trendWeeks: [4, 6, 8, 12].includes(preset.trendWeeks)
+			? preset.trendWeeks
+			: 6,
+		sortField:
+			preset.sortField === 'total' || preset.sortField === 'gap'
+				? preset.sortField
+				: 'name',
+		sortDirection: preset.sortDirection === 'desc' ? 'desc' : 'asc',
+		selectedUser: preset.selectedUser.trim(),
+	};
+}
+
 function dedupeByCaseInsensitive<T>(
 	items: T[],
 	getKey: (item: T) => string,
@@ -108,6 +146,7 @@ export const useUserDataStore = create<UserDataState>()(
 			commentPresets: [],
 			dayNotes: {},
 			calendarMappings: [],
+			reportPresets: [],
 
 			addFavorite: (issue) =>
 				set((state) => {
@@ -246,9 +285,38 @@ export const useUserDataStore = create<UserDataState>()(
 						(mapping) => mapping.pattern,
 					),
 				}),
+
+			saveReportPreset: (preset) =>
+				set((state) => {
+					const normalized = normalizeReportPreset(preset);
+					if (!normalized.id || !normalized.label) {
+						return state;
+					}
+
+					const existingIndex = state.reportPresets.findIndex(
+						(item) => item.id === normalized.id,
+					);
+					if (existingIndex === -1) {
+						return {
+							reportPresets: [...state.reportPresets, normalized],
+						};
+					}
+
+					return {
+						reportPresets: state.reportPresets.map((item) =>
+							item.id === normalized.id ? normalized : item,
+						),
+					};
+				}),
+
+			removeReportPreset: (id) =>
+				set((state) => ({
+					reportPresets: state.reportPresets.filter((preset) => preset.id !== id),
+				})),
 		}),
 		{
 			name: 'jira-timesheet-userdata',
+			storage: createJSONStorage(getPersistStorage),
 			merge: (persisted, current) => {
 				const persistedState = persisted as Partial<UserDataState> | undefined;
 				return {
@@ -279,6 +347,15 @@ export const useUserDataStore = create<UserDataState>()(
 							.map(normalizeCalendarMapping)
 							.filter((mapping) => !!mapping.pattern && !!mapping.issueKey),
 						(mapping) => mapping.pattern,
+					),
+					reportPresets: dedupeByCaseInsensitive(
+						(
+							persistedState?.reportPresets ??
+							(current as UserDataState).reportPresets
+						)
+							.map(normalizeReportPreset)
+							.filter((preset) => !!preset.id && !!preset.label),
+						(preset) => preset.id,
 					),
 				};
 			},

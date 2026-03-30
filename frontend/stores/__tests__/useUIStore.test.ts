@@ -14,6 +14,7 @@ describe('useUIStore', () => {
 				},
 				selectedProject: '',
 				expandedUsers: {},
+				installPromptDismissed: false,
 			});
 		});
 	});
@@ -193,6 +194,28 @@ describe('useUIStore', () => {
 
 			expect(useUIStore.getState().selectedTab).toBe('timesheet');
 			expect(useUIStore.getState().selectedProject).toBe('PROJ');
+		});
+	});
+
+	describe('install prompt persistence', () => {
+		it('should dismiss the install prompt', () => {
+			act(() => {
+				useUIStore.getState().dismissInstallPrompt();
+			});
+
+			expect(useUIStore.getState().installPromptDismissed).toBe(true);
+		});
+
+		it('should reset the install prompt dismissal', () => {
+			act(() => {
+				useUIStore.getState().dismissInstallPrompt();
+			});
+
+			act(() => {
+				useUIStore.getState().resetInstallPrompt();
+			});
+
+			expect(useUIStore.getState().installPromptDismissed).toBe(false);
 		});
 	});
 });

@@ -1,9 +1,41 @@
+// @vitest-environment happy-dom
+
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useUserDataStore } from '../useUserDataStore';
 
+function createMemoryStorage(): Storage {
+	let store: Record<string, string> = {};
+
+	return {
+		get length() {
+			return Object.keys(store).length;
+		},
+		clear() {
+			store = {};
+		},
+		getItem(key) {
+			return store[key] ?? null;
+		},
+		key(index) {
+			return Object.keys(store)[index] ?? null;
+		},
+		removeItem(key) {
+			delete store[key];
+		},
+		setItem(key, value) {
+			store[key] = value;
+		},
+	};
+}
+
 describe('useUserDataStore', () => {
 	beforeEach(() => {
+		Object.defineProperty(globalThis, 'localStorage', {
+			value: createMemoryStorage(),
+			configurable: true,
+		});
+
 		act(() => {
 			useUserDataStore.setState({
 				favorites: [],
@@ -11,6 +43,7 @@ describe('useUserDataStore', () => {
 				commentPresets: [],
 				dayNotes: {},
 				calendarMappings: [],
+				reportPresets: [],
 			});
 		});
 	});
@@ -116,5 +149,69 @@ describe('useUserDataStore', () => {
 			{ pattern: 'Planning', issueKey: 'PROJ-3', issueSummary: undefined },
 			{ pattern: 'Retro', issueKey: 'PROJ-5', issueSummary: undefined },
 		]);
+	});
+
+	it('saves and updates report presets with normalized values', () => {
+		act(() => {
+			useUserDataStore.getState().saveReportPreset({
+				id: ' weekly-attention ',
+				label: ' Weekly Attention ',
+				viewMode: 'weekly',
+				searchQuery: ' Team ',
+				onlyAttentionNeeded: true,
+				managerMode: true,
+				trendWeeks: 8,
+				sortField: 'gap',
+				sortDirection: 'desc',
+				selectedUser: '  ',
+			});
+			useUserDataStore.getState().saveReportPreset({
+				id: 'weekly-attention',
+				label: 'Weekly Attention Updated',
+				viewMode: 'monthly',
+				searchQuery: 'Bruno',
+				onlyAttentionNeeded: false,
+				managerMode: false,
+				trendWeeks: 99,
+				sortField: 'name',
+				sortDirection: 'asc',
+				selectedUser: 'Bruno',
+			});
+		});
+
+		expect(useUserDataStore.getState().reportPresets).toEqual([
+			{
+				id: 'weekly-attention',
+				label: 'Weekly Attention Updated',
+				viewMode: 'monthly',
+				searchQuery: 'Bruno',
+				onlyAttentionNeeded: false,
+				managerMode: false,
+				trendWeeks: 6,
+				sortField: 'name',
+				sortDirection: 'asc',
+				selectedUser: 'Bruno',
+			},
+		]);
+	});
+
+	it('removes report presets by id', () => {
+		act(() => {
+			useUserDataStore.getState().saveReportPreset({
+				id: 'preset-1',
+				label: 'Preset 1',
+				viewMode: 'weekly',
+				searchQuery: '',
+				onlyAttentionNeeded: false,
+				managerMode: false,
+				trendWeeks: 6,
+				sortField: 'name',
+				sortDirection: 'asc',
+				selectedUser: '',
+			});
+			useUserDataStore.getState().removeReportPreset('preset-1');
+		});
+
+		expect(useUserDataStore.getState().reportPresets).toEqual([]);
 	});
 });

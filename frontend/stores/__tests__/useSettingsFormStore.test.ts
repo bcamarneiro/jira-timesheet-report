@@ -74,4 +74,24 @@ describe('useSettingsFormStore', () => {
 			useSettingsFormStore.getState().integrationTests.gitlab.result,
 		).toBeNull();
 	});
+
+	it('normalizes host-like fields when saving', () => {
+		act(() => {
+			useSettingsFormStore
+				.getState()
+				.updateFormField('jiraHost', ' https://jira.example.com/ ');
+			useSettingsFormStore
+				.getState()
+				.updateFormField('corsProxy', ' http://localhost:8081/ ');
+			useSettingsFormStore.getState().saveSettings();
+		});
+
+		expect(useConfigStore.getState().config.jiraHost).toBe('jira.example.com');
+		expect(useConfigStore.getState().config.corsProxy).toBe(
+			'http://localhost:8081',
+		);
+		expect(useSettingsFormStore.getState().formData.jiraHost).toBe(
+			'jira.example.com',
+		);
+	});
 });
