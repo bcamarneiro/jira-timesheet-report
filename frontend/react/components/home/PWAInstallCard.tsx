@@ -17,7 +17,9 @@ export const PWAInstallCard: React.FC = () => {
 		return (
 			<div className={styles.card}>
 				<div className={styles.header}>
-					<span className={`${styles.statusBadge} ${styles.ready}`}>Installed</span>
+					<span className={`${styles.statusBadge} ${styles.ready}`}>
+						Installed
+					</span>
 					<h3>App install is already active</h3>
 				</div>
 				<p>

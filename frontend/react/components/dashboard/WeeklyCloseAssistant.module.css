@@ -10,8 +10,7 @@
 			135deg,
 			color-mix(in srgb, var(--color-primary) 10%, transparent),
 			transparent 44%
-		),
-		var(--color-surface);
+		), var(--color-surface);
 }
 
 .header {

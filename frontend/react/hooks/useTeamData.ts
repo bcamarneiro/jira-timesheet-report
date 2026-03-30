@@ -37,7 +37,12 @@ export function useTeamData(
 		if (allWorklogs.length === 0 && !isLoading) return [];
 		if (allWorklogs.length === 0) return [];
 
-		return buildTeamSummaries(allWorklogs, weekStart, weekEnd, config.allowedUsers);
+		return buildTeamSummaries(
+			allWorklogs,
+			weekStart,
+			weekEnd,
+			config.allowedUsers,
+		);
 	}, [
 		month1.data,
 		month2.data,

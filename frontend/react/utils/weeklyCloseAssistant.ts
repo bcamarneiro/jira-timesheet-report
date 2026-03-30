@@ -54,12 +54,16 @@ export function buildWeeklyCloseAssistantModel({
 		(day) => day.targetSeconds > 0 && day.loggedSeconds === 0,
 	);
 	const activeSuggestions = daysWithGaps.flatMap((day) =>
-		day.suggestions.filter((suggestion) => !suggestion.logged && !!suggestion.issueKey),
+		day.suggestions.filter(
+			(suggestion) => !suggestion.logged && !!suggestion.issueKey,
+		),
 	);
 	const unmappedSuggestions = daysWithGaps.flatMap((day) =>
 		day.suggestions.filter(
 			(suggestion) =>
-				!suggestion.logged && !suggestion.issueKey && !!suggestion.calendarEventTitle,
+				!suggestion.logged &&
+				!suggestion.issueKey &&
+				!!suggestion.calendarEventTitle,
 		),
 	);
 

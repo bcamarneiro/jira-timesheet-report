@@ -64,7 +64,11 @@ self.addEventListener('fetch', (event) => {
 						.then((cache) => cache.put(event.request, responseClone));
 					return networkResponse;
 				})
-				.catch(() => caches.match('./index.html').then((fallback) => fallback || Response.error()));
+				.catch(() =>
+					caches
+						.match('./index.html')
+						.then((fallback) => fallback || Response.error()),
+				);
 		}),
 	);
 });

@@ -46,9 +46,9 @@ describe('buildSettingsSetupModel', () => {
 		expect(model.headline).toBe('Start with your Jira account details');
 		expect(model.steps[0]?.status).toBe('pending');
 		expect(model.surfaces.dashboard.status).toBe('pending');
-		expect(model.diagnostics.find((item) => item.id === 'jira')?.detail).toContain(
-			'Jira host',
-		);
+		expect(
+			model.diagnostics.find((item) => item.id === 'jira')?.detail,
+		).toContain('Jira host');
 	});
 
 	it('treats a verified Jira-only setup as ready for core use', () => {

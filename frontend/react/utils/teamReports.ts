@@ -159,7 +159,12 @@ export function buildManagerTrendModel(
 	);
 	const weekSummaries = weekStarts.map((weekStart) => {
 		const weekEnd = addDaysToIsoDate(weekStart, 6);
-		const members = buildTeamSummaries(worklogs, weekStart, weekEnd, allowedUsers);
+		const members = buildTeamSummaries(
+			worklogs,
+			weekStart,
+			weekEnd,
+			allowedUsers,
+		);
 		const totalSeconds = members.reduce(
 			(sum, member) => sum + member.totalSeconds,
 			0,
@@ -168,10 +173,13 @@ export function buildManagerTrendModel(
 			(sum, member) => sum + member.gapSeconds,
 			0,
 		);
-		const compliantMembers = members.filter((member) => member.gapSeconds === 0)
-			.length;
+		const compliantMembers = members.filter(
+			(member) => member.gapSeconds === 0,
+		).length;
 		const complianceRate =
-			members.length > 0 ? Math.round((compliantMembers / members.length) * 100) : 0;
+			members.length > 0
+				? Math.round((compliantMembers / members.length) * 100)
+				: 0;
 
 		return {
 			members,
@@ -182,7 +190,8 @@ export function buildManagerTrendModel(
 				totalSeconds,
 				totalGapSeconds,
 				complianceRate,
-				attentionCount: members.filter((member) => member.gapSeconds > 0).length,
+				attentionCount: members.filter((member) => member.gapSeconds > 0)
+					.length,
 			},
 		};
 	});

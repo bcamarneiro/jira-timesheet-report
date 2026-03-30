@@ -1,6 +1,10 @@
 import type { TeamMemberSummary } from '../../services/teamService';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
-import { getWorkingDaysInMonth, isDateInMonth, parseIsoDateLocal } from './date';
+import {
+	getWorkingDaysInMonth,
+	isDateInMonth,
+	parseIsoDateLocal,
+} from './date';
 import { formatHours } from './format';
 import type { ManagerTrendModel } from './teamReports';
 
@@ -223,12 +227,11 @@ export function buildReportsSnapshotMarkdown(
 		);
 	}
 
-	const detailedEntry =
-		input.selectedUser
-			? input.entries.find(([user]) => user === input.selectedUser)
-			: input.entries.length === 1
-				? input.entries[0]
-				: undefined;
+	const detailedEntry = input.selectedUser
+		? input.entries.find(([user]) => user === input.selectedUser)
+		: input.entries.length === 1
+			? input.entries[0]
+			: undefined;
 	const breakdown = buildDailyBreakdown(
 		detailedEntry,
 		input.year,
@@ -280,7 +283,8 @@ export function buildReportsSnapshotHtml(input: ReportsSnapshotInput): string {
 									<ul>
 										${input.trendModel.weeks
 											.map(
-												(week) => `<li><strong>${escapeHtml(week.weekStart)}</strong>: ${week.complianceRate}% compliant, ${escapeHtml(formatHours(week.totalGapSeconds))} gap, ${week.attentionCount} people need attention</li>`,
+												(week) =>
+													`<li><strong>${escapeHtml(week.weekStart)}</strong>: ${week.complianceRate}% compliant, ${escapeHtml(formatHours(week.totalGapSeconds))} gap, ${week.attentionCount} people need attention</li>`,
 											)
 											.join('')}
 									</ul>
@@ -291,7 +295,8 @@ export function buildReportsSnapshotHtml(input: ReportsSnapshotInput): string {
 													${input.trendModel.recurringGapMembers
 														.slice(0, 5)
 														.map(
-															(member) => `<li><strong>${escapeHtml(member.displayName)}</strong>: ${member.gapWeeks} weeks with gap, current ${escapeHtml(formatHours(member.currentGapSeconds))}, average ${escapeHtml(formatHours(member.averageGapSeconds))}</li>`,
+															(member) =>
+																`<li><strong>${escapeHtml(member.displayName)}</strong>: ${member.gapWeeks} weeks with gap, current ${escapeHtml(formatHours(member.currentGapSeconds))}, average ${escapeHtml(formatHours(member.averageGapSeconds))}</li>`,
 														)
 														.join('')}
 												</ul>`
@@ -351,12 +356,11 @@ export function buildReportsSnapshotHtml(input: ReportsSnapshotInput): string {
 						(sum, row) => sum + row.totalSeconds,
 						0,
 					);
-					const detailedEntry =
-						input.selectedUser
-							? input.entries.find(([user]) => user === input.selectedUser)
-							: input.entries.length === 1
-								? input.entries[0]
-								: undefined;
+					const detailedEntry = input.selectedUser
+						? input.entries.find(([user]) => user === input.selectedUser)
+						: input.entries.length === 1
+							? input.entries[0]
+							: undefined;
 					const breakdown = buildDailyBreakdown(
 						detailedEntry,
 						input.year,

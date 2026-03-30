@@ -39,8 +39,9 @@ export const ManagerInsightsPanel: React.FC<Props> = ({
 	isLoading,
 	errorMessage,
 }) => {
-	const attentionNow = currentMembers.filter((member) => member.gapSeconds > 0)
-		.length;
+	const attentionNow = currentMembers.filter(
+		(member) => member.gapSeconds > 0,
+	).length;
 	const currentGapSeconds = currentMembers.reduce(
 		(sum, member) => sum + member.gapSeconds,
 		0,
@@ -50,10 +51,7 @@ export const ManagerInsightsPanel: React.FC<Props> = ({
 		0;
 
 	return (
-		<section
-			className={styles.panel}
-			aria-labelledby="manager-insights-title"
-		>
+		<section className={styles.panel} aria-labelledby="manager-insights-title">
 			<div className={styles.header}>
 				<div>
 					<p className={styles.kicker}>Manager mode</p>
@@ -155,7 +153,9 @@ export const ManagerInsightsPanel: React.FC<Props> = ({
 											<span>{member.gapWeeks} weeks with gap</span>
 										</div>
 										<div className={styles.attentionMetrics}>
-											<span>Current: {formatHours(member.currentGapSeconds)}</span>
+											<span>
+												Current: {formatHours(member.currentGapSeconds)}
+											</span>
 											<span>
 												Avg gap: {formatHours(member.averageGapSeconds)}
 											</span>

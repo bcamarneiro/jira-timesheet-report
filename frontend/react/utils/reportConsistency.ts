@@ -42,7 +42,10 @@ export function validateReportsConsistency(
 		]),
 	);
 
-	const monthlyMap = new Map<string, { displayName: string; seconds: number }>();
+	const monthlyMap = new Map<
+		string,
+		{ displayName: string; seconds: number }
+	>();
 	for (const worklog of worklogs) {
 		const email = worklog.author?.emailAddress?.toLowerCase();
 		if (!email) continue;

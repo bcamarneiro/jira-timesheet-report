@@ -311,7 +311,9 @@ export const useUserDataStore = create<UserDataState>()(
 
 			removeReportPreset: (id) =>
 				set((state) => ({
-					reportPresets: state.reportPresets.filter((preset) => preset.id !== id),
+					reportPresets: state.reportPresets.filter(
+						(preset) => preset.id !== id,
+					),
 				})),
 		}),
 		{

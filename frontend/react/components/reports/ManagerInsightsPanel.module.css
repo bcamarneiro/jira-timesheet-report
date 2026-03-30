@@ -10,8 +10,7 @@
 			circle at top right,
 			color-mix(in srgb, var(--color-primary) 12%, transparent),
 			transparent 38%
-		),
-		var(--color-surface);
+		), var(--color-surface);
 }
 
 .header,

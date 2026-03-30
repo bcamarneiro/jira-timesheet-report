@@ -114,7 +114,9 @@ export function normalizeConfig(
 			typeof config?.jqlFilter === 'string'
 				? config.jqlFilter.trim()
 				: fallback.jqlFilter,
-		allowedUsers: normalizeCsvList(config?.allowedUsers ?? fallback.allowedUsers),
+		allowedUsers: normalizeCsvList(
+			config?.allowedUsers ?? fallback.allowedUsers,
+		),
 		canAddWorklogs:
 			typeof config?.canAddWorklogs === 'boolean'
 				? config.canAddWorklogs

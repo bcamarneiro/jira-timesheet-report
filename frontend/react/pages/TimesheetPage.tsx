@@ -5,7 +5,10 @@ import type { TeamMemberSummary } from '../../services/teamService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTeamStore } from '../../stores/useTeamStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
-import { useUserDataStore, type ReportPreset } from '../../stores/useUserDataStore';
+import {
+	useUserDataStore,
+	type ReportPreset,
+} from '../../stores/useUserDataStore';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
 import { ManagerInsightsPanel } from '../components/reports/ManagerInsightsPanel';
 import { MonthNavigator } from '../components/MonthNavigator';
@@ -293,14 +296,17 @@ export const TimesheetPage: React.FC = () => {
 	const { downloadUser, downloadAll } = useDownload();
 	const reportPresets = useUserDataStore((state) => state.reportPresets);
 	const saveReportPreset = useUserDataStore((state) => state.saveReportPreset);
-	const removeReportPreset = useUserDataStore((state) => state.removeReportPreset);
+	const removeReportPreset = useUserDataStore(
+		(state) => state.removeReportPreset,
+	);
 	const { issueSummaries, users, grouped, visibleEntries } = useMemo(
 		() => deriveMonthlyReportState(data, selectedUser, allowedUsers),
 		[data, selectedUser, allowedUsers],
 	);
-	const [validationState, setValidationState] = useState<ReportsValidationState>(
-		() => buildIdleValidationState(viewMode, weekStart, weekEnd),
-	);
+	const [validationState, setValidationState] =
+		useState<ReportsValidationState>(() =>
+			buildIdleValidationState(viewMode, weekStart, weekEnd),
+		);
 
 	useReportsURLState({
 		viewMode,
@@ -328,10 +334,7 @@ export const TimesheetPage: React.FC = () => {
 
 	const weekdays = getWeekdays(weekStart);
 	const normalizedSearchQuery = searchQuery.trim().toLowerCase();
-	const allMonthlyEntries = useMemo(
-		() => Object.entries(grouped),
-		[grouped],
-	);
+	const allMonthlyEntries = useMemo(() => Object.entries(grouped), [grouped]);
 	const filteredTeamMembers = useMemo(
 		() =>
 			teamMembers.filter((member) => {
@@ -875,7 +878,9 @@ export const TimesheetPage: React.FC = () => {
 					{hasNoFilteredWeeklyResults && (
 						<div className={styles.emptyState}>
 							<div className={styles.emptyIcon}>&#128269;</div>
-							<div className={styles.emptyTitle}>No team members match these filters</div>
+							<div className={styles.emptyTitle}>
+								No team members match these filters
+							</div>
 							<div className={styles.emptyDescription}>
 								Try clearing the people filter or disable attention-only mode to
 								see the full weekly report again.
@@ -958,7 +963,7 @@ export const TimesheetPage: React.FC = () => {
 												weekdays={weekdays}
 												onMemberClick={handleMemberClick}
 											/>
-											))}
+										))}
 										<SummaryRow members={sortedMembers} weekdays={weekdays} />
 									</tbody>
 								</table>
@@ -1027,7 +1032,9 @@ export const TimesheetPage: React.FC = () => {
 					{hasNoFilteredMonthlyResults && (
 						<div className={styles.emptyState}>
 							<div className={styles.emptyIcon}>&#128269;</div>
-							<div className={styles.emptyTitle}>No monthly users match this filter</div>
+							<div className={styles.emptyTitle}>
+								No monthly users match this filter
+							</div>
 							<div className={styles.emptyDescription}>
 								Try clearing the people filter or pick a different user to bring
 								results back into view.

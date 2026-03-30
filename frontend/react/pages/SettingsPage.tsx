@@ -46,7 +46,9 @@ export const SettingsPage: React.FC = () => {
 
 	const runAvailableChecks = async () => {
 		if (!canRunChecks) {
-			toast.error('Add at least a Jira connection or one optional source first');
+			toast.error(
+				'Add at least a Jira connection or one optional source first',
+			);
 			return;
 		}
 

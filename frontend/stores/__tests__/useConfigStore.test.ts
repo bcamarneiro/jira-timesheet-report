@@ -30,7 +30,9 @@ describe('useConfigStore helpers', () => {
 			{
 				config: {
 					jiraHost: ' https://jira.example.com/ ',
-					calendarFeeds: [{ label: 'Work', url: ' https://calendar.test/feed ' }],
+					calendarFeeds: [
+						{ label: 'Work', url: ' https://calendar.test/feed ' },
+					],
 				},
 			},
 			0,

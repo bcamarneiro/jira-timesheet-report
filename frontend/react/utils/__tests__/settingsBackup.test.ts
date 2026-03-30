@@ -109,7 +109,10 @@ describe('settingsBackup', () => {
 			calendarFeeds: [],
 		});
 
-		const parsed = parseSettingsBackup(JSON.stringify(sharePack), currentConfig);
+		const parsed = parseSettingsBackup(
+			JSON.stringify(sharePack),
+			currentConfig,
+		);
 
 		expect(parsed.kind).toBe('share-pack');
 		expect(parsed.config.email).toBe('me@example.com');

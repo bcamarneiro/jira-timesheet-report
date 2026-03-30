@@ -36,10 +36,12 @@ describe('buildWeeklyCloseAssistantModel', () => {
 
 		expect(model.status).toBe('ready');
 		expect(model.headline).toBe('You are clear to close the week');
-		expect(model.items.find((item) => item.id === 'gaps')?.status).toBe('ready');
-		expect(
-			model.items.find((item) => item.id === 'handoff')?.actionId,
-		).toBe('copy-summary');
+		expect(model.items.find((item) => item.id === 'gaps')?.status).toBe(
+			'ready',
+		);
+		expect(model.items.find((item) => item.id === 'handoff')?.actionId).toBe(
+			'copy-summary',
+		);
 	});
 
 	it('flags open gaps with no reusable suggestions', () => {
@@ -61,9 +63,9 @@ describe('buildWeeklyCloseAssistantModel', () => {
 		expect(
 			model.items.find((item) => item.id === 'suggestions')?.actionId,
 		).toBe('copy-prev-week');
-		expect(
-			model.items.find((item) => item.id === 'reminders')?.status,
-		).toBe('warning');
+		expect(model.items.find((item) => item.id === 'reminders')?.status).toBe(
+			'warning',
+		);
 	});
 
 	it('treats ready suggestions as a positive signal during weekly close', () => {
@@ -100,9 +102,9 @@ describe('buildWeeklyCloseAssistantModel', () => {
 			totalGapHours: 2,
 		});
 
-		expect(
-			model.items.find((item) => item.id === 'suggestions')?.status,
-		).toBe('ready');
+		expect(model.items.find((item) => item.id === 'suggestions')?.status).toBe(
+			'ready',
+		);
 		expect(
 			model.items.find((item) => item.id === 'suggestions')?.actionId,
 		).toBe('jump-gap-days');

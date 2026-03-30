@@ -55,7 +55,10 @@ export const App: React.FC = () => {
 					<Route path="/dashboard" element={<DashboardPage />} />
 					<Route path="/reports" element={<TimesheetPage />} />
 					<Route path="/team" element={<Navigate to="/reports" replace />} />
-					<Route path="/timesheet" element={<Navigate to="/reports" replace />} />
+					<Route
+						path="/timesheet"
+						element={<Navigate to="/reports" replace />}
+					/>
 					<Route path="/settings" element={<SettingsPage />} />
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>
@@ -64,11 +67,9 @@ export const App: React.FC = () => {
 		</div>
 	);
 
-	return (
-		isHashRouterMode ? (
-			<HashRouter>{appShell}</HashRouter>
-		) : (
-			<BrowserRouter basename={appBasePath}>{appShell}</BrowserRouter>
-		)
+	return isHashRouterMode ? (
+		<HashRouter>{appShell}</HashRouter>
+	) : (
+		<BrowserRouter basename={appBasePath}>{appShell}</BrowserRouter>
 	);
 };

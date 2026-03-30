@@ -57,7 +57,9 @@ describe('buildReportsSnapshotMarkdown', () => {
 			trendWeeks: 4,
 			sortField: 'gap',
 			sortDirection: 'desc',
-			members: [createMember('alice@example.com', 'Alice', 32 * 3600, 8 * 3600)],
+			members: [
+				createMember('alice@example.com', 'Alice', 32 * 3600, 8 * 3600),
+			],
 			validationState: {
 				status: 'consistent',
 				message: 'Weekly and monthly totals matched.',

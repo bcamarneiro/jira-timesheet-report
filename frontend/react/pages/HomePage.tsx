@@ -15,14 +15,16 @@ export const HomePage: React.FC = () => {
 		<div className={styles.container}>
 			<section className={styles.hero}>
 				<div className={styles.heroContent}>
-					<div className={styles.eyebrow}>Zero-backend Jira worklog companion</div>
+					<div className={styles.eyebrow}>
+						Zero-backend Jira worklog companion
+					</div>
 					<h1 className={styles.title}>
 						Close the week faster. Keep reports trustworthy.
 					</h1>
 					<p className={styles.description}>
-						Jira Timesheet Report gives people a weekly dashboard for gap
-						triage and a reports area for monthly and team-wide visibility,
-						without introducing a backend or moving credentials off-device.
+						Jira Timesheet Report gives people a weekly dashboard for gap triage
+						and a reports area for monthly and team-wide visibility, without
+						introducing a backend or moving credentials off-device.
 					</p>
 					<div className={styles.badgeRow}>
 						<span className={styles.badge}>Dashboard-first workflow</span>
@@ -58,7 +60,9 @@ export const HomePage: React.FC = () => {
 					</p>
 					<ul className={styles.panelList}>
 						<li>Import an exported JSON backup if you already have one</li>
-						<li>Keep credentials local to the browser with no backend required</li>
+						<li>
+							Keep credentials local to the browser with no backend required
+						</li>
 						<li>Use the same data model across Dashboard and Reports</li>
 					</ul>
 				</aside>
@@ -136,7 +140,9 @@ export const HomePage: React.FC = () => {
 
 			<section className={styles.section}>
 				<div className={styles.sectionHeading}>
-					<h2 className={styles.sectionTitle}>Install it like a lightweight app</h2>
+					<h2 className={styles.sectionTitle}>
+						Install it like a lightweight app
+					</h2>
 					<p className={styles.sectionDescription}>
 						GitHub Pages gets much more usable when the workspace can live in a
 						dock, launcher, or home screen instead of a random tab.

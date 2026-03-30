@@ -15,6 +15,10 @@ export function withBasePath(pathname: string): string {
 		return appBasePath;
 	}
 
-	const normalizedPath = pathname.startsWith('/') ? pathname.slice(1) : pathname;
-	return appBasePath === '/' ? `/${normalizedPath}` : `${appBasePath}${normalizedPath}`;
+	const normalizedPath = pathname.startsWith('/')
+		? pathname.slice(1)
+		: pathname;
+	return appBasePath === '/'
+		? `/${normalizedPath}`
+		: `${appBasePath}${normalizedPath}`;
 }

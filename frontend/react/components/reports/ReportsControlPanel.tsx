@@ -86,7 +86,9 @@ export const ReportsControlPanel: React.FC<Props> = ({
 			<div className={styles.header}>
 				<div>
 					<p className={styles.kicker}>Reports controls</p>
-					<h2 id="reports-controls-title">Filter, share, and validate this view</h2>
+					<h2 id="reports-controls-title">
+						Filter, share, and validate this view
+					</h2>
 					<p className={styles.description}>
 						Search is always local to the current reports surface. Share links
 						preserve the current state, and presets let you reuse the same
@@ -174,9 +176,7 @@ export const ReportsControlPanel: React.FC<Props> = ({
 								<select
 									value={trendWeeks}
 									onChange={(event) =>
-										onTrendWeeksChange(
-											Number.parseInt(event.target.value, 10),
-										)
+										onTrendWeeksChange(Number.parseInt(event.target.value, 10))
 									}
 								>
 									<option value={4}>4 weeks</option>

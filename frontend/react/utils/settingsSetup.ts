@@ -182,16 +182,17 @@ export function buildSettingsSetupModel(
 			? 'Checking your Jira account and worklog permissions now.'
 			: jiraResult?.success
 				? `${jiraResult.message}${config.corsProxy.trim() ? ` via ${config.corsProxy.trim()}` : ''}`
-				: jiraResult?.message ??
-					'Run the Jira check once to confirm the account and auto-detect permissions.';
+				: (jiraResult?.message ??
+					'Run the Jira check once to confirm the account and auto-detect permissions.');
 
-	const scopeDetail = config.jqlFilter.trim() && allowedUsersCount > 0
-		? `JQL is narrowing the issue set and Reports is scoped to ${allowedUsersCount} allowed user${allowedUsersCount === 1 ? '' : 's'}.`
-		: config.jqlFilter.trim()
-			? 'JQL is narrowing the issue set; Reports will include everyone this Jira account can see.'
-			: allowedUsersCount > 0
-				? `Reports is scoped to ${allowedUsersCount} allowed user${allowedUsersCount === 1 ? '' : 's'}.`
-				: 'No scope filters yet, so Reports will use all issues and users visible to this Jira account.';
+	const scopeDetail =
+		config.jqlFilter.trim() && allowedUsersCount > 0
+			? `JQL is narrowing the issue set and Reports is scoped to ${allowedUsersCount} allowed user${allowedUsersCount === 1 ? '' : 's'}.`
+			: config.jqlFilter.trim()
+				? 'JQL is narrowing the issue set; Reports will include everyone this Jira account can see.'
+				: allowedUsersCount > 0
+					? `Reports is scoped to ${allowedUsersCount} allowed user${allowedUsersCount === 1 ? '' : 's'}.`
+					: 'No scope filters yet, so Reports will use all issues and users visible to this Jira account.';
 
 	const signalsDetail =
 		configuredSignalCount === 0
@@ -285,7 +286,9 @@ export function buildSettingsSetupModel(
 			id: 'permissions',
 			label: 'Worklog permissions',
 			status:
-				config.canAddWorklogs && config.canEditWorklogs && config.canDeleteWorklogs
+				config.canAddWorklogs &&
+				config.canEditWorklogs &&
+				config.canDeleteWorklogs
 					? 'ready'
 					: 'warning',
 			detail: permissionSummary(config),
@@ -320,9 +323,7 @@ export function buildSettingsSetupModel(
 				: 'Ready for weekly triage and quick logging. Add optional sources later if you want smarter suggestions.'
 			: 'Dashboard is usable in read-only mode, but quick logging is disabled by the current permissions.';
 
-	const reportsStatus: SetupStatus = !coreReady
-		? overallStatus
-		: 'ready';
+	const reportsStatus: SetupStatus = !coreReady ? overallStatus : 'ready';
 	const reportsDetail = !coreReady
 		? 'Verify the Jira connection first so weekly and monthly reports have a trusted data source.'
 		: allowedUsersCount > 0
