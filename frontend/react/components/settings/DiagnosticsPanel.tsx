@@ -12,6 +12,8 @@ type Props = {
 	model: SettingsSetupModel;
 	canRunChecks: boolean;
 	checksRunning: boolean;
+	lastRunAt: string | null;
+	lastRunSummary: string | null;
 	onJumpToSection: (sectionId: string) => void;
 	onRunAvailableChecks: () => Promise<void> | void;
 };
@@ -37,6 +39,8 @@ export const DiagnosticsPanel: React.FC<Props> = ({
 	model,
 	canRunChecks,
 	checksRunning,
+	lastRunAt,
+	lastRunSummary,
 	onJumpToSection,
 	onRunAvailableChecks,
 }) => {
@@ -50,6 +54,12 @@ export const DiagnosticsPanel: React.FC<Props> = ({
 						These checks tell us whether Dashboard and Reports are ready to be
 						trusted day to day, not just whether the fields are filled in.
 					</p>
+					{lastRunAt ? (
+						<p className={styles.meta}>
+							Last refreshed: {lastRunAt}
+							{lastRunSummary ? ` · ${lastRunSummary}` : ''}
+						</p>
+					) : null}
 				</div>
 				{canRunChecks ? (
 					<Button

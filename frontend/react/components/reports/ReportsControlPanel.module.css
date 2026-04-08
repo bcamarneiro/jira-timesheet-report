@@ -42,7 +42,8 @@
 .validationBox p,
 .presetsHeader p,
 .emptyPresets,
-.validationTimestamp {
+.validationTimestamp,
+.freshnessDetail {
 	margin: 0;
 	font-size: var(--text-sm);
 	line-height: var(--leading-relaxed);
@@ -53,10 +54,52 @@
 .filterMeta,
 .presetComposer,
 .presetList,
-.weeklyToggles {
+.weeklyToggles,
+.freshnessRow {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--space-3);
+}
+
+.freshnessRow {
+	align-items: center;
+	margin-top: var(--space-3);
+}
+
+.freshnessBadge {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 10px;
+	border-radius: 999px;
+	border: 1px solid transparent;
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.freshnessFresh {
+	background: var(--color-success-bg);
+	color: var(--color-success);
+	border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+}
+
+.freshnessWarning {
+	background: var(--color-warning-bg);
+	color: var(--color-warning);
+	border-color: var(--color-warning-border);
+}
+
+.freshnessStale {
+	background: var(--color-error-bg);
+	color: var(--color-error);
+	border-color: var(--color-error-border);
+}
+
+.freshnessIdle {
+	background: var(--color-surface);
+	color: var(--color-text-secondary);
+	border-color: var(--color-border);
 }
 
 .filtersRow,

@@ -20,10 +20,14 @@ This file tracks the implementation backlog locally while Linear write access re
 - `Done`: manager mode and multi-week trends
 - `Done`: read-only snapshot exports
 - `Done`: rollout docs and teammate onboarding guide
+- `Done`: pilot feedback template
+- `Done`: CI smoke coverage for core onboarding and reports flows
+- `Done`: last-sync trust signals in Dashboard, Reports, and Settings
+- `Done`: Vercel deployment config and rollout docs
 
 ## Notes
 
 - Product plan: `docs/product-plan.md`
 - Linear-ready issue drafts: `docs/linear-issue-drafts.md`
-- GitHub Pages is the current distribution priority because it keeps the zero-backend model intact
+- Vercel is the current rollout target
 - Route-level lazy loading and chunk splitting removed the earlier bundle size warnings from the production build

@@ -1,7 +1,10 @@
 import type React from 'react';
 import { useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
-import { useSettingsFormStore } from '../../stores/useSettingsFormStore';
+import {
+	useSettingsFormStore,
+	type SettingsIntegrationTests,
+} from '../../stores/useSettingsFormStore';
 import { buildSettingsSetupModel } from '../utils/settingsSetup';
 import { toast } from '../components/ui/Toast';
 import { DiagnosticsPanel } from '../components/settings/DiagnosticsPanel';
@@ -20,6 +23,12 @@ export const SettingsPage: React.FC = () => {
 	const testRescueTime = useSettingsFormStore((state) => state.testRescueTime);
 	const savedConfig = useConfigStore((state) => state.config);
 	const [checksRunning, setChecksRunning] = useState(false);
+	const [lastDiagnosticsRunAt, setLastDiagnosticsRunAt] = useState<
+		string | null
+	>(null);
+	const [lastDiagnosticsSummary, setLastDiagnosticsSummary] = useState<
+		string | null
+	>(null);
 
 	const isDirty = JSON.stringify(formData) !== JSON.stringify(savedConfig);
 	const canTestJira =
@@ -44,6 +53,19 @@ export const SettingsPage: React.FC = () => {
 		});
 	};
 
+	const summarizeDiagnostics = (tests: SettingsIntegrationTests) => {
+		const results = [
+			canTestJira ? tests.jira.result : null,
+			canTestGitlab ? tests.gitlab.result : null,
+			hasCalendarFeeds ? tests.calendar.result : null,
+			canTestRescueTime ? tests.rescuetime.result : null,
+		].filter((result): result is NonNullable<typeof result> => result !== null);
+
+		if (results.length === 0) return null;
+		const successCount = results.filter((result) => result.success).length;
+		return `${successCount}/${results.length} checks passed`;
+	};
+
 	const runAvailableChecks = async () => {
 		if (!canRunChecks) {
 			toast.error(
@@ -66,6 +88,9 @@ export const SettingsPage: React.FC = () => {
 			if (canTestRescueTime) {
 				await testRescueTime();
 			}
+			const completedTests = useSettingsFormStore.getState().integrationTests;
+			setLastDiagnosticsRunAt(new Date().toLocaleString());
+			setLastDiagnosticsSummary(summarizeDiagnostics(completedTests));
 			toast.success('Diagnostics refreshed');
 		} finally {
 			setChecksRunning(false);
@@ -118,6 +143,8 @@ export const SettingsPage: React.FC = () => {
 					model={model}
 					canRunChecks={canRunChecks}
 					checksRunning={checksRunning}
+					lastRunAt={lastDiagnosticsRunAt}
+					lastRunSummary={lastDiagnosticsSummary}
 					onJumpToSection={jumpToSection}
 					onRunAvailableChecks={runAvailableChecks}
 				/>

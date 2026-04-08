@@ -114,4 +114,56 @@ describe('fetchMonthWorklogs', () => {
 		expect(result).toHaveLength(1);
 		expect(result[0]?.id).toBe('w2');
 	});
+
+	it('emits progress updates for search and truncated worklog fetches', async () => {
+		const onProgress = vi.fn();
+		vi.spyOn(global, 'fetch')
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					total: 1,
+					issues: [
+						{
+							id: '10000',
+							key: 'PROJ-1',
+							fields: {
+								summary: 'Issue summary',
+								worklog: {
+									startAt: 0,
+									maxResults: 20,
+									total: 30,
+									worklogs: [],
+								},
+							},
+						},
+					],
+				}),
+			} as Response)
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					worklogs: [],
+				}),
+			} as Response);
+
+		await fetchMonthWorklogs(baseConfig, 2025, 9, { onProgress });
+
+		expect(onProgress).toHaveBeenCalled();
+		expect(onProgress.mock.calls[0]?.[0]).toMatchObject({
+			phase: 'searching',
+			percent: 8,
+		});
+		expect(
+			onProgress.mock.calls.some((call) => call[0]?.phase === 'inspecting'),
+		).toBe(true);
+		expect(
+			onProgress.mock.calls.some(
+				(call) => call[0]?.phase === 'fetching-truncated',
+			),
+		).toBe(true);
+		expect(onProgress.mock.calls.at(-1)?.[0]).toMatchObject({
+			phase: 'complete',
+			percent: 100,
+		});
+	});
 });

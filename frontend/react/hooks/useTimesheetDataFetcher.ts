@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useMonthWorklogs } from './useMonthWorklogs';
+import type { WorklogFetchProgress } from '../../../types/worklogLoading';
 
 /**
  * Hook that fetches timesheet data via the shared month worklog query
@@ -15,11 +16,14 @@ export function useTimesheetDataFetcher(options?: { enabled?: boolean }) {
 	const currentMonth = useTimesheetStore((state) => state.currentMonth);
 	const setData = useTimesheetStore((state) => state.setData);
 	const jqlFilter = useConfigStore((state) => state.config.jqlFilter);
+	const [worklogProgress, setWorklogProgress] =
+		useState<WorklogFetchProgress | null>(null);
 
 	const query = useMonthWorklogs(currentYear, currentMonth, {
 		jqlFilter: jqlFilter || undefined,
 		prefetchAdjacent: enabled,
 		enabled,
+		onProgress: setWorklogProgress,
 	});
 
 	// Sync data to store (cast to EnrichedJiraWorklog — same JSON shape)
@@ -36,5 +40,6 @@ export function useTimesheetDataFetcher(options?: { enabled?: boolean }) {
 				? `Failed to fetch data from Jira: ${query.error.message}`
 				: 'An unknown error occurred.'
 			: null,
+		worklogProgress,
 	};
 }

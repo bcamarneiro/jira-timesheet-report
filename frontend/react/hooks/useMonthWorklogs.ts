@@ -5,11 +5,13 @@ import {
 	type WorklogItem,
 } from '../../services/monthWorklogService';
 import { useConfigStore } from '../../stores/useConfigStore';
+import type { WorklogFetchProgress } from '../../../types/worklogLoading';
 
 interface UseMonthWorklogsOptions {
 	currentUserOnly?: boolean;
 	jqlFilter?: string;
 	enabled?: boolean;
+	onProgress?: (progress: WorklogFetchProgress | null) => void;
 	/** Prefetch adjacent months in background. Only useful for month-based navigation (timesheet, heatmap). */
 	prefetchAdjacent?: boolean;
 }
@@ -46,6 +48,7 @@ export function useMonthWorklogs(
 	const corsProxy = config.corsProxy;
 	const currentUserOnly = options?.currentUserOnly ?? false;
 	const jqlFilter = options?.jqlFilter ?? '';
+	const onProgress = options?.onProgress;
 
 	const result = useQuery<WorklogItem[]>({
 		queryKey: monthWorklogsQueryKey(
@@ -64,6 +67,7 @@ export function useMonthWorklogs(
 				{
 					currentUserOnly,
 					jqlFilter: options?.jqlFilter,
+					onProgress: onProgress ?? undefined,
 				},
 				signal,
 			),
@@ -82,6 +86,12 @@ export function useMonthWorklogs(
 		}),
 		[config, jiraHost, apiToken, corsProxy],
 	);
+	useEffect(() => {
+		if (!result.isFetching) {
+			onProgress?.(null);
+		}
+	}, [result.isFetching, onProgress]);
+
 	useEffect(() => {
 		if (!prefetchAdjacent || !jiraHost || !apiToken) return;
 

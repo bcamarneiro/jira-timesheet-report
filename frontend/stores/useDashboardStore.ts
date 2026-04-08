@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { DaySummary, WorklogSuggestion } from '../../types/Suggestion';
+import type { WorklogFetchProgress } from '../../types/worklogLoading';
 import {
 	addDaysToIsoDate,
 	parseIsoDateLocal,
@@ -65,7 +66,9 @@ interface DashboardState {
 	rescueTimeError: string | null;
 
 	lastFetchedAt: string | null;
+	worklogsLoadingProgress: WorklogFetchProgress | null;
 	setLastFetchedAt: (ts: string | null) => void;
+	setWorklogsLoadingProgress: (progress: WorklogFetchProgress | null) => void;
 
 	setWeek: (start: string) => void;
 	goToPrevWeek: () => void;
@@ -128,7 +131,10 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 	rescueTimeError: null,
 
 	lastFetchedAt: null,
+	worklogsLoadingProgress: null,
 	setLastFetchedAt: (ts) => set({ lastFetchedAt: ts }),
+	setWorklogsLoadingProgress: (progress) =>
+		set({ worklogsLoadingProgress: progress }),
 
 	setWeek: (start) => set({ weekStart: start, weekEnd: getSunday(start) }),
 

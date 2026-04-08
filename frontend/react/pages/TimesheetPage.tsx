@@ -21,13 +21,14 @@ import { UserSelector } from '../components/UserSelector';
 import { Button } from '../components/ui/Button';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { ProgressBar } from '../components/ui/ProgressBar';
-import { Spinner } from '../components/ui/Spinner';
 import { toast } from '../components/ui/Toast';
+import { WorklogLoadingStatus } from '../components/ui/WorklogLoadingStatus';
 import { useReportsURLState } from '../hooks/useReportsURLState';
 import { useDownload } from '../hooks/useDownload';
 import { useReportsTrendData } from '../hooks/useReportsTrendData';
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
+import { describeFreshness } from '../utils/dataFreshness';
 import { addDaysToIsoDate, monthLabel, parseIsoDateLocal } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
 import { formatHours } from '../utils/format';
@@ -264,7 +265,13 @@ export const TimesheetPage: React.FC = () => {
 	const [trendWeeks, setTrendWeeks] = useState(6);
 
 	// Only fetch data for the active view
-	const { isLoading, errorMessage } = useTimesheetDataFetcher({
+	const {
+		isLoading,
+		isFetching: monthlyFetching,
+		dataUpdatedAt: monthlyDataUpdatedAt,
+		errorMessage,
+		worklogProgress: monthlyWorklogProgress,
+	} = useTimesheetDataFetcher({
 		enabled: viewMode === 'monthly',
 	});
 
@@ -290,7 +297,10 @@ export const TimesheetPage: React.FC = () => {
 	const {
 		data: teamMembers,
 		isLoading: teamLoading,
+		isFetching: teamFetching,
 		error: teamError,
+		lastUpdatedAt: teamLastUpdatedAt,
+		loadingProgress: teamLoadingProgress,
 	} = useTeamData(weekStart, weekEnd, { enabled: viewMode === 'weekly' });
 
 	const { downloadUser, downloadAll } = useDownload();
@@ -692,6 +702,29 @@ export const TimesheetPage: React.FC = () => {
 			),
 		};
 	}, [viewMode, sortedMembers]);
+	const reportsFreshness = useMemo(() => {
+		const timestamp =
+			viewMode === 'weekly' ? teamLastUpdatedAt : monthlyDataUpdatedAt || null;
+		const isRefreshing = viewMode === 'weekly' ? teamFetching : monthlyFetching;
+		const baseState = describeFreshness(timestamp);
+
+		if (!isRefreshing) return baseState;
+
+		return {
+			label: 'Syncing current view…',
+			detail:
+				baseState.tone === 'idle'
+					? 'Fetching data for this reports view now.'
+					: `${baseState.detail} A refresh is in progress.`,
+			tone: 'warning' as const,
+		};
+	}, [
+		viewMode,
+		teamLastUpdatedAt,
+		monthlyDataUpdatedAt,
+		teamFetching,
+		monthlyFetching,
+	]);
 
 	if (errorMessage && viewMode === 'monthly') {
 		return (
@@ -818,6 +851,9 @@ export const TimesheetPage: React.FC = () => {
 						? sortedMembers.length > 0
 						: filteredVisibleEntries.length > 0
 				}
+				dataFreshnessLabel={reportsFreshness.label}
+				dataFreshnessDetail={reportsFreshness.detail}
+				dataFreshnessTone={reportsFreshness.tone}
 			/>
 
 			{/* ---- WEEKLY VIEW ---- */}
@@ -846,8 +882,10 @@ export const TimesheetPage: React.FC = () => {
 
 					{teamLoading && teamMembers.length === 0 && (
 						<div className={styles.loading}>
-							<Spinner size="lg" />
-							<p>Loading team worklogs...</p>
+							<WorklogLoadingStatus
+								title="Loading team worklogs"
+								progress={teamLoadingProgress}
+							/>
 						</div>
 					)}
 
@@ -892,8 +930,11 @@ export const TimesheetPage: React.FC = () => {
 						<>
 							{teamLoading && (
 								<div className={styles.refetching}>
-									<Spinner size="sm" />
-									<span>Updating...</span>
+									<WorklogLoadingStatus
+										title="Updating team worklogs"
+										progress={teamLoadingProgress}
+										compact
+									/>
 								</div>
 							)}
 							<TeamStatsCards teamMembers={sortedMembers} />
@@ -1005,15 +1046,20 @@ export const TimesheetPage: React.FC = () => {
 					)}
 					{isLoading && !data && (
 						<div className={styles.loading}>
-							<Spinner size="lg" />
-							<p>Loading worklogs...</p>
+							<WorklogLoadingStatus
+								title="Loading worklogs"
+								progress={monthlyWorklogProgress}
+							/>
 						</div>
 					)}
 
 					{isLoading && data && (
 						<div className={styles.refetching}>
-							<Spinner size="sm" />
-							<span>Updating...</span>
+							<WorklogLoadingStatus
+								title="Updating worklogs"
+								progress={monthlyWorklogProgress}
+								compact
+							/>
 						</div>
 					)}
 

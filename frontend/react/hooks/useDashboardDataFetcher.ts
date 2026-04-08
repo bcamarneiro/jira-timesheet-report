@@ -63,6 +63,9 @@ export function useDashboardDataFetcher() {
 	const weekEnd = useDashboardStore((s) => s.weekEnd);
 	const setLoading = useDashboardStore((s) => s.setLoading);
 	const setError = useDashboardStore((s) => s.setError);
+	const setWorklogsLoadingProgress = useDashboardStore(
+		(s) => s.setWorklogsLoadingProgress,
+	);
 	const favorites = useUserDataStore((s) => s.favorites);
 	const templates = useUserDataStore((s) => s.templates);
 	const calendarMappings = useUserDataStore((s) => s.calendarMappings);
@@ -97,6 +100,12 @@ export function useDashboardDataFetcher() {
 
 			// Set loading states
 			setLoading('worklogs', true);
+			setWorklogsLoadingProgress({
+				phase: 'searching',
+				percent: 8,
+				message: 'Preparing weekly worklog fetch',
+				detail: `${weekStart} to ${weekEnd}`,
+			});
 			setLoading('jira', true);
 			if (gitlabToken && gitlabHost) setLoading('gitlab', true);
 			const suggestionFeeds = (config.calendarFeeds ?? []).filter(
@@ -141,7 +150,16 @@ export function useDashboardDataFetcher() {
 						const month1Data = await queryClient.fetchQuery({
 							queryKey: buildKey(startYear, startMonth),
 							queryFn: ({ signal: s }) =>
-								fetchMonthWorklogs(config, startYear, startMonth, fetchOpts, s),
+								fetchMonthWorklogs(
+									config,
+									startYear,
+									startMonth,
+									{
+										...fetchOpts,
+										onProgress: setWorklogsLoadingProgress,
+									},
+									s,
+								),
 							staleTime: 15 * 60 * 1000,
 						});
 
@@ -150,7 +168,16 @@ export function useDashboardDataFetcher() {
 							const month2Data = await queryClient.fetchQuery({
 								queryKey: buildKey(endYear, endMonth),
 								queryFn: ({ signal: s }) =>
-									fetchMonthWorklogs(config, endYear, endMonth, fetchOpts, s),
+									fetchMonthWorklogs(
+										config,
+										endYear,
+										endMonth,
+										{
+											...fetchOpts,
+											onProgress: setWorklogsLoadingProgress,
+										},
+										s,
+									),
 								staleTime: 15 * 60 * 1000,
 							});
 							allData = [...month1Data, ...month2Data];
@@ -166,6 +193,7 @@ export function useDashboardDataFetcher() {
 						return [] as WorklogEntry[];
 					} finally {
 						setLoading('worklogs', false);
+						setWorklogsLoadingProgress(null);
 					}
 				})(),
 
@@ -269,6 +297,7 @@ export function useDashboardDataFetcher() {
 		weekEnd,
 		setLoading,
 		setError,
+		setWorklogsLoadingProgress,
 		favorites,
 		templates,
 		calendarMappings,

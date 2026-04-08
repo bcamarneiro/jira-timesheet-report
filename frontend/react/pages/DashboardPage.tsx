@@ -16,6 +16,7 @@ import { WeekOverview } from '../components/dashboard/WeekOverview';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { toast } from '../components/ui/Toast';
+import { WorklogLoadingStatus } from '../components/ui/WorklogLoadingStatus';
 import { useAbsenceDays } from '../hooks/useAbsenceDays';
 import { useComplianceReminder } from '../hooks/useComplianceReminder';
 import { useCopyPreviousWeek } from '../hooks/useCopyPreviousWeek';
@@ -44,6 +45,9 @@ export const DashboardPage: React.FC = () => {
 	const goToCurrentWeek = useDashboardStore((s) => s.goToCurrentWeek);
 	const worklogsError = useDashboardStore((s) => s.worklogsError);
 	const weekWorklogs = useDashboardStore((s) => s.weekWorklogs);
+	const worklogsLoadingProgress = useDashboardStore(
+		(s) => s.worklogsLoadingProgress,
+	);
 
 	const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
 	const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
@@ -228,8 +232,10 @@ export const DashboardPage: React.FC = () => {
 
 			{isLoadingWorklogs && daySummaries.length === 0 && (
 				<div className={styles.loading}>
-					<Spinner size="lg" />
-					<p>Loading your week...</p>
+					<WorklogLoadingStatus
+						title="Loading your week"
+						progress={worklogsLoadingProgress}
+					/>
 				</div>
 			)}
 
@@ -237,8 +243,11 @@ export const DashboardPage: React.FC = () => {
 				<>
 					{isLoadingWorklogs && (
 						<div className={styles.refetching}>
-							<Spinner size="sm" />
-							<span>Updating...</span>
+							<WorklogLoadingStatus
+								title="Updating your week"
+								progress={worklogsLoadingProgress}
+								compact
+							/>
 						</div>
 					)}
 

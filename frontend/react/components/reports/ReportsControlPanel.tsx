@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState } from 'react';
 import type { ReportPreset } from '../../../stores/useUserDataStore';
+import type { FreshnessTone } from '../../utils/dataFreshness';
 import type {
 	ReportsSortDirection,
 	ReportsSortField,
@@ -44,6 +45,9 @@ type Props = {
 	validationState: ValidationState;
 	canValidate: boolean;
 	canExportSnapshot: boolean;
+	dataFreshnessLabel: string;
+	dataFreshnessDetail: string;
+	dataFreshnessTone: FreshnessTone;
 };
 
 const validationToneMap = {
@@ -78,8 +82,19 @@ export const ReportsControlPanel: React.FC<Props> = ({
 	validationState,
 	canValidate,
 	canExportSnapshot,
+	dataFreshnessLabel,
+	dataFreshnessDetail,
+	dataFreshnessTone,
 }) => {
 	const [presetName, setPresetName] = useState('');
+	const freshnessToneClass =
+		dataFreshnessTone === 'fresh'
+			? styles.freshnessFresh
+			: dataFreshnessTone === 'warning'
+				? styles.freshnessWarning
+				: dataFreshnessTone === 'stale'
+					? styles.freshnessStale
+					: styles.freshnessIdle;
 
 	return (
 		<section className={styles.panel} aria-labelledby="reports-controls-title">
@@ -94,6 +109,14 @@ export const ReportsControlPanel: React.FC<Props> = ({
 						preserve the current state, and presets let you reuse the same
 						filters without rebuilding them every time.
 					</p>
+					<div className={styles.freshnessRow}>
+						<span className={`${styles.freshnessBadge} ${freshnessToneClass}`}>
+							{dataFreshnessLabel}
+						</span>
+						<span className={styles.freshnessDetail}>
+							{dataFreshnessDetail}
+						</span>
+					</div>
 				</div>
 				<div className={styles.headerActions}>
 					<Button
