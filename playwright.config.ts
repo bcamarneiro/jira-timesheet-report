@@ -26,12 +26,13 @@ export default defineConfig({
 
 	// Start the dev server in offline mode only when explicitly requested.
 	// Local usage and CI can also provide the server themselves for more reliable startup handling.
-	webServer: process.env.PLAYWRIGHT_WEB_SERVER === '1'
-		? {
-				command: 'npm run dev:offline',
-				url: 'http://127.0.0.1:5174',
-				reuseExistingServer: false,
-				timeout: 120000,
-			}
-		: undefined,
+	webServer:
+		process.env.PLAYWRIGHT_WEB_SERVER === '1'
+			? {
+					command: 'npm run dev:offline',
+					url: 'http://127.0.0.1:5174',
+					reuseExistingServer: false,
+					timeout: 120000,
+				}
+			: undefined,
 });
