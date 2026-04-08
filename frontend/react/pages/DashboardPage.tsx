@@ -127,14 +127,29 @@ export const DashboardPage: React.FC = () => {
 	if (!jiraHost) {
 		return (
 			<div className={styles.container}>
-				<div className={styles.empty}>
-					<h2>Configure Jira first</h2>
-					<p>
-						The dashboard needs your Jira connection to fetch worklogs and
-						generate suggestions.
-					</p>
-					<Link to="/settings">Go to Settings</Link>
-				</div>
+				<section className={styles.emptySetup}>
+					<div className={styles.emptySetupText}>
+						<h2>Set up Jira before you use Dashboard</h2>
+						<p>
+							Dashboard works best once Jira is connected and the core checks
+							pass. After that, this becomes the fastest place to close the
+							week.
+						</p>
+						<ul className={styles.emptyChecklist}>
+							<li>Connect your Jira host, email, and API token</li>
+							<li>Run diagnostics to confirm auth, permissions, and CORS</li>
+							<li>Come back here to fill gaps, reuse prior work, and export</li>
+						</ul>
+					</div>
+					<div className={styles.emptyActions}>
+						<Link to="/settings" className={styles.primaryLink}>
+							Start setup
+						</Link>
+						<Link to="/" className={styles.secondaryLink}>
+							Back to Home
+						</Link>
+					</div>
+				</section>
 			</div>
 		);
 	}
@@ -239,10 +254,10 @@ export const DashboardPage: React.FC = () => {
 				</div>
 			)}
 
-			{daySummaries.length > 0 && (
-				<>
-					{isLoadingWorklogs && (
-						<div className={styles.refetching}>
+				{daySummaries.length > 0 && (
+					<>
+						{isLoadingWorklogs && (
+							<div className={styles.refetching}>
 							<WorklogLoadingStatus
 								title="Updating your week"
 								progress={worklogsLoadingProgress}
@@ -251,33 +266,7 @@ export const DashboardPage: React.FC = () => {
 						</div>
 					)}
 
-					<WeeklyCloseAssistant
-						model={closeAssistantModel}
-						canExport={weekWorklogs.length > 0}
-						isCopyingPrevWeek={isCopyingPrevWeek}
-						onJumpToGapDays={jumpToGapDays}
-						onCopyPrevWeek={handleCopyPrevWeek}
-						onCopySummary={handleExportMd}
-						onExportCsv={handleExportCsv}
-						onEnableReminders={enableReminder}
-					/>
-
 					<WeekOverview days={daySummaries} />
-
-					{monthHeatmap.isLoading && monthHeatmap.data.size === 0 && (
-						<div className={styles.heatmapLoading}>
-							<Spinner size="sm" />
-							<span>Loading month overview...</span>
-						</div>
-					)}
-					{monthHeatmap.data.size > 0 && (
-						<MonthHeatmap
-							monthData={monthHeatmap.data}
-							month={monthHeatmap.month}
-							year={monthHeatmap.year}
-							vacationDates={vacationDates}
-						/>
-					)}
 
 					{hasGaps && (
 						<div id={GAP_DAYS_SECTION_ID} className={styles.daysSection}>
@@ -295,6 +284,32 @@ export const DashboardPage: React.FC = () => {
 									/>
 								))}
 						</div>
+					)}
+
+					<WeeklyCloseAssistant
+						model={closeAssistantModel}
+						canExport={weekWorklogs.length > 0}
+						isCopyingPrevWeek={isCopyingPrevWeek}
+						onJumpToGapDays={jumpToGapDays}
+						onCopyPrevWeek={handleCopyPrevWeek}
+						onCopySummary={handleExportMd}
+						onExportCsv={handleExportCsv}
+						onEnableReminders={enableReminder}
+					/>
+
+					{monthHeatmap.isLoading && monthHeatmap.data.size === 0 && (
+						<div className={styles.heatmapLoading}>
+							<Spinner size="sm" />
+							<span>Loading month overview...</span>
+						</div>
+					)}
+					{monthHeatmap.data.size > 0 && (
+						<MonthHeatmap
+							monthData={monthHeatmap.data}
+							month={monthHeatmap.month}
+							year={monthHeatmap.year}
+							vacationDates={vacationDates}
+						/>
 					)}
 
 					{!hasGaps && (

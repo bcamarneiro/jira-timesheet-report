@@ -99,16 +99,15 @@ export const SettingsPage: React.FC = () => {
 
 	return (
 		<div className={styles.container}>
-			<section className={styles.hero}>
-				<div className={styles.heroText}>
-					<p className={styles.kicker}>Setup and trust</p>
-					<h1>Make the app easy to trust before it becomes easy to forget</h1>
-					<p className={styles.lead}>
-						We are treating Settings as onboarding now, not just storage. The
-						goal is simple: get someone from zero to a trustworthy Dashboard and
-						Reports flow without guesswork.
-					</p>
-				</div>
+				<section className={styles.hero}>
+					<div className={styles.heroText}>
+						<p className={styles.kicker}>Setup and trust</p>
+						<h1>Connect Jira once. Keep the workspace trustworthy.</h1>
+						<p className={styles.lead}>
+							Use this page to connect Jira, run diagnostics, and save a setup
+							that makes Dashboard and Reports reliable for day-to-day use.
+						</p>
+					</div>
 				<div className={styles.heroChecklist}>
 					<div>
 						<strong>Core setup</strong>

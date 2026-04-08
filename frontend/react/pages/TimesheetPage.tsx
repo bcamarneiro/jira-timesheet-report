@@ -18,7 +18,6 @@ import { TimesheetGrid } from '../components/TimesheetGrid';
 import { TeamStatsCards } from '../components/team/TeamStatsCards';
 import { TimesheetStatsCards } from '../components/timesheet/TimesheetStatsCards';
 import { UserSelector } from '../components/UserSelector';
-import { Button } from '../components/ui/Button';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { toast } from '../components/ui/Toast';
@@ -792,9 +791,9 @@ export const TimesheetPage: React.FC = () => {
 							onNext={goNextMonth}
 						/>
 					</>
-				) : (
-					<WeekNavigator
-						weekStart={weekStart}
+					) : (
+						<WeekNavigator
+							weekStart={weekStart}
 						weekEnd={weekEnd}
 						onPrev={goToPrevWeek}
 						onNext={goToNextWeek}
@@ -802,20 +801,10 @@ export const TimesheetPage: React.FC = () => {
 					/>
 				)}
 
-				<div className={styles.toolbarRight}>
-					{jiraDomain && <span className={styles.context}>{jiraDomain}</span>}
-					{viewMode === 'monthly' && filteredVisibleEntries.length > 0 && (
-						<Button variant="secondary" onClick={handleDownloadAll}>
-							Export All
-						</Button>
-					)}
-					{viewMode === 'weekly' && sortedMembers.length > 0 && (
-						<Button variant="secondary" onClick={handleExportTeamCsv}>
-							Export CSV
-						</Button>
-					)}
+					<div className={styles.toolbarRight}>
+						{jiraDomain && <span className={styles.context}>{jiraDomain}</span>}
+					</div>
 				</div>
-			</div>
 
 			<ReportsControlPanel
 				viewMode={viewMode}
@@ -834,14 +823,29 @@ export const TimesheetPage: React.FC = () => {
 				onSavePreset={handleSavePreset}
 				onApplyPreset={handleApplyPreset}
 				onRemovePreset={handleRemovePreset}
-				onCopyShareLink={handleCopyShareLink}
-				onExportSnapshotHtml={handleExportSnapshotHtml}
-				onExportSnapshotMarkdown={handleExportSnapshotMarkdown}
-				onValidateConsistency={handleValidateConsistency}
-				validationState={validationState}
-				canValidate={
-					viewMode === 'weekly' &&
-					!!config.jiraHost &&
+					onCopyShareLink={handleCopyShareLink}
+					onExportSnapshotHtml={handleExportSnapshotHtml}
+					onExportSnapshotMarkdown={handleExportSnapshotMarkdown}
+					onExportPrimary={
+						viewMode === 'weekly' ? handleExportTeamCsv : handleDownloadAll
+					}
+					onValidateConsistency={handleValidateConsistency}
+					validationState={validationState}
+					primaryExportLabel={
+						viewMode === 'weekly'
+							? 'Export CSV'
+							: filteredVisibleEntries.length > 0
+								? 'Export monthly CSVs'
+								: null
+					}
+					canExportPrimary={
+						viewMode === 'weekly'
+							? sortedMembers.length > 0
+							: filteredVisibleEntries.length > 0
+					}
+					canValidate={
+						viewMode === 'weekly' &&
+						!!config.jiraHost &&
 					!!config.apiToken &&
 					!teamLoading &&
 					!teamError

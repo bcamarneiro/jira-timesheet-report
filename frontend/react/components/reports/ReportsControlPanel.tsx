@@ -41,8 +41,11 @@ type Props = {
 	onCopyShareLink: () => Promise<void> | void;
 	onExportSnapshotHtml: () => void;
 	onExportSnapshotMarkdown: () => void;
+	onExportPrimary: () => void;
 	onValidateConsistency: () => Promise<void> | void;
 	validationState: ValidationState;
+	primaryExportLabel: string | null;
+	canExportPrimary: boolean;
 	canValidate: boolean;
 	canExportSnapshot: boolean;
 	dataFreshnessLabel: string;
@@ -78,8 +81,11 @@ export const ReportsControlPanel: React.FC<Props> = ({
 	onCopyShareLink,
 	onExportSnapshotHtml,
 	onExportSnapshotMarkdown,
+	onExportPrimary,
 	onValidateConsistency,
 	validationState,
+	primaryExportLabel,
+	canExportPrimary,
 	canValidate,
 	canExportSnapshot,
 	dataFreshnessLabel,
@@ -119,6 +125,16 @@ export const ReportsControlPanel: React.FC<Props> = ({
 					</div>
 				</div>
 				<div className={styles.headerActions}>
+					{primaryExportLabel ? (
+						<Button
+							type="button"
+							variant="secondary"
+							onClick={onExportPrimary}
+							disabled={!canExportPrimary}
+						>
+							{primaryExportLabel}
+						</Button>
+					) : null}
 					<Button
 						type="button"
 						variant="secondary"

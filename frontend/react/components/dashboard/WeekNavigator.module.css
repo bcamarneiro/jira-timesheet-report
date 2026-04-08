@@ -48,3 +48,22 @@
 	background: var(--color-surface-raised);
 	color: var(--color-text);
 }
+
+@media (max-width: 640px) {
+	.container {
+		width: 100%;
+		flex-wrap: wrap;
+		justify-content: center;
+		row-gap: var(--space-2);
+	}
+
+	.label {
+		order: -1;
+		flex: 1 1 100%;
+		min-width: 0;
+	}
+
+	.todayButton {
+		min-width: 72px;
+	}
+}
