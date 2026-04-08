@@ -1,0 +1,16 @@
+.git
+.github
+.husky
+.claude
+.vscode
+node_modules
+dist
+build
+coverage
+playwright-report
+test-results
+test-screenshots
+test-output.log
+.env
+.npmrc
+tmp

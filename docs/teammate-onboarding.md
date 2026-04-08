@@ -18,6 +18,7 @@ If you are unsure where to start, begin with `Dashboard`.
 You need:
 
 - the app URL
+- if your team uses Vercel, this will usually be a Vercel-hosted URL
 - your Jira email
 - your Jira API token
 - a `Share Pack` if your team lead or maintainer gave you one

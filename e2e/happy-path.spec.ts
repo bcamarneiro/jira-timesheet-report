@@ -11,9 +11,9 @@ test.describe('Home Page', () => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
 
-		// In offline mode the config is pre-set, so we should see "My Dashboard"
+		// In offline mode the config is pre-set, so we should see the configured dashboard CTA
 		await expect(
-			page.getByRole('link', { name: 'My Dashboard' }),
+			page.getByRole('link', { name: 'Open Dashboard' }),
 		).toBeVisible();
 		await expect(page.getByRole('link', { name: 'Reports' })).toBeVisible();
 	});
@@ -36,7 +36,7 @@ test.describe('Home Page', () => {
 
 	test('navigates to dashboard from home', async ({ page }) => {
 		await page.goto('/');
-		await page.getByRole('link', { name: 'My Dashboard' }).click();
+		await page.getByRole('link', { name: 'Open Dashboard' }).click();
 		await expect(page).toHaveURL(/\/dashboard/);
 	});
 });

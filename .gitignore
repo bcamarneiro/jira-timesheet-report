@@ -12,6 +12,7 @@ package-lock.json
 .npmrc
 frontend/public/mockServiceWorker.js
 .claude/
+.vercel
 
 # Test artifacts
 test-output.log

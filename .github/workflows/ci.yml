@@ -7,66 +7,92 @@ on:
     branches: [main, develop]
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 20
+          cache: npm
 
       - name: Install dependencies
-        run: bun install
+        run: npm ci
 
       - name: Run linter
-        run: bun run lint
-        continue-on-error: true
+        run: npm run lint
 
       - name: Run formatter check
-        run: bun run format -- --check
-        continue-on-error: true
+        run: npx biome check . --linter-enabled=false --assist-enabled=false
 
-      - name: Run tests with coverage
-        run: bun run test:coverage
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 30
+      - name: Run unit tests
+        run: npm run test:run
 
       - name: Build project
-        run: bun run build
-
-  build:
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build
-        run: bun run build
+        run: npm run build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
+          path: dist/
+          retention-days: 7
+
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start offline server
+        run: npm run dev:offline > /tmp/jira-timesheet-offline.log 2>&1 &
+
+      - name: Wait for offline server
+        run: |
+          for attempt in {1..60}; do
+            if curl -sI --max-time 5 http://127.0.0.1:5174/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/jira-timesheet-offline.log
+          exit 1
+
+      - name: Run E2E smoke tests
+        run: npm run test:e2e:smoke
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
           path: |
-            dist/
-            build/
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: Upload offline server log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-server-log
+          path: /tmp/jira-timesheet-offline.log
           retention-days: 7

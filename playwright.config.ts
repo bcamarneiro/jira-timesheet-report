@@ -24,10 +24,9 @@ export default defineConfig({
 		},
 	],
 
-	// Start the dev server in offline mode before running tests
-	// Note: Run `npm run dev:offline` manually before running tests locally
-	// The webServer is only automatically started in CI environments
-	webServer: process.env.CI
+	// Start the dev server in offline mode only when explicitly requested.
+	// Local usage and CI can also provide the server themselves for more reliable startup handling.
+	webServer: process.env.PLAYWRIGHT_WEB_SERVER === '1'
 		? {
 				command: 'npm run dev:offline',
 				url: 'http://127.0.0.1:5174',

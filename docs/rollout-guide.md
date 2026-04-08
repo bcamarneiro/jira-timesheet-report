@@ -13,6 +13,17 @@ The goal is simple:
 
 Use a phased rollout instead of dropping the app into a wide team channel without context.
 
+## Hosting Target
+
+Vercel is the preferred hosted path now.
+
+Why:
+
+- browser routing works cleanly with rewrites
+- the app stays fully static and zero-backend
+- previews are easier to share during pilot rollout
+- the production build does not need the GitHub Pages hash-routing fallback
+
 ### Phase 1: Internal Maintainer Check
 
 Before inviting teammates:
@@ -23,8 +34,9 @@ Before inviting teammates:
 ```bash
 npm run lint
 npm run test:run
+npm run test:e2e:smoke
 npm run build
-APP_BASE_PATH=/jira-timesheet-report/ npm run build:pages
+npm run build:vercel
 ```
 
 3. Open the app and verify:
@@ -63,7 +75,8 @@ For the pilot:
 1. Send the hosted URL
 2. Send a teammate-safe `Share Pack` from `Settings`
 3. Ask each person to complete onboarding using the guide in `docs/teammate-onboarding.md`
-4. Ask for feedback on:
+4. Collect feedback with `docs/pilot-feedback-template.md`
+5. Ask for feedback on:
    - setup time
    - diagnostics clarity
    - whether `Dashboard` or `Reports` was easier to understand first
@@ -99,6 +112,7 @@ Use this checklist before each meaningful rollout wave:
 Prepare these before sharing broadly:
 
 - hosted app URL
+- Vercel preview/production URL
 - one `Share Pack` per team or reporting scope
 - a short “what is this for?” intro message
 - one screenshot of `Dashboard`

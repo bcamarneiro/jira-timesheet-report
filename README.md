@@ -80,6 +80,7 @@ Open `http://localhost:5174`.
 
 - Maintainer rollout guide: `docs/rollout-guide.md`
 - Teammate onboarding guide: `docs/teammate-onboarding.md`
+- Pilot feedback template: `docs/pilot-feedback-template.md`
 
 ## Configure Jira
 
@@ -115,11 +116,13 @@ npm run cors-proxy:socks
 | `npm run dev` | Start the app against real Jira |
 | `npm run dev:offline` | Start the app with MSW mock data |
 | `npm run build` | Build production assets |
+| `npm run build:vercel` | Build the Vercel/static-hosting production variant |
 | `npm run build:pages` | Build the GitHub Pages variant with hash routing |
 | `npm run test` | Run Vitest in watch mode |
 | `npm run test:run` | Run Vitest once |
 | `npm run test:coverage` | Run tests with coverage |
 | `npm run test:e2e` | Run Playwright tests |
+| `npm run test:e2e:smoke` | Run the stable rollout smoke path |
 | `npm run lint` | Run Biome lint checks |
 | `npm run format` | Format the repo with Biome |
 | `npm run cors-proxy` | Start the local CORS proxy |
@@ -130,6 +133,27 @@ GitHub Pages deployment is automated via `.github/workflows/deploy-pages.yml` an
 The Pages build also ships a manifest and service worker so the app can be installed as a lightweight PWA on supported browsers.
 
 Route-level lazy loading and chunk splitting are enabled so static deployments do not ship the full workspace on first paint.
+
+CI now runs stricter quality gates plus a small Playwright smoke suite against the offline app so core onboarding and reporting flows stay covered between releases.
+
+## Vercel Deployment
+
+Vercel is now the preferred hosted rollout target.
+
+The repo includes:
+
+- `vercel.json` with SPA rewrites to `index.html`
+- `.vercelignore` to avoid uploading local artifacts
+- `npm run build:vercel` as the default production build command
+
+Recommended Vercel project settings:
+
+- Framework preset: `Other`
+- Build command: `npm run build:vercel`
+- Output directory: `dist`
+- Install command: `npm ci`
+
+Once deployed, `Dashboard`, `Reports`, and `Settings` should work with normal browser routing, unlike the hash-routing fallback used for GitHub Pages.
 
 ## Real-Data Validation
 
