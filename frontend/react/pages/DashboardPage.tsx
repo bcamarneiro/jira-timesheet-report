@@ -254,10 +254,10 @@ export const DashboardPage: React.FC = () => {
 				</div>
 			)}
 
-				{daySummaries.length > 0 && (
-					<>
-						{isLoadingWorklogs && (
-							<div className={styles.refetching}>
+			{daySummaries.length > 0 && (
+				<>
+					{isLoadingWorklogs && (
+						<div className={styles.refetching}>
 							<WorklogLoadingStatus
 								title="Updating your week"
 								progress={worklogsLoadingProgress}

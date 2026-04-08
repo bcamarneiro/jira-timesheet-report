@@ -791,9 +791,9 @@ export const TimesheetPage: React.FC = () => {
 							onNext={goNextMonth}
 						/>
 					</>
-					) : (
-						<WeekNavigator
-							weekStart={weekStart}
+				) : (
+					<WeekNavigator
+						weekStart={weekStart}
 						weekEnd={weekEnd}
 						onPrev={goToPrevWeek}
 						onNext={goToNextWeek}
@@ -801,10 +801,10 @@ export const TimesheetPage: React.FC = () => {
 					/>
 				)}
 
-					<div className={styles.toolbarRight}>
-						{jiraDomain && <span className={styles.context}>{jiraDomain}</span>}
-					</div>
+				<div className={styles.toolbarRight}>
+					{jiraDomain && <span className={styles.context}>{jiraDomain}</span>}
 				</div>
+			</div>
 
 			<ReportsControlPanel
 				viewMode={viewMode}
@@ -823,29 +823,29 @@ export const TimesheetPage: React.FC = () => {
 				onSavePreset={handleSavePreset}
 				onApplyPreset={handleApplyPreset}
 				onRemovePreset={handleRemovePreset}
-					onCopyShareLink={handleCopyShareLink}
-					onExportSnapshotHtml={handleExportSnapshotHtml}
-					onExportSnapshotMarkdown={handleExportSnapshotMarkdown}
-					onExportPrimary={
-						viewMode === 'weekly' ? handleExportTeamCsv : handleDownloadAll
-					}
-					onValidateConsistency={handleValidateConsistency}
-					validationState={validationState}
-					primaryExportLabel={
-						viewMode === 'weekly'
-							? 'Export CSV'
-							: filteredVisibleEntries.length > 0
-								? 'Export monthly CSVs'
-								: null
-					}
-					canExportPrimary={
-						viewMode === 'weekly'
-							? sortedMembers.length > 0
-							: filteredVisibleEntries.length > 0
-					}
-					canValidate={
-						viewMode === 'weekly' &&
-						!!config.jiraHost &&
+				onCopyShareLink={handleCopyShareLink}
+				onExportSnapshotHtml={handleExportSnapshotHtml}
+				onExportSnapshotMarkdown={handleExportSnapshotMarkdown}
+				onExportPrimary={
+					viewMode === 'weekly' ? handleExportTeamCsv : handleDownloadAll
+				}
+				onValidateConsistency={handleValidateConsistency}
+				validationState={validationState}
+				primaryExportLabel={
+					viewMode === 'weekly'
+						? 'Export CSV'
+						: filteredVisibleEntries.length > 0
+							? 'Export monthly CSVs'
+							: null
+				}
+				canExportPrimary={
+					viewMode === 'weekly'
+						? sortedMembers.length > 0
+						: filteredVisibleEntries.length > 0
+				}
+				canValidate={
+					viewMode === 'weekly' &&
+					!!config.jiraHost &&
 					!!config.apiToken &&
 					!teamLoading &&
 					!teamError

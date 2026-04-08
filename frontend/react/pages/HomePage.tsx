@@ -101,25 +101,25 @@ export const HomePage: React.FC = () => {
 				</div>
 			</section>
 
-				<section className={styles.section}>
-					<div className={styles.sectionHeading}>
-						<h2 className={styles.sectionTitle}>
-							Why teams can roll this out quickly
-						</h2>
-						<p className={styles.sectionDescription}>
-							The product works best when setup is lightweight, sharing a safe
-							configuration takes minutes, and the hosted path does not add new
-							operational work.
-						</p>
-					</div>
-					<div className={styles.adoptionGrid}>
-						<div className={styles.adoptionCard}>
-							<div className={styles.adoptionTitle}>No backend to maintain</div>
-							<div className={styles.adoptionDescription}>
-								The app stays static-host friendly, which makes Vercel or any
-								simple static host a realistic rollout path.
-							</div>
+			<section className={styles.section}>
+				<div className={styles.sectionHeading}>
+					<h2 className={styles.sectionTitle}>
+						Why teams can roll this out quickly
+					</h2>
+					<p className={styles.sectionDescription}>
+						The product works best when setup is lightweight, sharing a safe
+						configuration takes minutes, and the hosted path does not add new
+						operational work.
+					</p>
+				</div>
+				<div className={styles.adoptionGrid}>
+					<div className={styles.adoptionCard}>
+						<div className={styles.adoptionTitle}>No backend to maintain</div>
+						<div className={styles.adoptionDescription}>
+							The app stays static-host friendly, which makes Vercel or any
+							simple static host a realistic rollout path.
 						</div>
+					</div>
 					<div className={styles.adoptionCard}>
 						<div className={styles.adoptionTitle}>
 							Import/export already exists
@@ -141,16 +141,16 @@ export const HomePage: React.FC = () => {
 				</div>
 			</section>
 
-				<section className={styles.section}>
-					<div className={styles.sectionHeading}>
-						<h2 className={styles.sectionTitle}>
-							Install it like a lightweight app
-						</h2>
-						<p className={styles.sectionDescription}>
-							A hosted workspace gets much more usable when it can live in a
-							dock, launcher, or home screen instead of a random browser tab.
-						</p>
-					</div>
+			<section className={styles.section}>
+				<div className={styles.sectionHeading}>
+					<h2 className={styles.sectionTitle}>
+						Install it like a lightweight app
+					</h2>
+					<p className={styles.sectionDescription}>
+						A hosted workspace gets much more usable when it can live in a dock,
+						launcher, or home screen instead of a random browser tab.
+					</p>
+				</div>
 				<PWAInstallCard />
 			</section>
 
