@@ -8,6 +8,13 @@ import {
 import { sanitizeFilename } from '../utils/downloadFile';
 import { isDateInMonth } from '../utils/date';
 
+export function formatMonthlyExportSegment(
+	year: number,
+	monthZeroIndexed: number,
+): string {
+	return `${year}-${String(monthZeroIndexed + 1).padStart(2, '0')}`;
+}
+
 /**
  * Filter worklogs to only include those within the specified month.
  */
@@ -65,7 +72,8 @@ export function useDownload() {
 		const userWorklogs = grouped[user] || {};
 		const filteredWorklogs = filterWorklogsByMonth(userWorklogs, year, month);
 		const csvContent = buildCsvForUser(filteredWorklogs, issueSummaries);
-		download(sanitizeFilename(`${user}-${year}-${month + 1}.csv`), csvContent);
+		const monthSegment = formatMonthlyExportSegment(year, month);
+		download(sanitizeFilename(`${user}-${monthSegment}.csv`), csvContent);
 	};
 
 	const downloadAll = (
@@ -76,15 +84,13 @@ export function useDownload() {
 		month: number,
 	) => {
 		const summaries: UserSummary[] = [];
+		const monthSegment = formatMonthlyExportSegment(year, month);
 
 		for (const user of users) {
 			const userWorklogs = grouped[user] || {};
 			const filteredWorklogs = filterWorklogsByMonth(userWorklogs, year, month);
 			const csvContent = buildCsvForUser(filteredWorklogs, issueSummaries);
-			download(
-				sanitizeFilename(`${user}-${year}-${month + 1}.csv`),
-				csvContent,
-			);
+			download(sanitizeFilename(`${user}-${monthSegment}.csv`), csvContent);
 
 			summaries.push(computeUserSummary(user, userWorklogs, year, month));
 		}
@@ -92,10 +98,7 @@ export function useDownload() {
 		// Download the summary CSV with all users
 		if (users.length > 1) {
 			const summaryCsv = buildSummaryCsv(summaries, year, month);
-			download(
-				sanitizeFilename(`summary-${year}-${month + 1}.csv`),
-				summaryCsv,
-			);
+			download(sanitizeFilename(`summary-${monthSegment}.csv`), summaryCsv);
 		}
 	};
 

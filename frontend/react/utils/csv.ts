@@ -26,6 +26,59 @@ function parseOriginalDateFromComment(
 	return match ? match[1] : null;
 }
 
+function getActualLoggedDateParts(worklog: EnrichedJiraWorklog): {
+	sortKey: number;
+	formattedDate: string;
+} {
+	const started = worklog.started ? new Date(worklog.started) : null;
+	if (!started || Number.isNaN(started.getTime())) {
+		return {
+			sortKey: Number.POSITIVE_INFINITY,
+			formattedDate: '',
+		};
+	}
+
+	const formattedDate = `${started.getFullYear()}/${String(
+		started.getMonth() + 1,
+	).padStart(2, '0')}/${String(started.getDate()).padStart(2, '0')}`;
+
+	return {
+		sortKey: started.getTime(),
+		formattedDate,
+	};
+}
+
+function getOriginalIntendedSortKey(worklog: EnrichedJiraWorklog): string {
+	const originalDate = parseOriginalDateFromComment(worklog.comment);
+	return originalDate ?? '9999/99/99';
+}
+
+function sortWorklogsForCsv(
+	data: EnrichedJiraWorklog[],
+): EnrichedJiraWorklog[] {
+	return [...data].sort((a, b) => {
+		const actualA = getActualLoggedDateParts(a);
+		const actualB = getActualLoggedDateParts(b);
+		if (actualA.sortKey !== actualB.sortKey) {
+			return actualA.sortKey - actualB.sortKey;
+		}
+
+		const originalA = getOriginalIntendedSortKey(a);
+		const originalB = getOriginalIntendedSortKey(b);
+		if (originalA !== originalB) {
+			return originalA.localeCompare(originalB);
+		}
+
+		const issueKeyA = a.issue?.key ?? '';
+		const issueKeyB = b.issue?.key ?? '';
+		if (issueKeyA !== issueKeyB) {
+			return issueKeyA.localeCompare(issueKeyB);
+		}
+
+		return (a.id ?? '').localeCompare(b.id ?? '');
+	});
+}
+
 export function isRetroactiveWorklog(
 	worklog: EnrichedJiraWorklog,
 	currentYear: number,
@@ -55,6 +108,7 @@ export function buildCsvForUser(
 	data: EnrichedJiraWorklog[],
 	issueSummaries: Record<string, string>,
 ): string {
+	const sortedData = sortWorklogsForCsv(data);
 	const headers = [
 		'Name',
 		'TicketKey',
@@ -63,7 +117,7 @@ export function buildCsvForUser(
 		'ActualLoggedDate',
 		'BookedTime',
 	].join(SEP);
-	const rows = data.map((entry) => {
+	const rows = sortedData.map((entry) => {
 		const name = entry.author?.displayName ?? '';
 		const ticketKey = entry.issue.key;
 		const ticketName = issueSummaries[entry.issue.id] ?? '';
@@ -73,10 +127,7 @@ export function buildCsvForUser(
 		const originalIntendedDate = originalDate || '';
 
 		// Actual logged date
-		const loggedDate = new Date(entry.started ?? '');
-		const actualLoggedDate = `${loggedDate.getFullYear()}/${String(
-			loggedDate.getMonth() + 1,
-		).padStart(2, '0')}/${String(loggedDate.getDate()).padStart(2, '0')}`;
+		const actualLoggedDate = getActualLoggedDateParts(entry).formattedDate;
 
 		// Booked time in hours
 		const bookedTime = (entry.timeSpentSeconds ?? 0) / 3600;
@@ -92,7 +143,7 @@ export function buildCsvForUser(
 	});
 
 	// Calculate total hours
-	const totalSeconds = data.reduce(
+	const totalSeconds = sortedData.reduce(
 		(sum, entry) => sum + (entry.timeSpentSeconds ?? 0),
 		0,
 	);

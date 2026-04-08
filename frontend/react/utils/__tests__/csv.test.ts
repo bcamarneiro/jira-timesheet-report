@@ -148,6 +148,56 @@ describe('buildCsvForUser', () => {
 		expect(lines[3]).toBe(';;;;Total;3.00'); // 1 + 2 = 3 hours
 	});
 
+	it('should sort worklogs by actual logged date and then deterministic tie-breakers', () => {
+		const data: EnrichedJiraWorklog[] = [
+			{
+				id: '3',
+				started: '2025-01-16T14:00:00.000Z',
+				timeSpentSeconds: 7200,
+				author: mockAuthor,
+				issue: {
+					...mockIssue,
+					id: '12346',
+					key: 'PROJ-124',
+				},
+			} as EnrichedJiraWorklog,
+			{
+				id: '1',
+				started: '2025-01-15T14:00:00.000Z',
+				timeSpentSeconds: 1800,
+				author: mockAuthor,
+				issue: {
+					...mockIssue,
+					id: '12347',
+					key: 'PROJ-125',
+				},
+			} as EnrichedJiraWorklog,
+			{
+				id: '2',
+				started: '2025-01-15T09:00:00.000Z',
+				timeSpentSeconds: 3600,
+				author: mockAuthor,
+				issue: mockIssue,
+				comment: 'Retroactive. Original Worklog Date was: 2025/01/10',
+			} as EnrichedJiraWorklog,
+		];
+
+		const issueSummaries: Record<string, string> = {
+			'12345': 'First Issue',
+			'12346': 'Second Issue',
+			'12347': 'Third Issue',
+		};
+
+		const result = buildCsvForUser(data, issueSummaries);
+		const lines = result.split('\n');
+
+		expect(lines[1]).toBe(
+			'John Doe;PROJ-123;First Issue;2025/01/10;2025/01/15;1.00',
+		);
+		expect(lines[2]).toBe('John Doe;PROJ-125;Third Issue;;2025/01/15;0.50');
+		expect(lines[3]).toBe('John Doe;PROJ-124;Second Issue;;2025/01/16;2.00');
+	});
+
 	it('should handle missing issue summary', () => {
 		const data: EnrichedJiraWorklog[] = [
 			{
