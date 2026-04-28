@@ -129,7 +129,7 @@ export const ReportsControlPanel: React.FC<Props> = ({
 						</span>
 					</div>
 				</div>
-					<div className={styles.headerActions}>
+				<div className={styles.headerActions}>
 					{primaryExportLabel ? (
 						<Button
 							type="button"
@@ -207,7 +207,9 @@ export const ReportsControlPanel: React.FC<Props> = ({
 								/>
 								<div>
 									<span>Needs attention only</span>
-									<small>Show only people who still have a gap this week.</small>
+									<small>
+										Show only people who still have a gap this week.
+									</small>
 								</div>
 							</label>
 							<label
@@ -233,7 +235,9 @@ export const ReportsControlPanel: React.FC<Props> = ({
 									<select
 										value={trendWeeks}
 										onChange={(event) =>
-											onTrendWeeksChange(Number.parseInt(event.target.value, 10))
+											onTrendWeeksChange(
+												Number.parseInt(event.target.value, 10),
+											)
 										}
 									>
 										<option value={4}>4 weeks</option>

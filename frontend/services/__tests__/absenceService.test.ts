@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-	fetchAbsenceDays,
-	fetchAbsenceDaysByUser,
-} from '../absenceService';
+import { fetchAbsenceDays, fetchAbsenceDaysByUser } from '../absenceService';
 
 const teamCalendarIcs = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -53,11 +50,11 @@ describe('absenceService', () => {
 			'2026-04-10',
 		);
 
-		expect([...result.get('bruno@example.com')?.keys() ?? []]).toEqual([
+		expect([...(result.get('bruno@example.com')?.keys() ?? [])]).toEqual([
 			'2026-04-07',
 			'2026-04-09',
 		]);
-		expect([...result.get('daniel@example.com')?.keys() ?? []]).toEqual([
+		expect([...(result.get('daniel@example.com')?.keys() ?? [])]).toEqual([
 			'2026-04-08',
 		]);
 		expect(result.get('bruno@example.com')?.get('2026-04-07')?.kind).toBe(

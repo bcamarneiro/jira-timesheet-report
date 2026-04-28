@@ -87,13 +87,15 @@ export function useAbsenceDays(
 	options?: Options,
 ) {
 	const config = useConfigStore((s) => s.config);
-	const absenceByUserQuery = useAbsenceDaysByUser(rangeStart, rangeEnd, options);
+	const absenceByUserQuery = useAbsenceDaysByUser(
+		rangeStart,
+		rangeEnd,
+		options,
+	);
 	const currentUserEmail = config.email.trim().toLowerCase();
 
 	return {
 		...absenceByUserQuery,
-		data:
-			absenceByUserQuery.data?.get(currentUserEmail) ??
-			EMPTY_ABSENCE_DAYS,
+		data: absenceByUserQuery.data?.get(currentUserEmail) ?? EMPTY_ABSENCE_DAYS,
 	};
 }

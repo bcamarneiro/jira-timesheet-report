@@ -51,7 +51,9 @@ export function getAbsenceKindLabel(kind: AbsenceKind | undefined): string {
 	}
 }
 
-export function getAbsenceKindShortLabel(kind: AbsenceKind | undefined): string {
+export function getAbsenceKindShortLabel(
+	kind: AbsenceKind | undefined,
+): string {
 	switch (kind) {
 		case 'vacation':
 			return 'vac';

@@ -325,10 +325,7 @@ export const SettingsForm: React.FC = () => {
 	};
 
 	return (
-		<div
-			id={SETTINGS_SECTION_IDS.form}
-			className={styles.form}
-		>
+		<div id={SETTINGS_SECTION_IDS.form} className={styles.form}>
 			<input
 				ref={fileInputRef}
 				type="file"
@@ -464,8 +461,8 @@ export const SettingsForm: React.FC = () => {
 					</small>
 					<small>
 						Start with <code>npm run cors-proxy</code>. If your environment
-						needs SOCKS5, run <code>npm run cors-proxy:socks</code> and keep
-						the same local proxy URL here.
+						needs SOCKS5, run <code>npm run cors-proxy:socks</code> and keep the
+						same local proxy URL here.
 					</small>
 					{formData.corsProxy.trim() ? (
 						<small>
@@ -581,7 +578,8 @@ export const SettingsForm: React.FC = () => {
 								<h3>Recent GitLab activity</h3>
 								<p>
 									Use GitLab events to suggest time from pushes, merge request
-									actions, and review activity that already references Jira keys.
+									actions, and review activity that already references Jira
+									keys.
 								</p>
 							</div>
 							<span
@@ -714,8 +712,8 @@ export const SettingsForm: React.FC = () => {
 							<h3>Suggestion feeds and time off calendars</h3>
 							<p>
 								Suggestion feeds turn meetings into worklog candidates. Time off
-								calendars reduce target hours for the right person in Reports and
-								for you in Dashboard.
+								calendars reduce target hours for the right person in Reports
+								and for you in Dashboard.
 							</p>
 						</div>
 						<span
@@ -730,8 +728,8 @@ export const SettingsForm: React.FC = () => {
 							<div>
 								<h4>Suggestion feeds</h4>
 								<p>
-									Best for calendars whose event titles already include Jira keys
-									or can be mapped with the editor below.
+									Best for calendars whose event titles already include Jira
+									keys or can be mapped with the editor below.
 								</p>
 							</div>
 							<Button
@@ -950,7 +948,9 @@ export const SettingsForm: React.FC = () => {
 							onClick={testCalendar}
 							disabled={integrationTests.calendar.loading || !hasCalendarFeeds}
 						>
-							{integrationTests.calendar.loading ? 'Testing...' : 'Test calendars'}
+							{integrationTests.calendar.loading
+								? 'Testing...'
+								: 'Test calendars'}
 						</Button>
 					</div>
 					{integrationTests.calendar.result ? (

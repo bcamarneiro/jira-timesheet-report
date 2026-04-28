@@ -127,9 +127,9 @@ describe('buildSettingsSetupModel', () => {
 		expect(model.status).toBe('ready');
 		expect(model.steps[0]?.status).toBe('ready');
 		expect(model.steps[3]?.status).toBe('ready');
-		expect(model.diagnostics.find((item) => item.id === 'jira')?.detail).toContain(
-			'Recent Jira data fetches already succeeded',
-		);
+		expect(
+			model.diagnostics.find((item) => item.id === 'jira')?.detail,
+		).toContain('Recent Jira data fetches already succeeded');
 	});
 
 	it('does not trust old Jira fetch evidence when the form is dirty', () => {

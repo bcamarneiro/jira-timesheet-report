@@ -124,11 +124,13 @@ describe('useSettingsFormStore', () => {
 
 	it('clears Jira evidence when saving a different connection without a fresh pass', () => {
 		act(() => {
-			useUIStore.getState().markJiraConnectionEvidence(
-				'jira.example.com::user@example.com::token::',
-				'fetch',
-				'2026-04-08T10:00:00.000Z',
-			);
+			useUIStore
+				.getState()
+				.markJiraConnectionEvidence(
+					'jira.example.com::user@example.com::token::',
+					'fetch',
+					'2026-04-08T10:00:00.000Z',
+				);
 			useSettingsFormStore.setState({
 				integrationTests: {
 					jira: { loading: false, result: null },

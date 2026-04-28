@@ -1,7 +1,4 @@
-import type {
-	AbsenceAssignment,
-	CalendarFeed,
-} from '../stores/useConfigStore';
+import type { AbsenceAssignment, CalendarFeed } from '../stores/useConfigStore';
 import { logger } from '../react/utils/logger';
 import type { AbsenceKind } from '../../types/absence';
 
@@ -386,20 +383,20 @@ export async function fetchAbsenceDaysByUser(
 			continue;
 		}
 
-			const { label, absenceAttribution, titleFilter, events } = result.value;
-			for (const event of events) {
-				const matchedUsers =
-					absenceAttribution === 'shared'
-						? new Set(findMatchedUsers(event.summary, normalizedAssignments))
-						: new Set<string>();
-				if (
-					absenceAttribution === 'self' &&
-					normalizedCurrentUser &&
-					matchesTitleFilter(event.summary, titleFilter)
-				) {
-					matchedUsers.add(normalizedCurrentUser);
-				}
-				if (matchedUsers.size === 0) continue;
+		const { label, absenceAttribution, titleFilter, events } = result.value;
+		for (const event of events) {
+			const matchedUsers =
+				absenceAttribution === 'shared'
+					? new Set(findMatchedUsers(event.summary, normalizedAssignments))
+					: new Set<string>();
+			if (
+				absenceAttribution === 'self' &&
+				normalizedCurrentUser &&
+				matchesTitleFilter(event.summary, titleFilter)
+			) {
+				matchedUsers.add(normalizedCurrentUser);
+			}
+			if (matchedUsers.size === 0) continue;
 
 			const dates = expandAbsenceDates(event, rangeStart, rangeEnd);
 			for (const { date, summary } of dates) {
@@ -446,5 +443,7 @@ export async function fetchAbsenceDays(
 		signal,
 	);
 
-	return userAbsenceDays.get(currentUserEmail.trim().toLowerCase()) ?? new Map();
+	return (
+		userAbsenceDays.get(currentUserEmail.trim().toLowerCase()) ?? new Map()
+	);
 }

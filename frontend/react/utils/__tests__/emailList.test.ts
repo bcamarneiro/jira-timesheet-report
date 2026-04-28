@@ -33,9 +33,9 @@ describe('emailList', () => {
 	});
 
 	it('formats emails back to a csv string', () => {
-		expect(
-			formatEmailEntries(['one@example.com', 'two@example.com']),
-		).toBe('one@example.com, two@example.com');
+		expect(formatEmailEntries(['one@example.com', 'two@example.com'])).toBe(
+			'one@example.com, two@example.com',
+		);
 	});
 
 	it('parses csv email lists into unique normalized emails', () => {

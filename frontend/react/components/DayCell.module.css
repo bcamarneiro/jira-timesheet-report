@@ -79,7 +79,11 @@
 }
 
 .absenceDay {
-	background: color-mix(in srgb, var(--color-warning-bg) 76%, var(--color-surface));
+	background: color-mix(
+		in srgb,
+		var(--color-warning-bg) 76%,
+		var(--color-surface)
+	);
 	border-color: var(--color-warning-border);
 }
 

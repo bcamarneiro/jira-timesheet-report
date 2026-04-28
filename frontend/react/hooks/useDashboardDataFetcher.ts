@@ -78,10 +78,11 @@ export function useDashboardDataFetcher() {
 	const hasAbsenceFeeds = (calendarFeeds ?? []).some(
 		(feed) => feed.type === 'absence' && feed.url.trim(),
 	);
-	const {
-		data: absenceDays,
-		isFetched: absenceDaysReady,
-	} = useAbsenceDays(weekStart, weekEnd, { enabled: hasAbsenceFeeds });
+	const { data: absenceDays, isFetched: absenceDaysReady } = useAbsenceDays(
+		weekStart,
+		weekEnd,
+		{ enabled: hasAbsenceFeeds },
+	);
 
 	useEffect(() => {
 		if (!jiraHost || !apiToken) return;

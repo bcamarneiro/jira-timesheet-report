@@ -1,10 +1,7 @@
 import type React from 'react';
 import { useId, useMemo, useState } from 'react';
 import type { AbsenceAssignment } from '../../../stores/useConfigStore';
-import {
-	isValidEmailEntry,
-	normalizeEmailEntry,
-} from '../../utils/emailList';
+import { isValidEmailEntry, normalizeEmailEntry } from '../../utils/emailList';
 import { Button } from '../ui/Button';
 import * as styles from './TeamAbsenceAssignmentsEditor.module.css';
 
@@ -66,8 +63,7 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 
 		const duplicate = assignments.some(
 			(assignment) =>
-				assignmentKey(assignment) ===
-					assignmentKey({ pattern, userEmail }) &&
+				assignmentKey(assignment) === assignmentKey({ pattern, userEmail }) &&
 				(!editingAssignment ||
 					assignmentKey(assignment) !== assignmentKey(editingAssignment)),
 		);
@@ -142,7 +138,9 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 									<strong>{assignment.pattern}</strong>
 								</div>
 								<div className={styles.assignmentCell}>
-									<span className={styles.cellLabel}>Counts as time off for</span>
+									<span className={styles.cellLabel}>
+										Counts as time off for
+									</span>
 									<code>{assignment.userEmail}</code>
 								</div>
 							</div>
@@ -164,7 +162,8 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 									onClick={() => {
 										if (
 											editingAssignment &&
-											assignmentKey(editingAssignment) === assignmentKey(assignment)
+											assignmentKey(editingAssignment) ===
+												assignmentKey(assignment)
 										) {
 											resetComposer();
 										}

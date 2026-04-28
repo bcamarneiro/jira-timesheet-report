@@ -94,7 +94,11 @@
 
 .timeOff {
 	border-color: var(--color-warning-border);
-	background: color-mix(in srgb, var(--color-warning-bg) 72%, var(--color-surface));
+	background: color-mix(
+		in srgb,
+		var(--color-warning-bg) 72%,
+		var(--color-surface)
+	);
 }
 
 .empty {

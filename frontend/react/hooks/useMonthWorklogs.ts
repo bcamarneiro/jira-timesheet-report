@@ -101,7 +101,10 @@ export function useMonthWorklogs(
 
 		useUIStore
 			.getState()
-			.markJiraConnectionEvidence(buildJiraConnectionFingerprint(config), 'fetch');
+			.markJiraConnectionEvidence(
+				buildJiraConnectionFingerprint(config),
+				'fetch',
+			);
 	}, [config, result.dataUpdatedAt, result.isSuccess]);
 
 	useEffect(() => {

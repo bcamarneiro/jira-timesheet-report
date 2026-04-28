@@ -18,9 +18,7 @@ type Props = {
 	placeholder?: string;
 };
 
-type Feedback =
-	| { tone: 'error' | 'info'; message: string }
-	| null;
+type Feedback = { tone: 'error' | 'info'; message: string } | null;
 
 export const AllowedUsersInput: React.FC<Props> = ({
 	id,
@@ -233,7 +231,11 @@ export const AllowedUsersInput: React.FC<Props> = ({
 			</label>
 
 			{isFocused && availableSuggestions.length > 0 ? (
-				<div id={`${id}-suggestions`} className={styles.dropdown} role="listbox">
+				<div
+					id={`${id}-suggestions`}
+					className={styles.dropdown}
+					role="listbox"
+				>
 					{availableSuggestions.slice(0, 5).map((suggestion, index) => (
 						<button
 							key={suggestion}

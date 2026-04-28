@@ -191,7 +191,8 @@ export function buildSettingsSetupModel(
 			? 'warning'
 			: 'ready';
 
-	const coreReady = (jiraResult?.success === true || hasSavedJiraEvidence) && !isDirty;
+	const coreReady =
+		(jiraResult?.success === true || hasSavedJiraEvidence) && !isDirty;
 	const overallStatus: SetupStatus = coreReady
 		? 'ready'
 		: hasConnectionCredentials

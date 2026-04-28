@@ -7,10 +7,7 @@ import {
 import { logger } from '../react/utils/logger';
 import { toLocalDateString } from '../react/utils/date';
 import { normalizeConfig, type Config, useConfigStore } from './useConfigStore';
-import {
-	buildJiraConnectionFingerprint,
-	useUIStore,
-} from './useUIStore';
+import { buildJiraConnectionFingerprint, useUIStore } from './useUIStore';
 
 export interface IntegrationTestResult {
 	loading: boolean;
@@ -83,13 +80,12 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 		const normalizedConfig = normalizeConfig(formData);
 		const nextFingerprint = buildJiraConnectionFingerprint(normalizedConfig);
 		const savedFingerprint = buildJiraConnectionFingerprint(savedConfig);
-		const jiraWasVerified = get().integrationTests.jira.result?.success === true;
+		const jiraWasVerified =
+			get().integrationTests.jira.result?.success === true;
 		useConfigStore.getState().setConfig(normalizedConfig);
 
 		if (jiraWasVerified && nextFingerprint) {
-			useUIStore
-				.getState()
-				.markJiraConnectionEvidence(nextFingerprint, 'test');
+			useUIStore.getState().markJiraConnectionEvidence(nextFingerprint, 'test');
 		} else if (savedFingerprint !== nextFingerprint) {
 			useUIStore.getState().clearJiraConnectionEvidence();
 		}
@@ -187,7 +183,8 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				},
 			}));
 
-			const currentFingerprint = buildJiraConnectionFingerprint(normalizedConfig);
+			const currentFingerprint =
+				buildJiraConnectionFingerprint(normalizedConfig);
 			const savedFingerprint = buildJiraConnectionFingerprint(
 				useConfigStore.getState().config,
 			);

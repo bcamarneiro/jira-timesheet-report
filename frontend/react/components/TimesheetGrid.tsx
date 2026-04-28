@@ -49,7 +49,11 @@ export const TimesheetGrid: React.FC<Props> = ({
 		Math.max(
 			0,
 			getWorkingDaysInMonth(year, monthZeroIndexed) -
-				countAbsenceWorkdaysInMonth(absenceDays?.keys(), year, monthZeroIndexed),
+				countAbsenceWorkdaysInMonth(
+					absenceDays?.keys(),
+					year,
+					monthZeroIndexed,
+				),
 		) *
 		8 *
 		3600;

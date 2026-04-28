@@ -207,9 +207,14 @@
 }
 
 .toggleCardActive {
-	border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+	border-color: color-mix(
+		in srgb,
+		var(--color-primary) 40%,
+		var(--color-border)
+	);
 	background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
-	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 22%, transparent);
+	box-shadow: 0 0 0 1px
+		color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 .validationBox,

@@ -153,7 +153,8 @@ export function normalizeConfig(
 								...feed,
 								absenceAttribution:
 									feed.absenceAttribution ??
-									(feed.titleFilter?.trim() || normalizedAbsenceAssignments.length === 0
+									(feed.titleFilter?.trim() ||
+									normalizedAbsenceAssignments.length === 0
 										? 'self'
 										: 'shared'),
 							}

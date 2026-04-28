@@ -225,11 +225,13 @@ describe('useUIStore', () => {
 	describe('jira connection evidence', () => {
 		it('marks Jira connection evidence with a fingerprint and source', () => {
 			act(() => {
-				useUIStore.getState().markJiraConnectionEvidence(
-					'jira.example.com::user@example.com::token::http://localhost:8081',
-					'fetch',
-					'2026-04-08T10:00:00.000Z',
-				);
+				useUIStore
+					.getState()
+					.markJiraConnectionEvidence(
+						'jira.example.com::user@example.com::token::http://localhost:8081',
+						'fetch',
+						'2026-04-08T10:00:00.000Z',
+					);
 			});
 
 			expect(useUIStore.getState().jiraConnectionEvidenceAt).toBe(
@@ -243,10 +245,12 @@ describe('useUIStore', () => {
 
 		it('clears Jira connection evidence', () => {
 			act(() => {
-				useUIStore.getState().markJiraConnectionEvidence(
-					'jira.example.com::user@example.com::token::',
-					'test',
-				);
+				useUIStore
+					.getState()
+					.markJiraConnectionEvidence(
+						'jira.example.com::user@example.com::token::',
+						'test',
+					);
 			});
 
 			act(() => {
@@ -254,7 +258,9 @@ describe('useUIStore', () => {
 			});
 
 			expect(useUIStore.getState().jiraConnectionEvidenceAt).toBeNull();
-			expect(useUIStore.getState().jiraConnectionEvidenceFingerprint).toBeNull();
+			expect(
+				useUIStore.getState().jiraConnectionEvidenceFingerprint,
+			).toBeNull();
 			expect(useUIStore.getState().jiraConnectionEvidenceSource).toBeNull();
 		});
 	});

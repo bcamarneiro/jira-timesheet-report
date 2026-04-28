@@ -30,9 +30,9 @@ export const CalendarMappingsEditor: React.FC<Props> = ({
 	const [editingPattern, setEditingPattern] = useState<string | null>(null);
 	const [draftPattern, setDraftPattern] = useState('');
 	const [draftIssueKey, setDraftIssueKey] = useState('');
-	const [draftIssueSummary, setDraftIssueSummary] = useState<string | undefined>(
-		undefined,
-	);
+	const [draftIssueSummary, setDraftIssueSummary] = useState<
+		string | undefined
+	>(undefined);
 	const patternInputId = useId();
 	const issueInputId = useId();
 
@@ -41,7 +41,8 @@ export const CalendarMappingsEditor: React.FC<Props> = ({
 		if (!normalizedQuery) return mappings;
 
 		return mappings.filter((mapping) => {
-			const haystack = `${mapping.pattern} ${mapping.issueKey} ${mapping.issueSummary ?? ''}`.toLowerCase();
+			const haystack =
+				`${mapping.pattern} ${mapping.issueKey} ${mapping.issueSummary ?? ''}`.toLowerCase();
 			return haystack.includes(normalizedQuery);
 		});
 	}, [mappings, searchQuery]);
@@ -184,8 +185,8 @@ export const CalendarMappingsEditor: React.FC<Props> = ({
 							{editingPattern ? 'Edit mapping' : 'Add calendar mapping'}
 						</strong>
 						<p>
-							Shared calendars work best when you map a stable title pattern to a
-							reliable issue key.
+							Shared calendars work best when you map a stable title pattern to
+							a reliable issue key.
 						</p>
 					</div>
 					{editingPattern ? (

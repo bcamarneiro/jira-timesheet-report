@@ -12,8 +12,7 @@ export function useDayCalculation(
 			(sum, wl) => sum + wl.timeSpentSeconds,
 			0,
 		);
-		const baselineSeconds =
-			isWeekend || isAbsent ? 0 : BASELINE_HOURS * 3600;
+		const baselineSeconds = isWeekend || isAbsent ? 0 : BASELINE_HOURS * 3600;
 		const effectiveSeconds = dayTotalSeconds;
 		const missingSeconds = Math.max(0, baselineSeconds - effectiveSeconds);
 

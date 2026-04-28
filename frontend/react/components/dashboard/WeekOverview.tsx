@@ -52,8 +52,8 @@ export const WeekOverview = memo<Props>(function WeekOverview({ days }) {
 							: day.loggedSeconds >= day.targetSeconds
 								? 'complete'
 								: day.loggedSeconds > 0
-								? 'partially logged'
-								: 'empty';
+									? 'partially logged'
+									: 'empty';
 					return (
 						<li
 							key={day.date}
@@ -73,9 +73,9 @@ export const WeekOverview = memo<Props>(function WeekOverview({ days }) {
 									? formatHours(day.loggedSeconds)
 									: day.targetSeconds === 0 && !day.isWeekend
 										? getAbsenceKindShortLabel(day.absenceKind)
-									: day.isWeekend
-										? ''
-										: '0h'}
+										: day.isWeekend
+											? ''
+											: '0h'}
 							</div>
 						</li>
 					);

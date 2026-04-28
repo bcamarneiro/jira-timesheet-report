@@ -317,10 +317,11 @@ export const TimesheetPage: React.FC = () => {
 		monthEnd,
 		{ enabled: viewMode === 'monthly' },
 	);
-	const { issueSummaries, users, userEmails, grouped, visibleEntries } = useMemo(
-		() => deriveMonthlyReportState(data, selectedUser, allowedUsers),
-		[data, selectedUser, allowedUsers],
-	);
+	const { issueSummaries, users, userEmails, grouped, visibleEntries } =
+		useMemo(
+			() => deriveMonthlyReportState(data, selectedUser, allowedUsers),
+			[data, selectedUser, allowedUsers],
+		);
 	const [validationState, setValidationState] =
 		useState<ReportsValidationState>(() =>
 			buildIdleValidationState(viewMode, weekStart, weekEnd),
@@ -909,11 +910,11 @@ export const TimesheetPage: React.FC = () => {
 						<div className={styles.emptyState}>
 							<div className={styles.emptyIcon}>&#128203;</div>
 							<div className={styles.emptyTitle}>No team data found</div>
-								<div className={styles.emptyDescription}>
-									No worklogs were found for this week. Make sure team members
-									have logged time, or configure your team members list in
-									Settings.
-								</div>
+							<div className={styles.emptyDescription}>
+								No worklogs were found for this week. Make sure team members
+								have logged time, or configure your team members list in
+								Settings.
+							</div>
 						</div>
 					)}
 

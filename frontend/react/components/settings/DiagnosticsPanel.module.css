@@ -83,8 +83,7 @@
 			135deg,
 			color-mix(in srgb, var(--color-primary) 10%, transparent),
 			transparent 54%
-		),
-		var(--color-surface-raised);
+		), var(--color-surface-raised);
 }
 
 .checklist {
