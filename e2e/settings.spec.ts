@@ -17,7 +17,10 @@ test.describe('Settings Page', () => {
 		await expect(page.getByLabel(/JQL Filter/)).toBeVisible();
 		await expect(page.getByLabel(/Allow adding worklogs/)).toBeVisible();
 		await expect(page.getByLabel('Theme')).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Export' })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Backup' })).toBeVisible();
+		await expect(
+			page.getByRole('button', { name: 'Share Pack' }),
+		).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Import' })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Discard' })).toBeDisabled();
 		await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
@@ -29,7 +32,9 @@ test.describe('Settings Page', () => {
 		const jqlInput = page.getByLabel(/JQL Filter/);
 		await jqlInput.fill('project = PLAY');
 
-		await expect(page.getByText('Unsaved changes')).toBeVisible();
+		await expect(
+			page.getByText('Unsaved changes', { exact: true }),
+		).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Discard' })).toBeEnabled();
 		await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
 
@@ -42,7 +47,7 @@ test.describe('Settings Page', () => {
 
 	test('exports settings as a JSON backup', async ({ page }) => {
 		const downloadPromise = page.waitForEvent('download');
-		await page.getByRole('button', { name: 'Export' }).click();
+		await page.getByRole('button', { name: 'Backup' }).click();
 		const download = await downloadPromise;
 
 		expect(download.suggestedFilename()).toBe('jira-timesheet-settings.json');
@@ -55,7 +60,7 @@ test.describe('Settings Page', () => {
 		}
 
 		const parsed = JSON.parse(content);
-		expect(parsed.version).toBe(1);
+		expect(parsed.version).toBe(2);
 		expect(parsed.config.jiraHost).toBe('mock.atlassian.net');
 		expect(Array.isArray(parsed.calendarMappings)).toBe(true);
 	});
@@ -95,7 +100,7 @@ test.describe('Settings Page', () => {
 		});
 
 		await expect(
-			page.getByText('Settings imported into the form'),
+			page.getByText('Settings backup imported into the form'),
 		).toBeVisible();
 		await expect(page.getByLabel('Jira Host')).toHaveValue(
 			'imported.atlassian.net',
@@ -104,7 +109,7 @@ test.describe('Settings Page', () => {
 		await expect(page.getByLabel(/JQL Filter/)).toHaveValue('project = IMPORT');
 		await expect(page.getByLabel('Theme')).toHaveValue('dark');
 		await expect(page.getByLabel('Time Rounding')).toHaveValue('30m');
-		await expect(page.getByDisplayValue('Planning')).toBeVisible();
-		await expect(page.getByDisplayValue('IMP-42')).toBeVisible();
+		await expect(page.getByText('Planning', { exact: true })).toBeVisible();
+		await expect(page.getByText('IMP-42', { exact: true })).toBeVisible();
 	});
 });

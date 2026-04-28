@@ -73,15 +73,16 @@ test.describe('Timesheet Page', () => {
 	});
 
 	test('should display calendar with weekday headers', async ({ page }) => {
-		const body = await page.textContent('body');
-
-		// Check for weekday labels
-		const hasSun = body?.includes('Sun');
-		const hasMon = body?.includes('Mon');
-		const hasFri = body?.includes('Fri');
-		const hasSat = body?.includes('Sat');
-
-		expect(hasSun && hasMon && hasFri && hasSat).toBeTruthy();
+		for (const weekday of ['Sun', 'Mon', 'Fri', 'Sat']) {
+			await expect
+				.poll(() =>
+					page
+						.locator('[class*="weekdayLabel"]')
+						.filter({ hasText: weekday })
+						.count(),
+				)
+				.toBeGreaterThan(0);
+		}
 	});
 
 	test('should show month total hours', async ({ page }) => {

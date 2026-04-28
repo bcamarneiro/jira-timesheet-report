@@ -48,7 +48,7 @@ test.describe('Smoke rollout paths', () => {
 			page.getByText('Filter, share, and validate this view'),
 		).toBeVisible();
 		await expect(
-			page.getByRole('button', { name: 'Validate weekly vs monthly' }),
+			page.getByRole('button', { name: 'Run consistency check' }),
 		).toBeVisible();
 		await expect(
 			page.getByRole('button', { name: 'Snapshot HTML' }),

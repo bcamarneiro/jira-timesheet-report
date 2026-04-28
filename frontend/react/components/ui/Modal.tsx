@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import * as styles from './Modal.module.css';
 
 type Props = {
@@ -16,6 +16,7 @@ export const Modal: React.FC<Props> = ({
 	children,
 }) => {
 	const dialogRef = useRef<HTMLDialogElement>(null);
+	const titleId = useId();
 
 	useEffect(() => {
 		const dialog = dialogRef.current;
@@ -70,11 +71,11 @@ export const Modal: React.FC<Props> = ({
 			className={styles.dialog}
 			onClick={handleBackdropClick}
 			onKeyDown={handleKeyDown}
-			aria-labelledby="modal-title"
+			aria-labelledby={titleId}
 		>
 			<div className={styles.modal}>
 				<div className={styles.header}>
-					<h2 id="modal-title" className={styles.title}>
+					<h2 id={titleId} className={styles.title}>
 						{title}
 					</h2>
 					<button

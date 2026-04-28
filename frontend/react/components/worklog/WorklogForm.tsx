@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { formatDateTimeLocalValue } from '../../utils/date';
 import { isValidTimeSpentFormat } from '../../utils/timeSpent';
 import { Button } from '../ui/Button';
@@ -31,6 +31,10 @@ export const WorklogForm: React.FC<Props> = ({
 	isEdit = false,
 	isLoading = false,
 }) => {
+	const issueKeyId = useId();
+	const timeSpentId = useId();
+	const startedId = useId();
+	const commentId = useId();
 	const [issueKey, setIssueKey] = useState(initialData?.issueKey || '');
 	const [timeSpent, setTimeSpent] = useState(initialData?.timeSpent || '');
 	const [comment, setComment] = useState(initialData?.comment || '');
@@ -81,12 +85,12 @@ export const WorklogForm: React.FC<Props> = ({
 	return (
 		<form onSubmit={handleSubmit} className={styles.form}>
 			<div className={styles.formGroup}>
-				<label htmlFor="issueKey">
+				<label htmlFor={issueKeyId}>
 					Issue Key <span className={styles.required}>*</span>
 				</label>
 				<input
 					type="text"
-					id="issueKey"
+					id={issueKeyId}
 					value={issueKey}
 					onChange={(e) => setIssueKey(e.target.value)}
 					placeholder="e.g., PROJ-123"
@@ -103,12 +107,12 @@ export const WorklogForm: React.FC<Props> = ({
 			</div>
 
 			<div className={styles.formGroup}>
-				<label htmlFor="timeSpent">
+				<label htmlFor={timeSpentId}>
 					Time Spent <span className={styles.required}>*</span>
 				</label>
 				<input
 					type="text"
-					id="timeSpent"
+					id={timeSpentId}
 					value={timeSpent}
 					onChange={(e) => setTimeSpent(e.target.value)}
 					placeholder="e.g., 1h 30m"
@@ -123,10 +127,10 @@ export const WorklogForm: React.FC<Props> = ({
 			</div>
 
 			<div className={styles.formGroup}>
-				<label htmlFor="started">Started</label>
+				<label htmlFor={startedId}>Started</label>
 				<input
 					type="datetime-local"
-					id="started"
+					id={startedId}
 					value={started}
 					onChange={(e) => setStarted(e.target.value)}
 					disabled={isLoading}
@@ -135,10 +139,10 @@ export const WorklogForm: React.FC<Props> = ({
 			</div>
 
 			<div className={styles.formGroup}>
-				<label htmlFor="comment">Description (Optional)</label>
+				<label htmlFor={commentId}>Description (Optional)</label>
 				<CommentPresets onSelect={handlePresetSelect} />
 				<textarea
-					id="comment"
+					id={commentId}
 					value={comment}
 					onChange={(e) => setComment(e.target.value)}
 					placeholder="Add a description of the work done..."

@@ -15,23 +15,19 @@ test.describe('Home Page', () => {
 		await expect(
 			page.getByRole('link', { name: 'Open Dashboard' }),
 		).toBeVisible();
-		await expect(page.getByRole('link', { name: 'Reports' })).toBeVisible();
+		await expect(
+			page.getByRole('navigation').getByRole('link', { name: 'Reports' }),
+		).toBeVisible();
 	});
 
-	test('shows feature cards', async ({ page }) => {
+	test('shows product areas', async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
 
-		await expect(
-			page.getByText('Monthly Reports', { exact: true }),
-		).toBeVisible();
-		await expect(
-			page.getByText('Weekly Dashboard', { exact: true }),
-		).toBeVisible();
-		await expect(page.getByText('CSV Export', { exact: true })).toBeVisible();
-		await expect(
-			page.getByText('Privacy First', { exact: true }),
-		).toBeVisible();
+		await expect(page.getByText('Weekly gap triage')).toBeVisible();
+		await expect(page.getByText('Weekly team compliance')).toBeVisible();
+		await expect(page.getByText('Connection details, JQL')).toBeVisible();
+		await expect(page.getByText('No backend to maintain')).toBeVisible();
 	});
 
 	test('navigates to dashboard from home', async ({ page }) => {
@@ -91,7 +87,7 @@ test.describe('Settings Page', () => {
 
 		// Filters section
 		await expect(page.getByLabel(/JQL Filter/)).toBeVisible();
-		await expect(page.getByLabel(/Allowed Users/)).toBeVisible();
+		await expect(page.getByLabel(/Team Members/)).toBeVisible();
 
 		// Permissions section
 		await expect(page.getByLabel(/Allow adding worklogs/)).toBeVisible();
@@ -225,6 +221,8 @@ test.describe('Dashboard Page', () => {
 	});
 
 	test('toolbar buttons are visible', async ({ page }) => {
+		const toolbar = page.locator('[class*="toolbarRight"]');
+
 		await expect(page.getByRole('button', { name: 'Pinned' })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Templates' })).toBeVisible();
 		await expect(
@@ -232,7 +230,7 @@ test.describe('Dashboard Page', () => {
 		).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Export MD' })).toBeVisible();
 		await expect(
-			page.getByRole('button', { name: 'Export CSV' }),
+			toolbar.getByRole('button', { name: 'Export CSV' }),
 		).toBeVisible();
 	});
 
@@ -256,7 +254,9 @@ test.describe('Dashboard Page', () => {
 
 		const dialog = page.locator('dialog[open]');
 		await expect(dialog).toBeVisible();
-		await expect(dialog.getByText('Pinned Issues')).toBeVisible();
+		await expect(
+			dialog.getByRole('heading', { name: 'Pinned Issues' }),
+		).toBeVisible();
 		await expect(
 			dialog.getByPlaceholder('e.g., PROJ-123 or search...'),
 		).toBeVisible();
@@ -282,7 +282,9 @@ test.describe('Dashboard Page', () => {
 
 		const dialog = page.locator('dialog[open]');
 		await expect(dialog).toBeVisible();
-		await expect(dialog.getByText('Recurring Templates')).toBeVisible();
+		await expect(
+			dialog.getByRole('heading', { name: 'Recurring Templates' }),
+		).toBeVisible();
 
 		await dialog.getByRole('button', { name: 'Close' }).click();
 		await expect(dialog).not.toBeVisible();
@@ -339,7 +341,7 @@ test.describe('Reports Page', () => {
 		await expect(
 			page.getByRole('columnheader', { name: 'Total' }),
 		).toBeVisible();
-		await expect(page.getByText('Gap')).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Gap' })).toBeVisible();
 
 		const tableText = await page.locator('table').textContent();
 		expect(tableText).toContain('Mon');

@@ -145,3 +145,23 @@
 		align-items: flex-start;
 	}
 }
+
+@media (max-width: 480px) {
+	.grid {
+		gap: var(--space-1);
+	}
+
+	.day {
+		min-width: 0;
+		padding: var(--space-2) var(--space-1);
+	}
+
+	.dayDate {
+		font-size: var(--text-base);
+	}
+
+	.barTrack {
+		width: 18px;
+		height: 40px;
+	}
+}
