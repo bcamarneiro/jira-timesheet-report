@@ -5,6 +5,10 @@ import {
 	type WorklogItem,
 } from '../../services/monthWorklogService';
 import { useConfigStore } from '../../stores/useConfigStore';
+import {
+	buildJiraConnectionFingerprint,
+	useUIStore,
+} from '../../stores/useUIStore';
 import type { WorklogFetchProgress } from '../../../types/worklogLoading';
 
 interface UseMonthWorklogsOptions {
@@ -91,6 +95,14 @@ export function useMonthWorklogs(
 			onProgress?.(null);
 		}
 	}, [result.isFetching, onProgress]);
+
+	useEffect(() => {
+		if (!result.isSuccess || result.dataUpdatedAt <= 0) return;
+
+		useUIStore
+			.getState()
+			.markJiraConnectionEvidence(buildJiraConnectionFingerprint(config), 'fetch');
+	}, [config, result.dataUpdatedAt, result.isSuccess]);
 
 	useEffect(() => {
 		if (!prefetchAdjacent || !jiraHost || !apiToken) return;

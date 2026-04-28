@@ -6,6 +6,13 @@ export interface CalendarFeed {
 	label: string;
 	url: string;
 	type: 'suggestion' | 'absence';
+	absenceAttribution?: 'self' | 'shared';
+	titleFilter?: string;
+}
+
+export interface AbsenceAssignment {
+	pattern: string;
+	userEmail: string;
 }
 
 export interface Config {
@@ -22,6 +29,7 @@ export interface Config {
 	gitlabHost: string;
 	rescueTimeApiKey: string;
 	calendarFeeds: CalendarFeed[];
+	absenceAssignments: AbsenceAssignment[];
 	complianceReminderEnabled: boolean;
 	theme: 'system' | 'light' | 'dark';
 	timeRounding: 'off' | '15m' | '30m';
@@ -32,7 +40,7 @@ interface ConfigState {
 	setConfig: (newConfig: Config) => void;
 }
 
-export const CONFIG_STORAGE_VERSION = 2;
+export const CONFIG_STORAGE_VERSION = 4;
 
 function normalizeHost(value: unknown): string {
 	if (typeof value !== 'string') return '';
@@ -64,11 +72,41 @@ function normalizeCalendarFeed(
 	const url =
 		typeof feed?.url === 'string' ? feed.url.trim().replace(/\/+$/g, '') : '';
 	if (!url) return null;
+	const type = feed?.type === 'absence' ? 'absence' : 'suggestion';
 
 	return {
 		label: typeof feed?.label === 'string' ? feed.label.trim() : '',
 		url,
-		type: feed?.type === 'absence' ? 'absence' : 'suggestion',
+		type,
+		absenceAttribution:
+			type === 'absence'
+				? feed?.absenceAttribution === 'shared'
+					? 'shared'
+					: feed?.absenceAttribution === 'self'
+						? 'self'
+						: undefined
+				: undefined,
+		titleFilter:
+			typeof feed?.titleFilter === 'string'
+				? feed.titleFilter.trim() || undefined
+				: undefined,
+	};
+}
+
+function normalizeAbsenceAssignment(
+	assignment: Partial<AbsenceAssignment> | undefined,
+): AbsenceAssignment | null {
+	const pattern =
+		typeof assignment?.pattern === 'string' ? assignment.pattern.trim() : '';
+	const userEmail =
+		typeof assignment?.userEmail === 'string'
+			? assignment.userEmail.trim().toLowerCase()
+			: '';
+	if (!pattern || !userEmail) return null;
+
+	return {
+		pattern,
+		userEmail,
 	};
 }
 
@@ -87,6 +125,7 @@ export function createDefaultConfig(): Config {
 		gitlabHost: '',
 		rescueTimeApiKey: '',
 		calendarFeeds: [],
+		absenceAssignments: [],
 		complianceReminderEnabled: false,
 		theme: 'system',
 		timeRounding: 'off',
@@ -97,6 +136,31 @@ export function normalizeConfig(
 	config: Partial<Config> | undefined,
 	fallback: Config = createDefaultConfig(),
 ): Config {
+	const normalizedAbsenceAssignments = Array.isArray(config?.absenceAssignments)
+		? config.absenceAssignments
+				.map(normalizeAbsenceAssignment)
+				.filter(
+					(assignment): assignment is AbsenceAssignment => assignment !== null,
+				)
+		: fallback.absenceAssignments.map((assignment) => ({ ...assignment }));
+	const normalizedCalendarFeeds = Array.isArray(config?.calendarFeeds)
+		? config.calendarFeeds
+				.map(normalizeCalendarFeed)
+				.filter((feed): feed is CalendarFeed => feed !== null)
+				.map((feed) =>
+					feed.type === 'absence'
+						? {
+								...feed,
+								absenceAttribution:
+									feed.absenceAttribution ??
+									(feed.titleFilter?.trim() || normalizedAbsenceAssignments.length === 0
+										? 'self'
+										: 'shared'),
+							}
+						: feed,
+				)
+		: fallback.calendarFeeds.map((feed) => ({ ...feed }));
+
 	return {
 		...fallback,
 		...config,
@@ -138,11 +202,8 @@ export function normalizeConfig(
 			typeof config?.rescueTimeApiKey === 'string'
 				? config.rescueTimeApiKey.trim()
 				: fallback.rescueTimeApiKey.trim(),
-		calendarFeeds: Array.isArray(config?.calendarFeeds)
-			? config.calendarFeeds
-					.map(normalizeCalendarFeed)
-					.filter((feed): feed is CalendarFeed => feed !== null)
-			: fallback.calendarFeeds.map((feed) => ({ ...feed })),
+		calendarFeeds: normalizedCalendarFeeds,
+		absenceAssignments: normalizedAbsenceAssignments,
 		complianceReminderEnabled:
 			typeof config?.complianceReminderEnabled === 'boolean'
 				? config.complianceReminderEnabled

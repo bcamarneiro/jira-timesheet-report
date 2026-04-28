@@ -15,6 +15,18 @@ interface CalendarEvent {
 	exdates: string[]; // EXDATE values (excluded occurrences)
 }
 
+function isAbortError(error: unknown): boolean {
+	return (
+		(error instanceof DOMException && error.name === 'AbortError') ||
+		(error instanceof Error && error.name === 'AbortError')
+	);
+}
+
+function matchesTitleFilter(summary: string, titleFilter?: string): boolean {
+	if (!titleFilter?.trim()) return true;
+	return summary.toLowerCase().includes(titleFilter.trim().toLowerCase());
+}
+
 function extractJiraKeys(text: string): string[] {
 	const matches = text.match(JIRA_KEY_RE);
 	return matches ? [...new Set(matches)] : [];
@@ -436,6 +448,7 @@ export async function fetchCalendarSuggestions(
 		feeds.map((feed) =>
 			fetchFeed(feed.url, corsProxy, signal).then((events) => ({
 				label: feed.label,
+				titleFilter: feed.titleFilter,
 				events,
 			})),
 		),
@@ -446,6 +459,9 @@ export async function fetchCalendarSuggestions(
 		if (result.status === 'fulfilled') {
 			let expandedCount = 0;
 			for (const event of result.value.events) {
+				if (!matchesTitleFilter(event.summary, result.value.titleFilter)) {
+					continue;
+				}
 				// Expand recurring events into individual occurrences
 				const occurrences = expandRecurring(event, weekStart, weekEnd);
 				expandedCount += occurrences.length;
@@ -457,8 +473,14 @@ export async function fetchCalendarSuggestions(
 				`[Calendar] Feed "${result.value.label}": ${result.value.events.length} events, ${expandedCount} after expanding recurrences`,
 			);
 		} else {
-			logger.warn('[Calendar] Feed failed:', result.reason);
+			if (!isAbortError(result.reason)) {
+				logger.warn('[Calendar] Feed failed:', result.reason);
+			}
 		}
+	}
+
+	if (signal?.aborted) {
+		return [];
 	}
 
 	logger.debug(

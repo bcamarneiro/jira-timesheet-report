@@ -1,7 +1,16 @@
 import { create } from 'zustand';
+import {
+	buildGitlabBaseUrl,
+	describeGitlabConnectionError,
+	normalizeGitlabHost,
+} from '../services/gitlabService';
 import { logger } from '../react/utils/logger';
 import { toLocalDateString } from '../react/utils/date';
 import { normalizeConfig, type Config, useConfigStore } from './useConfigStore';
+import {
+	buildJiraConnectionFingerprint,
+	useUIStore,
+} from './useUIStore';
 
 export interface IntegrationTestResult {
 	loading: boolean;
@@ -70,8 +79,21 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 
 	saveSettings: () => {
 		const { formData } = get();
+		const savedConfig = useConfigStore.getState().config;
 		const normalizedConfig = normalizeConfig(formData);
+		const nextFingerprint = buildJiraConnectionFingerprint(normalizedConfig);
+		const savedFingerprint = buildJiraConnectionFingerprint(savedConfig);
+		const jiraWasVerified = get().integrationTests.jira.result?.success === true;
 		useConfigStore.getState().setConfig(normalizedConfig);
+
+		if (jiraWasVerified && nextFingerprint) {
+			useUIStore
+				.getState()
+				.markJiraConnectionEvidence(nextFingerprint, 'test');
+		} else if (savedFingerprint !== nextFingerprint) {
+			useUIStore.getState().clearJiraConnectionEvidence();
+		}
+
 		set({
 			formData: normalizedConfig,
 			integrationTests: resetIntegrationTests(),
@@ -164,6 +186,16 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 					},
 				},
 			}));
+
+			const currentFingerprint = buildJiraConnectionFingerprint(normalizedConfig);
+			const savedFingerprint = buildJiraConnectionFingerprint(
+				useConfigStore.getState().config,
+			);
+			if (currentFingerprint === savedFingerprint && currentFingerprint) {
+				useUIStore
+					.getState()
+					.markJiraConnectionEvidence(currentFingerprint, 'test');
+			}
 		} catch (error) {
 			logger.error('[Test] Jira failed:', error);
 			set((s) => ({
@@ -197,13 +229,11 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 				throw new Error('GitLab host and token are required');
 			}
 
-			const cleanHost = normalizedConfig.gitlabHost
-				.replace(/^https?:\/\//, '')
-				.replace(/\/$/, '');
-			const gitlabOrigin = `https://${cleanHost}`;
-			const baseUrl = normalizedConfig.corsProxy
-				? `${normalizedConfig.corsProxy.replace(/\/$/, '')}/${gitlabOrigin}`
-				: gitlabOrigin;
+			const cleanHost = normalizeGitlabHost(normalizedConfig.gitlabHost);
+			const baseUrl = buildGitlabBaseUrl(
+				normalizedConfig.gitlabHost,
+				normalizedConfig.corsProxy,
+			);
 
 			const res = await fetch(`${baseUrl}/api/v4/user`, {
 				headers: {
@@ -213,8 +243,22 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 			});
 
 			if (!res.ok) {
-				if (res.status === 401) throw new Error('Invalid GitLab token');
-				throw new Error(`GitLab API error: ${res.status}`);
+				if (res.status === 401) {
+					throw new Error(
+						`GitLab rejected the token for ${cleanHost} (401). Check that the token is still active and has read_user or api scope.`,
+					);
+				}
+				if (res.status === 403) {
+					throw new Error(
+						`GitLab accepted the request but denied access on ${cleanHost} (403). Check account access and PAT scopes.`,
+					);
+				}
+				if (res.status === 404) {
+					throw new Error(
+						`Could not find the GitLab API on ${cleanHost} (404). Confirm the hostname and whether this self-hosted instance uses a custom base path.`,
+					);
+				}
+				throw new Error(`GitLab API error on ${cleanHost}: ${res.status}.`);
 			}
 
 			const user = (await res.json()) as { username: string };
@@ -225,13 +269,17 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 						loading: false,
 						result: {
 							success: true,
-							message: `Connected as @${user.username}`,
+							message: `Connected as @${user.username} on ${cleanHost}`,
 						},
 					},
 				},
 			}));
 		} catch (error) {
 			logger.error('[Test] GitLab failed:', error);
+			const { formData } = get();
+			const cleanHost = formData.gitlabHost
+				? normalizeGitlabHost(formData.gitlabHost)
+				: 'the configured GitLab host';
 			set((s) => ({
 				integrationTests: {
 					...s.integrationTests,
@@ -239,8 +287,7 @@ export const useSettingsFormStore = create<SettingsFormState>((set, get) => ({
 						loading: false,
 						result: {
 							success: false,
-							message:
-								error instanceof Error ? error.message : 'Connection failed',
+							message: describeGitlabConnectionError(error, cleanHost),
 						},
 					},
 				},

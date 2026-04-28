@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchMonthWorklogs } from '../../services/monthWorklogService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { addDaysToIsoDate, parseIsoDateLocal } from '../utils/date';
 import { buildManagerTrendModel } from '../utils/teamReports';
+import { useAbsenceDaysByUser } from './useAbsenceDays';
 import { monthWorklogsQueryKey } from './useMonthWorklogs';
 
 function getMonthsInRange(startDate: string, endDate: string) {
@@ -32,8 +34,13 @@ export function useReportsTrendData(
 	const config = useConfigStore((state) => state.config);
 	const enabled =
 		(options?.enabled ?? true) && !!config.jiraHost && !!config.apiToken;
+	const firstWeekStart = addDaysToIsoDate(weekStart, -7 * (trendWeeks - 1));
+	const lastWeekEnd = addDaysToIsoDate(weekStart, 6);
+	const absenceQuery = useAbsenceDaysByUser(firstWeekStart, lastWeekEnd, {
+		enabled,
+	});
 
-	return useQuery({
+	const worklogsQuery = useQuery({
 		queryKey: [
 			'reportsTrends',
 			weekStart,
@@ -45,8 +52,6 @@ export function useReportsTrendData(
 		enabled,
 		staleTime: 15 * 60 * 1000,
 		queryFn: async () => {
-			const firstWeekStart = addDaysToIsoDate(weekStart, -7 * (trendWeeks - 1));
-			const lastWeekEnd = addDaysToIsoDate(weekStart, 6);
 			const monthPairs = getMonthsInRange(firstWeekStart, lastWeekEnd);
 			const results = await Promise.all(
 				monthPairs.map(({ year, month }) =>
@@ -66,12 +71,33 @@ export function useReportsTrendData(
 				),
 			);
 
-			return buildManagerTrendModel(
-				results.flat(),
-				weekStart,
-				trendWeeks,
-				config.allowedUsers,
-			);
+			return results.flat();
 		},
 	});
+
+	const model = useMemo(() => {
+		if (!worklogsQuery.data) return undefined;
+
+		return buildManagerTrendModel(
+			worklogsQuery.data,
+			weekStart,
+			trendWeeks,
+			config.allowedUsers,
+			absenceQuery.data,
+		);
+	}, [
+		worklogsQuery.data,
+		weekStart,
+		trendWeeks,
+		config.allowedUsers,
+		absenceQuery.data,
+	]);
+
+	return {
+		...worklogsQuery,
+		data: model,
+		isLoading: worklogsQuery.isLoading || absenceQuery.isLoading,
+		isFetching: worklogsQuery.isFetching || absenceQuery.isFetching,
+		error: worklogsQuery.error ?? absenceQuery.error,
+	};
 }

@@ -2,6 +2,7 @@ import { memo, useState } from 'react';
 import type { DaySummary } from '../../../../types/Suggestion';
 import { useDashboardStore } from '../../../stores/useDashboardStore';
 import { useWorklogOperations } from '../../hooks/useWorklogOperations';
+import { getAbsenceKindLabel } from '../../utils/absence';
 import { parseIsoDateLocal, toLocalDateString } from '../../utils/date';
 import { formatHours } from '../../utils/format';
 import { toast } from '../ui/Toast';
@@ -54,6 +55,10 @@ export const DayCard = memo<Props>(function DayCard({
 	const loggableSuggestions = activeSuggestions.filter((s) => !!s.issueKey);
 	const loggedSuggestions = day.suggestions.filter((s) => s.logged);
 	const isToday = day.date === toLocalDateString(new Date());
+	const isTimeOff = !day.isWeekend && day.targetSeconds === 0;
+	const absenceLabel = isTimeOff
+		? getAbsenceKindLabel(day.absenceKind)
+		: undefined;
 	const rt = day.rescueTime;
 	const showFillButton = day.gapSeconds > 0 && activeSuggestions.length > 0;
 
@@ -128,6 +133,7 @@ export const DayCard = memo<Props>(function DayCard({
 					<span className={styles.logged}>
 						{formatHours(day.loggedSeconds)}
 					</span>
+					{isTimeOff && <span className={styles.timeOff}>{absenceLabel}</span>}
 					{day.gapSeconds > 0 && (
 						<span className={styles.gap}>-{formatHours(day.gapSeconds)}</span>
 					)}
@@ -208,6 +214,7 @@ export const DayCard = memo<Props>(function DayCard({
 			)}
 
 			{!day.isWeekend &&
+				!isTimeOff &&
 				day.gapSeconds > 0 &&
 				activeSuggestions.length === 0 && (
 					<div className={styles.noSuggestions}>

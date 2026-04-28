@@ -19,6 +19,7 @@ const defaultConfig = {
 	gitlabHost: '',
 	rescueTimeApiKey: '',
 	calendarFeeds: [],
+	absenceAssignments: [],
 	complianceReminderEnabled: false,
 	theme: 'system' as const,
 	timeRounding: 'off' as const,
@@ -51,8 +52,14 @@ describe('settingsBackup', () => {
 						label: ' Work ',
 						url: ' https://example.com/work.ics ',
 						type: 'absence',
+						absenceAttribution: 'self',
+						titleFilter: ' Bruno ',
 					},
 					{ label: 'Ignored', url: '   ' },
+				],
+				absenceAssignments: [
+					{ pattern: ' Bruno ', userEmail: ' BRUNO@EXAMPLE.COM ' },
+					{ pattern: ' ', userEmail: 'ignored@example.com' },
 				],
 				timeRounding: '15m',
 			},
@@ -74,7 +81,12 @@ describe('settingsBackup', () => {
 				label: 'Work',
 				url: 'https://example.com/work.ics',
 				type: 'absence',
+				absenceAttribution: 'self',
+				titleFilter: 'Bruno',
 			},
+		]);
+		expect(parsed.config.absenceAssignments).toEqual([
+			{ pattern: 'Bruno', userEmail: 'bruno@example.com' },
 		]);
 		expect(parsed.calendarMappings).toEqual([
 			{ pattern: 'Standup', issueKey: 'PROJ-10', issueSummary: undefined },
@@ -107,6 +119,7 @@ describe('settingsBackup', () => {
 			allowedUsers: 'one@example.com',
 			gitlabHost: 'gitlab.example.com',
 			calendarFeeds: [],
+			absenceAssignments: [],
 		});
 
 		const parsed = parseSettingsBackup(

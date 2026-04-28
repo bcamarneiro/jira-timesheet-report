@@ -3,6 +3,7 @@ import type {
 	RescueTimeDaySummary,
 	WorklogSuggestion,
 } from '../../types/Suggestion';
+import type { AbsenceDay } from './absenceService';
 import type {
 	FavoriteIssue,
 	RecurringTemplate,
@@ -26,6 +27,8 @@ export interface MergeSuggestionsInput {
 	favorites?: FavoriteIssue[];
 	templates?: RecurringTemplate[];
 	timeRounding?: 'off' | '15m' | '30m';
+	absenceDates?: Set<string>;
+	absenceDays?: Map<string, AbsenceDay>;
 }
 
 /**
@@ -225,6 +228,8 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 		favorites = [],
 		templates = [],
 		timeRounding,
+		absenceDates,
+		absenceDays,
 	} = input;
 
 	const dates = getWeekDates(weekStart);
@@ -332,7 +337,10 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 		const dayOfWeek = d.getDay();
 		const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 		const loggedSeconds = loggedByDay.get(date) || 0;
-		const targetSeconds = isWeekend ? 0 : BASELINE_SECONDS;
+		const absenceDay = absenceDays?.get(date);
+		const isTimeOff =
+			!isWeekend && (absenceDay ? true : (absenceDates?.has(date) ?? false));
+		const targetSeconds = isWeekend || isTimeOff ? 0 : BASELINE_SECONDS;
 		const gapSeconds = Math.max(0, targetSeconds - loggedSeconds);
 		const rtDay = rescueTimeData.get(date);
 
@@ -378,6 +386,7 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 			loggedSeconds,
 			targetSeconds,
 			gapSeconds,
+			absenceKind: absenceDay?.kind,
 			suggestions: [...roundedSuggestions, ...dayUnmapped],
 			rescueTime: rtDay,
 		};

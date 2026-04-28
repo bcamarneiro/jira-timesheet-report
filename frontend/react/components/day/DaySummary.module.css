@@ -14,3 +14,7 @@
 .missing {
 	color: var(--color-error);
 }
+
+.absence {
+	color: var(--color-warning);
+}

@@ -22,7 +22,7 @@ You need:
 - your Jira email
 - your Jira API token
 - a `Share Pack` if your team lead or maintainer gave you one
-- a proxy URL only if your environment needs it for Jira access
+- a proxy URL only if diagnostics later show your environment needs it for Jira access
 
 ## First-Time Setup
 
@@ -33,9 +33,10 @@ You need:
    - Jira host
    - email
    - API token
-   - optional CORS proxy
+   - leave `CORS Proxy` blank on the first attempt
 5. Run diagnostics
-6. Save only after the setup is marked ready
+6. Only add a proxy URL if the Jira check says direct browser access is blocked
+7. Save only after the setup is marked ready
 
 If the wizard succeeds, you are ready to use the app.
 
@@ -160,10 +161,14 @@ If something feels wrong:
 
 ### CORS Errors
 
+The app is designed to try direct browser access first.
+
 If browser requests to Jira are blocked:
 
-- ask whether your team uses the local proxy
-- if yes, enter the proxy URL in `Settings`
+1. keep the host, email, and token as they are
+2. ask whether your team uses the local proxy
+3. if yes, enter the proxy URL in `Settings`
+4. if your environment needs SOCKS5, run the local proxy with `npm run cors-proxy:socks`
 
 ## When To Ask For Help
 

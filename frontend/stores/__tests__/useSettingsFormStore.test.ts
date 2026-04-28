@@ -2,6 +2,7 @@ import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useConfigStore } from '../useConfigStore';
 import { useSettingsFormStore } from '../useSettingsFormStore';
+import { useUIStore } from '../useUIStore';
 
 const baseConfig = {
 	jiraHost: 'jira.example.com',
@@ -17,6 +18,7 @@ const baseConfig = {
 	gitlabHost: '',
 	rescueTimeApiKey: '',
 	calendarFeeds: [],
+	absenceAssignments: [],
 	complianceReminderEnabled: false,
 	theme: 'system' as const,
 	timeRounding: 'off' as const,
@@ -40,6 +42,19 @@ describe('useSettingsFormStore', () => {
 					calendar: { loading: false, result: null },
 					rescuetime: { loading: true, result: null },
 				},
+			});
+			useUIStore.setState({
+				selectedTab: 'home',
+				preferences: {
+					hideWeekends: false,
+					compactView: false,
+				},
+				selectedProject: '',
+				expandedUsers: {},
+				installPromptDismissed: false,
+				jiraConnectionEvidenceAt: null,
+				jiraConnectionEvidenceFingerprint: null,
+				jiraConnectionEvidenceSource: null,
 			});
 		});
 	});
@@ -93,5 +108,43 @@ describe('useSettingsFormStore', () => {
 		expect(useSettingsFormStore.getState().formData.jiraHost).toBe(
 			'jira.example.com',
 		);
+	});
+
+	it('keeps Jira evidence when saving a tested connection', () => {
+		act(() => {
+			useSettingsFormStore.getState().saveSettings();
+		});
+
+		expect(useUIStore.getState().jiraConnectionEvidenceAt).toBeTruthy();
+		expect(useUIStore.getState().jiraConnectionEvidenceSource).toBe('test');
+		expect(useUIStore.getState().jiraConnectionEvidenceFingerprint).toBe(
+			'jira.example.com::user@example.com::token::',
+		);
+	});
+
+	it('clears Jira evidence when saving a different connection without a fresh pass', () => {
+		act(() => {
+			useUIStore.getState().markJiraConnectionEvidence(
+				'jira.example.com::user@example.com::token::',
+				'fetch',
+				'2026-04-08T10:00:00.000Z',
+			);
+			useSettingsFormStore.setState({
+				integrationTests: {
+					jira: { loading: false, result: null },
+					gitlab: { loading: false, result: null },
+					calendar: { loading: false, result: null },
+					rescuetime: { loading: false, result: null },
+				},
+			});
+			useSettingsFormStore
+				.getState()
+				.updateFormField('jiraHost', 'next.example.com');
+			useSettingsFormStore.getState().saveSettings();
+		});
+
+		expect(useUIStore.getState().jiraConnectionEvidenceAt).toBeNull();
+		expect(useUIStore.getState().jiraConnectionEvidenceFingerprint).toBeNull();
+		expect(useUIStore.getState().jiraConnectionEvidenceSource).toBeNull();
 	});
 });

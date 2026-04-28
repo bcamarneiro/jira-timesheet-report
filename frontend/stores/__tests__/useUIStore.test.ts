@@ -15,6 +15,9 @@ describe('useUIStore', () => {
 				selectedProject: '',
 				expandedUsers: {},
 				installPromptDismissed: false,
+				jiraConnectionEvidenceAt: null,
+				jiraConnectionEvidenceFingerprint: null,
+				jiraConnectionEvidenceSource: null,
 			});
 		});
 	});
@@ -216,6 +219,43 @@ describe('useUIStore', () => {
 			});
 
 			expect(useUIStore.getState().installPromptDismissed).toBe(false);
+		});
+	});
+
+	describe('jira connection evidence', () => {
+		it('marks Jira connection evidence with a fingerprint and source', () => {
+			act(() => {
+				useUIStore.getState().markJiraConnectionEvidence(
+					'jira.example.com::user@example.com::token::http://localhost:8081',
+					'fetch',
+					'2026-04-08T10:00:00.000Z',
+				);
+			});
+
+			expect(useUIStore.getState().jiraConnectionEvidenceAt).toBe(
+				'2026-04-08T10:00:00.000Z',
+			);
+			expect(useUIStore.getState().jiraConnectionEvidenceFingerprint).toBe(
+				'jira.example.com::user@example.com::token::http://localhost:8081',
+			);
+			expect(useUIStore.getState().jiraConnectionEvidenceSource).toBe('fetch');
+		});
+
+		it('clears Jira connection evidence', () => {
+			act(() => {
+				useUIStore.getState().markJiraConnectionEvidence(
+					'jira.example.com::user@example.com::token::',
+					'test',
+				);
+			});
+
+			act(() => {
+				useUIStore.getState().clearJiraConnectionEvidence();
+			});
+
+			expect(useUIStore.getState().jiraConnectionEvidenceAt).toBeNull();
+			expect(useUIStore.getState().jiraConnectionEvidenceFingerprint).toBeNull();
+			expect(useUIStore.getState().jiraConnectionEvidenceSource).toBeNull();
 		});
 	});
 });

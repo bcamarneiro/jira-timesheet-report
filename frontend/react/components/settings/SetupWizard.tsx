@@ -82,10 +82,21 @@ export const SetupWizard: React.FC<Props> = ({
 				</div>
 				<ProgressBar value={model.progress.percent} height={8} />
 				<div className={styles.quickFacts}>
-					<span>{model.quickFacts.allowedUsersCount} allowed users</span>
+					<span>{model.quickFacts.allowedUsersCount} team members</span>
 					<span>{model.quickFacts.configuredSignalCount} optional signals</span>
 					<span>{model.quickFacts.suggestionFeedCount} suggestion feeds</span>
-					<span>{model.quickFacts.absenceFeedCount} absence feeds</span>
+					<span>{model.quickFacts.absenceFeedCount} time off calendars</span>
+				</div>
+				<div className={styles.accessHint}>
+					<div>
+						<strong>{model.accessPath.title}</strong>
+						<p>{model.accessPath.summary}</p>
+					</div>
+					<span
+						className={`${styles.statusBadge} ${statusClassMap[model.accessPath.status]}`}
+					>
+						{statusLabelMap[model.accessPath.status]}
+					</span>
 				</div>
 			</div>
 

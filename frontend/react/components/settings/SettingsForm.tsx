@@ -1,9 +1,10 @@
 import type React from 'react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef } from 'react';
 import type { CalendarFeed } from '../../../stores/useConfigStore';
 import { useConfigStore } from '../../../stores/useConfigStore';
 import { useSettingsFormStore } from '../../../stores/useSettingsFormStore';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
+import { splitCsvEmailList, uniqueEmailEntries } from '../../utils/emailList';
 import {
 	createSettingsBackup,
 	createSettingsSharePack,
@@ -12,8 +13,71 @@ import {
 import { SETTINGS_SECTION_IDS } from '../../constants/settingsSections';
 import { downloadAsFile } from '../../utils/downloadFile';
 import { Button } from '../ui/Button';
+import { AllowedUsersInput } from './AllowedUsersInput';
+import { CalendarMappingsEditor } from './CalendarMappingsEditor';
+import { TeamAbsenceAssignmentsEditor } from './TeamAbsenceAssignmentsEditor';
 import { toast } from '../ui/Toast';
 import * as styles from './SettingsForm.module.css';
+
+type FeedEntry = {
+	feed: CalendarFeed;
+	index: number;
+};
+
+type ServiceStatus = {
+	tone: 'ready' | 'warning' | 'pending';
+	label: string;
+};
+
+function getServiceStatus(
+	configured: boolean,
+	loading: boolean,
+	result: { success: boolean; message: string } | null,
+): ServiceStatus {
+	if (!configured) {
+		return { tone: 'pending', label: 'Not configured' };
+	}
+	if (loading) {
+		return { tone: 'warning', label: 'Testing' };
+	}
+	if (result?.success) {
+		return { tone: 'ready', label: 'Ready' };
+	}
+	if (result?.success === false) {
+		return { tone: 'warning', label: 'Needs review' };
+	}
+	return { tone: 'warning', label: 'Needs review' };
+}
+
+function buildFeedEntries(
+	feeds: CalendarFeed[] | undefined,
+	type: CalendarFeed['type'],
+): FeedEntry[] {
+	return (feeds ?? [])
+		.map((feed, index) => ({ feed, index }))
+		.filter((entry) => entry.feed.type === type);
+}
+
+function getGitlabTroubleshooting(message: string | null): string | null {
+	if (!message) return null;
+	const normalized = message.toLowerCase();
+	if (
+		normalized.includes('rejected the token') ||
+		normalized.includes('invalid gitlab token')
+	) {
+		return 'This usually means the host was reached but the token was rejected. Check that the token belongs to this GitLab instance and still has read_user or api scope.';
+	}
+	if (normalized.includes('denied access')) {
+		return 'GitLab understood the token but blocked the request. Confirm the account can access this instance and the PAT has enough scope.';
+	}
+	if (normalized.includes('api was not found')) {
+		return 'The hostname looks reachable, but the standard GitLab API path was not found. Double-check the host or whether this self-hosted instance needs a custom base path.';
+	}
+	if (normalized.includes('could not reach')) {
+		return 'This is usually a networking, certificate, VPN, or CORS-proxy issue rather than a bad token.';
+	}
+	return null;
+}
 
 export const SettingsForm: React.FC = () => {
 	const formData = useSettingsFormStore((state) => state.formData);
@@ -40,21 +104,13 @@ export const SettingsForm: React.FC = () => {
 	const removeCalendarMapping = useUserDataStore(
 		(s) => s.removeCalendarMapping,
 	);
+	const updateCalendarMapping = useUserDataStore(
+		(s) => s.updateCalendarMapping,
+	);
 	const replaceCalendarMappings = useUserDataStore(
 		(s) => s.replaceCalendarMappings,
 	);
-	const [newMappingPattern, setNewMappingPattern] = useState('');
-	const [newMappingIssueKey, setNewMappingIssueKey] = useState('');
 	const fileInputRef = useRef<HTMLInputElement>(null);
-
-	const handleAddMapping = () => {
-		const pattern = newMappingPattern.trim();
-		const issueKey = newMappingIssueKey.trim().toUpperCase();
-		if (!pattern || !issueKey) return;
-		addCalendarMapping({ pattern, issueKey });
-		setNewMappingPattern('');
-		setNewMappingIssueKey('');
-	};
 
 	const jiraHostId = useId();
 	const emailId = useId();
@@ -78,6 +134,122 @@ export const SettingsForm: React.FC = () => {
 	const hasCalendarFeeds = (formData.calendarFeeds ?? []).some((f) =>
 		f.url.trim(),
 	);
+	const suggestionFeedEntries = useMemo(
+		() => buildFeedEntries(formData.calendarFeeds, 'suggestion'),
+		[formData.calendarFeeds],
+	);
+	const absenceFeedEntries = useMemo(
+		() => buildFeedEntries(formData.calendarFeeds, 'absence'),
+		[formData.calendarFeeds],
+	);
+	const sharedAbsenceFeedEntries = useMemo(
+		() =>
+			absenceFeedEntries.filter(
+				({ feed }) => (feed.absenceAttribution ?? 'self') === 'shared',
+			),
+		[absenceFeedEntries],
+	);
+	const gitlabStatus = getServiceStatus(
+		!!formData.gitlabHost.trim() || !!formData.gitlabToken.trim(),
+		integrationTests.gitlab.loading,
+		integrationTests.gitlab.result,
+	);
+	const rescueTimeStatus = getServiceStatus(
+		!!formData.rescueTimeApiKey.trim(),
+		integrationTests.rescuetime.loading,
+		integrationTests.rescuetime.result,
+	);
+	const calendarStatus = getServiceStatus(
+		hasCalendarFeeds,
+		integrationTests.calendar.loading,
+		integrationTests.calendar.result,
+	);
+	const hasSharedAbsenceFeeds = sharedAbsenceFeedEntries.length > 0;
+	const showAbsenceAssignments =
+		hasSharedAbsenceFeeds || (formData.absenceAssignments ?? []).length > 0;
+	const hasSharedAbsenceFeedsWithoutAssignments =
+		hasSharedAbsenceFeeds && (formData.absenceAssignments ?? []).length === 0;
+	const allowedUserSuggestions = useMemo(
+		() =>
+			uniqueEmailEntries([
+				formData.email,
+				savedConfig.email,
+				...splitCsvEmailList(savedConfig.allowedUsers),
+				...splitCsvEmailList(formData.allowedUsers),
+			]),
+		[
+			formData.allowedUsers,
+			formData.email,
+			savedConfig.allowedUsers,
+			savedConfig.email,
+		],
+	);
+	const gitlabTroubleshooting = getGitlabTroubleshooting(
+		integrationTests.gitlab.result?.success === false
+			? integrationTests.gitlab.result.message
+			: null,
+	);
+
+	const updateCalendarFeed = (index: number, patch: Partial<CalendarFeed>) => {
+		const feeds = [...(formData.calendarFeeds ?? [])];
+		feeds[index] = {
+			...feeds[index],
+			...patch,
+		};
+		updateFormField('calendarFeeds', feeds as never);
+	};
+
+	const removeCalendarFeed = (index: number) => {
+		const feeds = (formData.calendarFeeds ?? []).filter((_, i) => i !== index);
+		updateFormField('calendarFeeds', feeds as never);
+	};
+
+	const addCalendarFeed = (type: CalendarFeed['type']) => {
+		const feeds: CalendarFeed[] = [
+			...(formData.calendarFeeds ?? []),
+			{ label: '', url: '', type },
+		];
+		updateFormField('calendarFeeds', feeds as never);
+	};
+
+	const addAbsenceAssignment = (assignment: {
+		pattern: string;
+		userEmail: string;
+	}) => {
+		updateFormField('absenceAssignments', [
+			...(formData.absenceAssignments ?? []),
+			assignment,
+		] as never);
+	};
+
+	const updateAbsenceAssignment = (
+		original: { pattern: string; userEmail: string },
+		nextAssignment: { pattern: string; userEmail: string },
+	) => {
+		updateFormField(
+			'absenceAssignments',
+			(formData.absenceAssignments ?? []).map((assignment) =>
+				assignment.pattern === original.pattern &&
+				assignment.userEmail === original.userEmail
+					? nextAssignment
+					: assignment,
+			) as never,
+		);
+	};
+
+	const removeAbsenceAssignment = (target: {
+		pattern: string;
+		userEmail: string;
+	}) => {
+		updateFormField(
+			'absenceAssignments',
+			(formData.absenceAssignments ?? []).filter(
+				(assignment) =>
+					assignment.pattern !== target.pattern ||
+					assignment.userEmail !== target.userEmail,
+			) as never,
+		);
+	};
 
 	useEffect(() => {
 		loadFromConfig();
@@ -97,8 +269,7 @@ export const SettingsForm: React.FC = () => {
 		updateFormField(name as keyof typeof formData, value as never);
 	};
 
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
+	const handleSave = () => {
 		if (!isDirty) return;
 		saveSettings();
 		toast.success('Settings saved');
@@ -154,9 +325,8 @@ export const SettingsForm: React.FC = () => {
 	};
 
 	return (
-		<form
+		<div
 			id={SETTINGS_SECTION_IDS.form}
-			onSubmit={handleSubmit}
 			className={styles.form}
 		>
 			<input
@@ -201,7 +371,7 @@ export const SettingsForm: React.FC = () => {
 					>
 						Discard
 					</Button>
-					<Button type="submit" disabled={!isDirty}>
+					<Button type="button" disabled={!isDirty} onClick={handleSave}>
 						Save
 					</Button>
 				</div>
@@ -289,14 +459,26 @@ export const SettingsForm: React.FC = () => {
 						spellCheck={false}
 					/>
 					<small>
-						Needed if your browser blocks direct Jira requests. Start with{' '}
-						<code>npm run cors-proxy</code>
+						Leave this blank on the first attempt. Only fill it in if the Jira
+						check fails because your browser or network blocks direct access.
 					</small>
+					<small>
+						Start with <code>npm run cors-proxy</code>. If your environment
+						needs SOCKS5, run <code>npm run cors-proxy:socks</code> and keep
+						the same local proxy URL here.
+					</small>
+					{formData.corsProxy.trim() ? (
+						<small>
+							Jira requests are currently going through{' '}
+							<code>{formData.corsProxy.trim()}</code> instead of using direct
+							browser access.
+						</small>
+					) : null}
 				</div>
 			</fieldset>
 
 			<fieldset id={SETTINGS_SECTION_IDS.scope} className={styles.section}>
-				<legend className={styles.sectionTitle}>Filters</legend>
+				<legend className={styles.sectionTitle}>Reports Scope</legend>
 				<div className={styles.formGroup}>
 					<label htmlFor={jqlFilterId}>
 						JQL Filter <span className={styles.optional}>optional</span>
@@ -313,17 +495,22 @@ export const SettingsForm: React.FC = () => {
 				</div>
 				<div className={styles.formGroup}>
 					<label htmlFor={allowedUsersId}>
-						Allowed Users <span className={styles.optional}>optional</span>
+						Team Members <span className={styles.optional}>optional</span>
 					</label>
-					<input
-						type="text"
+					<AllowedUsersInput
 						id={allowedUsersId}
-						name="allowedUsers"
 						value={formData.allowedUsers}
-						onChange={handleChange}
+						onChange={(nextValue) =>
+							updateFormField('allowedUsers', nextValue as never)
+						}
+						suggestions={allowedUserSuggestions}
 						placeholder="john@example.com, jane@example.com"
 					/>
-					<small>Comma-separated emails. Empty shows all users.</small>
+					<small>
+						Add the teammates you want to keep in scope for Reports and for
+						shared time-off assignments. Press <code>Enter</code>,{' '}
+						<code>Tab</code>, or paste a list to create chips.
+					</small>
 				</div>
 			</fieldset>
 
@@ -379,269 +566,427 @@ export const SettingsForm: React.FC = () => {
 				className={styles.section}
 			>
 				<legend className={styles.sectionTitle}>
-					<div className={styles.sectionHeader}>
-						<span>
-							Integrations <span className={styles.optional}>optional</span>
-						</span>
-					</div>
+					Services <span className={styles.optional}>optional</span>
 				</legend>
-				<small className={styles.permissionsHint}>
-					Power the Dashboard suggestions. Leave blank to disable.
-				</small>
-				<div className={styles.formGroup}>
-					<label htmlFor={gitlabHostId}>
-						GitLab Host
-						{(formData.gitlabHost || formData.gitlabToken) && (
-							<button
+				<p className={styles.servicesIntro}>
+					Each service helps in a different way. Keep them separate so it is
+					obvious what powers suggestions, what reduces target hours, and what
+					still needs review.
+				</p>
+				<div className={styles.servicesGrid}>
+					<section className={styles.serviceCard}>
+						<div className={styles.serviceHeader}>
+							<div className={styles.serviceHeading}>
+								<p className={styles.serviceKicker}>GitLab</p>
+								<h3>Recent GitLab activity</h3>
+								<p>
+									Use GitLab events to suggest time from pushes, merge request
+									actions, and review activity that already references Jira keys.
+								</p>
+							</div>
+							<span
+								className={`${styles.serviceStatusBadge} ${gitlabStatus.tone === 'ready' ? styles.serviceStatusReady : gitlabStatus.tone === 'warning' ? styles.serviceStatusWarning : styles.serviceStatusPending}`}
+							>
+								{gitlabStatus.label}
+							</span>
+						</div>
+						<div className={styles.formGroup}>
+							<label htmlFor={gitlabHostId}>GitLab Host</label>
+							<input
+								type="text"
+								id={gitlabHostId}
+								name="gitlabHost"
+								value={formData.gitlabHost}
+								onChange={handleChange}
+								placeholder="gitlab.com or vcs.company.net"
+								autoCapitalize="off"
+								autoCorrect="off"
+								spellCheck={false}
+							/>
+							<small>
+								Hostname only is ideal, but pasted <code>https://</code> URLs
+								are normalized for you
+							</small>
+						</div>
+						<div className={styles.formGroup}>
+							<label htmlFor={gitlabTokenId}>GitLab Token</label>
+							<input
+								type="password"
+								id={gitlabTokenId}
+								name="gitlabToken"
+								value={formData.gitlabToken}
+								onChange={handleChange}
+							/>
+							<small>
+								Personal access token with <code>read_user</code> or{' '}
+								<code>api</code> scope
+							</small>
+						</div>
+						<div className={styles.serviceActions}>
+							<Button
 								type="button"
-								className={styles.testButton}
+								variant="secondary"
 								onClick={testGitlab}
 								disabled={integrationTests.gitlab.loading || !canTestGitlab}
 							>
-								{integrationTests.gitlab.loading ? 'Testing...' : 'Test'}
-							</button>
+								{integrationTests.gitlab.loading ? 'Testing...' : 'Test GitLab'}
+							</Button>
+						</div>
+						{integrationTests.gitlab.result ? (
+							<div className={styles.serviceFeedback}>
+								<p
+									className={`${styles.testResult} ${integrationTests.gitlab.result.success ? styles.testSuccess : styles.testError}`}
+								>
+									{integrationTests.gitlab.result.message}
+								</p>
+								{gitlabTroubleshooting ? (
+									<p className={styles.serviceHint}>{gitlabTroubleshooting}</p>
+								) : null}
+							</div>
+						) : (
+							<p className={styles.serviceHint}>
+								Run the test once to confirm the host, token, and proxy path are
+								all valid together.
+							</p>
 						)}
-					</label>
-					<input
-						type="text"
-						id={gitlabHostId}
-						name="gitlabHost"
-						value={formData.gitlabHost}
-						onChange={handleChange}
-						placeholder="gitlab.com or vcs.company.net"
-						autoCapitalize="off"
-						autoCorrect="off"
-						spellCheck={false}
-					/>
-					<small>
-						Hostname only is ideal, but pasted <code>https://</code> URLs are
-						normalized for you
-					</small>
-				</div>
-				<div className={styles.formGroup}>
-					<label htmlFor={gitlabTokenId}>GitLab Token</label>
-					<input
-						type="password"
-						id={gitlabTokenId}
-						name="gitlabToken"
-						value={formData.gitlabToken}
-						onChange={handleChange}
-					/>
-					<small>
-						Personal access token with <code>read_user</code> scope
-					</small>
-					{integrationTests.gitlab.result && (
-						<p
-							className={`${styles.testResult} ${integrationTests.gitlab.result.success ? styles.testSuccess : styles.testError}`}
-						>
-							{integrationTests.gitlab.result.message}
-						</p>
-					)}
-				</div>
-				<div className={styles.formGroup}>
-					<label htmlFor={rescueTimeKeyId}>
-						RescueTime API Key
-						{formData.rescueTimeApiKey && (
-							<button
+					</section>
+
+					<section className={styles.serviceCard}>
+						<div className={styles.serviceHeader}>
+							<div className={styles.serviceHeading}>
+								<p className={styles.serviceKicker}>RescueTime</p>
+								<h3>Personal activity signal</h3>
+								<p>
+									Use RescueTime to add a productivity signal when Jira and
+									calendar data alone are not enough to explain a day.
+								</p>
+							</div>
+							<span
+								className={`${styles.serviceStatusBadge} ${rescueTimeStatus.tone === 'ready' ? styles.serviceStatusReady : rescueTimeStatus.tone === 'warning' ? styles.serviceStatusWarning : styles.serviceStatusPending}`}
+							>
+								{rescueTimeStatus.label}
+							</span>
+						</div>
+						<div className={styles.formGroup}>
+							<label htmlFor={rescueTimeKeyId}>RescueTime API Key</label>
+							<input
+								type="password"
+								id={rescueTimeKeyId}
+								name="rescueTimeApiKey"
+								value={formData.rescueTimeApiKey}
+								onChange={handleChange}
+							/>
+							<small>Requires the CORS proxy to be running</small>
+						</div>
+						<div className={styles.serviceActions}>
+							<Button
 								type="button"
-								className={styles.testButton}
+								variant="secondary"
 								onClick={testRescueTime}
 								disabled={
 									integrationTests.rescuetime.loading || !canTestRescueTime
 								}
 							>
-								{integrationTests.rescuetime.loading ? 'Testing...' : 'Test'}
-							</button>
+								{integrationTests.rescuetime.loading
+									? 'Testing...'
+									: 'Test RescueTime'}
+							</Button>
+						</div>
+						{integrationTests.rescuetime.result ? (
+							<p
+								className={`${styles.testResult} ${integrationTests.rescuetime.result.success ? styles.testSuccess : styles.testError}`}
+							>
+								{integrationTests.rescuetime.result.message}
+							</p>
+						) : (
+							<p className={styles.serviceHint}>
+								Leave this blank if you only want Jira- and calendar-based
+								suggestions.
+							</p>
 						)}
-					</label>
-					<input
-						type="password"
-						id={rescueTimeKeyId}
-						name="rescueTimeApiKey"
-						value={formData.rescueTimeApiKey}
-						onChange={handleChange}
-					/>
-					<small>Requires CORS proxy to be running</small>
-					{integrationTests.rescuetime.result && (
-						<p
-							className={`${styles.testResult} ${integrationTests.rescuetime.result.success ? styles.testSuccess : styles.testError}`}
-						>
-							{integrationTests.rescuetime.result.message}
-						</p>
-					)}
+					</section>
 				</div>
 
-				<div className={styles.formGroup}>
-					<span className={styles.calendarHeading}>
-						Calendar Feeds (ICS/iCal)
-						{hasCalendarFeeds && (
-							<button
-								type="button"
-								className={styles.testButton}
-								onClick={testCalendar}
-								disabled={integrationTests.calendar.loading}
-							>
-								{integrationTests.calendar.loading ? 'Testing...' : 'Test'}
-							</button>
-						)}
-					</span>
-					<small>
-						Add calendar feed URLs. <strong>Suggestions</strong>: generate
-						worklog suggestions from meetings (events with Jira keys).{' '}
-						<strong>Absence/Vacation</strong>: detect all-day events as vacation
-						days to reduce target hours. Works with Google Calendar, Outlook,
-						and Teams.
-					</small>
-					{(formData.calendarFeeds ?? []).map((feed, idx) => (
-						<div
-							key={`cal-${idx.toString()}`}
-							className={styles.calendarFeedRow}
-						>
-							<input
-								type="text"
-								value={feed.label}
-								onChange={(e) => {
-									const feeds = [...(formData.calendarFeeds ?? [])];
-									feeds[idx] = { ...feeds[idx], label: e.target.value };
-									updateFormField('calendarFeeds', feeds as never);
-								}}
-								placeholder="Label (e.g. Work, Personal)"
-								className={styles.calendarLabel}
-							/>
-							<select
-								value={feed.type || 'suggestion'}
-								onChange={(e) => {
-									const feeds = [...(formData.calendarFeeds ?? [])];
-									feeds[idx] = {
-										...feeds[idx],
-										type: e.target.value as 'suggestion' | 'absence',
-									};
-									updateFormField('calendarFeeds', feeds as never);
-								}}
-								className={styles.calendarType}
-							>
-								<option value="suggestion">Suggestions</option>
-								<option value="absence">Absence/Vacation</option>
-							</select>
-							<input
-								type="text"
-								value={feed.url}
-								onChange={(e) => {
-									const feeds = [...(formData.calendarFeeds ?? [])];
-									feeds[idx] = { ...feeds[idx], url: e.target.value };
-									updateFormField('calendarFeeds', feeds as never);
-								}}
-								placeholder="https://calendar.google.com/...basic.ics"
-								className={styles.calendarUrl}
-							/>
-							<button
-								type="button"
-								className={styles.calendarRemove}
-								onClick={() => {
-									const feeds = (formData.calendarFeeds ?? []).filter(
-										(_, i) => i !== idx,
-									);
-									updateFormField('calendarFeeds', feeds as never);
-								}}
-								aria-label={`Remove ${feed.label || 'calendar feed'}`}
-							>
-								&times;
-							</button>
+				<section className={`${styles.serviceCard} ${styles.serviceCardWide}`}>
+					<div className={styles.serviceHeader}>
+						<div className={styles.serviceHeading}>
+							<p className={styles.serviceKicker}>Calendars</p>
+							<h3>Suggestion feeds and time off calendars</h3>
+							<p>
+								Suggestion feeds turn meetings into worklog candidates. Time off
+								calendars reduce target hours for the right person in Reports and
+								for you in Dashboard.
+							</p>
 						</div>
-					))}
-					<button
-						type="button"
-						className={styles.calendarAdd}
-						onClick={() => {
-							const feeds: CalendarFeed[] = [
-								...(formData.calendarFeeds ?? []),
-								{ label: '', url: '', type: 'suggestion' },
-							];
-							updateFormField('calendarFeeds', feeds as never);
-						}}
-					>
-						+ Add calendar
-					</button>
-					{integrationTests.calendar.result && (
+						<span
+							className={`${styles.serviceStatusBadge} ${calendarStatus.tone === 'ready' ? styles.serviceStatusReady : calendarStatus.tone === 'warning' ? styles.serviceStatusWarning : styles.serviceStatusPending}`}
+						>
+							{calendarStatus.label}
+						</span>
+					</div>
+
+					<div className={styles.feedGroup}>
+						<div className={styles.feedGroupHeader}>
+							<div>
+								<h4>Suggestion feeds</h4>
+								<p>
+									Best for calendars whose event titles already include Jira keys
+									or can be mapped with the editor below.
+								</p>
+							</div>
+							<Button
+								type="button"
+								variant="secondary"
+								onClick={() => addCalendarFeed('suggestion')}
+							>
+								+ Suggestion feed
+							</Button>
+						</div>
+						<div className={styles.feedList}>
+							{suggestionFeedEntries.length > 0 ? (
+								suggestionFeedEntries.map(({ feed, index }) => (
+									<div
+										key={`suggestion-${index.toString()}`}
+										className={styles.calendarFeedCard}
+									>
+										<div className={styles.calendarCardHeader}>
+											<div className={styles.calendarCardHeading}>
+												<span className={styles.feedTypeBadge}>
+													Suggestion feed
+												</span>
+												<strong>
+													{feed.label.trim() || 'Untitled suggestion feed'}
+												</strong>
+											</div>
+											<button
+												type="button"
+												className={styles.calendarRemove}
+												onClick={() => removeCalendarFeed(index)}
+												aria-label={`Remove ${feed.label || 'suggestion feed'}`}
+											>
+												&times;
+											</button>
+										</div>
+										<div className={styles.feedFields}>
+											<label className={styles.feedField}>
+												<span className={styles.feedFieldLabel}>Label</span>
+												<input
+													type="text"
+													value={feed.label}
+													onChange={(e) =>
+														updateCalendarFeed(index, { label: e.target.value })
+													}
+													placeholder="Team, Work, PrimeIT"
+													className={styles.feedInput}
+												/>
+											</label>
+											<label
+												className={`${styles.feedField} ${styles.feedFieldWide}`}
+											>
+												<span className={styles.feedFieldLabel}>Feed URL</span>
+												<input
+													type="text"
+													value={feed.url}
+													onChange={(e) =>
+														updateCalendarFeed(index, { url: e.target.value })
+													}
+													placeholder="https://calendar.google.com/...basic.ics"
+													className={`${styles.feedInput} ${styles.feedUrlInput}`}
+												/>
+											</label>
+										</div>
+									</div>
+								))
+							) : (
+								<p className={styles.feedHelper}>
+									No suggestion feeds yet. Add one when you want meeting-based
+									worklog suggestions.
+								</p>
+							)}
+						</div>
+					</div>
+
+					<div className={styles.feedGroup}>
+						<div className={styles.feedGroupHeader}>
+							<div>
+								<h4>Time off calendars</h4>
+								<p>
+									Each calendar can either count only for you or act as a shared
+									team calendar that uses title-to-user assignments.
+								</p>
+							</div>
+							<Button
+								type="button"
+								variant="secondary"
+								onClick={() => addCalendarFeed('absence')}
+							>
+								+ Time off calendar
+							</Button>
+						</div>
+						<div className={styles.feedList}>
+							{absenceFeedEntries.length > 0 ? (
+								absenceFeedEntries.map(({ feed, index }) => (
+									<div
+										key={`absence-${index.toString()}`}
+										className={styles.calendarFeedCard}
+									>
+										<div className={styles.calendarCardHeader}>
+											<div className={styles.calendarCardHeading}>
+												<span className={styles.feedTypeBadge}>
+													Time off calendar
+												</span>
+												<strong>
+													{feed.label.trim() || 'Untitled time off calendar'}
+												</strong>
+											</div>
+											<button
+												type="button"
+												className={styles.calendarRemove}
+												onClick={() => removeCalendarFeed(index)}
+												aria-label={`Remove ${feed.label || 'time off calendar'}`}
+											>
+												&times;
+											</button>
+										</div>
+										<div className={styles.feedFields}>
+											<label className={styles.feedField}>
+												<span className={styles.feedFieldLabel}>Label</span>
+												<input
+													type="text"
+													value={feed.label}
+													onChange={(e) =>
+														updateCalendarFeed(index, { label: e.target.value })
+													}
+													placeholder="Team vacations"
+													className={styles.feedInput}
+												/>
+											</label>
+											<label
+												className={`${styles.feedField} ${styles.feedFieldWide}`}
+											>
+												<span className={styles.feedFieldLabel}>Feed URL</span>
+												<input
+													type="text"
+													value={feed.url}
+													onChange={(e) =>
+														updateCalendarFeed(index, { url: e.target.value })
+													}
+													placeholder="https://outlook.office365.com/...ics"
+													className={`${styles.feedInput} ${styles.feedUrlInput}`}
+												/>
+											</label>
+											<label className={styles.feedField}>
+												<span className={styles.feedFieldLabel}>
+													Who should this affect?
+												</span>
+												<select
+													value={feed.absenceAttribution ?? 'self'}
+													onChange={(e) =>
+														updateCalendarFeed(index, {
+															absenceAttribution:
+																e.target.value === 'shared' ? 'shared' : 'self',
+														})
+													}
+													className={styles.feedSelect}
+													aria-label={`Attribution mode for ${feed.label || 'time off calendar'}`}
+												>
+													<option value="self">Only me</option>
+													<option value="shared">Shared team calendar</option>
+												</select>
+											</label>
+											{(feed.absenceAttribution ?? 'self') === 'self' ? (
+												<label className={styles.feedField}>
+													<span className={styles.feedFieldLabel}>
+														Optional title filter
+													</span>
+													<input
+														type="text"
+														value={feed.titleFilter ?? ''}
+														onChange={(e) =>
+															updateCalendarFeed(index, {
+																titleFilter: e.target.value || undefined,
+															})
+														}
+														placeholder="Only titles containing your name"
+														className={styles.feedInput}
+													/>
+												</label>
+											) : (
+												<div
+													className={`${styles.feedField} ${styles.feedFieldHint}`}
+												>
+													<span className={styles.feedFieldLabel}>
+														Attribution rules
+													</span>
+													<p className={styles.calendarModeHint}>
+														Shared calendars use the assignment rules below to
+														match event titles to the right teammate.
+													</p>
+												</div>
+											)}
+										</div>
+									</div>
+								))
+							) : (
+								<p className={styles.feedHelper}>
+									No time off calendars yet. Leave this empty if target hours
+									should always assume a full work week.
+								</p>
+							)}
+						</div>
+						{hasSharedAbsenceFeedsWithoutAssignments ? (
+							<p className={styles.serviceHint}>
+								At least one shared time-off calendar still needs assignment
+								rules below so shared events reduce the right person’s target
+								hours.
+							</p>
+						) : null}
+					</div>
+
+					<div className={styles.serviceActions}>
+						<Button
+							type="button"
+							variant="secondary"
+							onClick={testCalendar}
+							disabled={integrationTests.calendar.loading || !hasCalendarFeeds}
+						>
+							{integrationTests.calendar.loading ? 'Testing...' : 'Test calendars'}
+						</Button>
+					</div>
+					{integrationTests.calendar.result ? (
 						<p
 							className={`${styles.testResult} ${integrationTests.calendar.result.success ? styles.testSuccess : styles.testError}`}
 						>
 							{integrationTests.calendar.result.message}
 						</p>
+					) : (
+						<p className={styles.serviceHint}>
+							Calendar tests confirm the feed URLs are reachable and parse as
+							ICS/iCal. They do not yet validate whether your title filters or
+							shared-calendar assignment rules are too broad.
+						</p>
 					)}
-				</div>
-			</fieldset>
 
-			{calendarMappings.length > 0 ||
-			(formData.calendarFeeds ?? []).length > 0 ? (
-				<fieldset
-					id={SETTINGS_SECTION_IDS.calendarMappings}
-					className={styles.section}
-				>
-					<legend className={styles.sectionTitle}>Calendar Mappings</legend>
-					<small className={styles.permissionsHint}>
-						Map calendar event titles to Jira issues. Events matching these
-						patterns will automatically generate worklog suggestions.
-					</small>
-					{calendarMappings.map((mapping) => (
-						<div key={mapping.pattern} className={styles.calendarFeedRow}>
-							<input
-								type="text"
-								value={mapping.pattern}
-								readOnly
-								className={styles.calendarLabel}
-								title="Event pattern"
-							/>
-							<input
-								type="text"
-								value={mapping.issueKey}
-								readOnly
-								className={styles.calendarUrl}
-								title="Jira issue key"
-							/>
-							<button
-								type="button"
-								className={styles.calendarRemove}
-								onClick={() => removeCalendarMapping(mapping.pattern)}
-								aria-label={`Remove mapping for ${mapping.pattern}`}
-							>
-								&times;
-							</button>
-						</div>
-					))}
-					<div className={styles.calendarFeedRow}>
-						<input
-							type="text"
-							value={newMappingPattern}
-							onChange={(e) => setNewMappingPattern(e.target.value)}
-							placeholder="Event title pattern"
-							className={styles.calendarLabel}
+					<div id={SETTINGS_SECTION_IDS.calendarMappings}>
+						<CalendarMappingsEditor
+							mappings={calendarMappings}
+							onAdd={addCalendarMapping}
+							onUpdate={updateCalendarMapping}
+							onRemove={removeCalendarMapping}
 						/>
-						<input
-							type="text"
-							value={newMappingIssueKey}
-							onChange={(e) => setNewMappingIssueKey(e.target.value)}
-							placeholder="PROJ-123"
-							className={styles.calendarUrl}
-							onKeyDown={(e) => {
-								if (e.key === 'Enter') {
-									e.preventDefault();
-									handleAddMapping();
-								}
-							}}
-						/>
-						<button
-							type="button"
-							className={styles.calendarAdd}
-							onClick={handleAddMapping}
-							disabled={!newMappingPattern.trim() || !newMappingIssueKey.trim()}
-							style={{ flex: '0 0 auto', borderStyle: 'solid' }}
-						>
-							+ Add
-						</button>
 					</div>
-				</fieldset>
-			) : null}
+
+					{showAbsenceAssignments ? (
+						<TeamAbsenceAssignmentsEditor
+							assignments={formData.absenceAssignments ?? []}
+							userSuggestions={allowedUserSuggestions}
+							onAdd={addAbsenceAssignment}
+							onUpdate={updateAbsenceAssignment}
+							onRemove={removeAbsenceAssignment}
+						/>
+					) : null}
+				</section>
+			</fieldset>
 
 			<fieldset
 				id={SETTINGS_SECTION_IDS.preferences}
@@ -677,6 +1022,6 @@ export const SettingsForm: React.FC = () => {
 					<small>Round suggestion durations to the nearest interval</small>
 				</div>
 			</fieldset>
-		</form>
+		</div>
 	);
 };

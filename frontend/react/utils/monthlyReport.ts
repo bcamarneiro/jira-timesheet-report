@@ -4,6 +4,7 @@ import { toLocalDateString } from './date';
 export interface MonthlyReportState {
 	issueSummaries: Record<string, string>;
 	users: string[];
+	userEmails: Record<string, string>;
 	grouped: GroupedWorklogs;
 	visibleEntries: [string, Record<string, EnrichedJiraWorklog[]>][];
 }
@@ -21,11 +22,15 @@ export function deriveMonthlyReportState(
 		: [];
 
 	const issueSummaries: Record<string, string> = {};
+	const userEmails: Record<string, string> = {};
 	for (const wl of data || []) {
 		const summary = wl.issue?.fields.summary;
 		if (!summary) continue;
 		issueSummaries[wl.issue.id] = summary;
 		issueSummaries[wl.issue.key] = summary;
+		if (wl.author?.displayName && wl.author?.emailAddress) {
+			userEmails[wl.author.displayName] = wl.author.emailAddress.toLowerCase();
+		}
 	}
 
 	const isUserAllowed = (worklog: EnrichedJiraWorklog): boolean => {
@@ -58,5 +63,5 @@ export function deriveMonthlyReportState(
 		([user]) => selectedUser === '' || user === selectedUser,
 	);
 
-	return { issueSummaries, users, grouped, visibleEntries };
+	return { issueSummaries, users, userEmails, grouped, visibleEntries };
 }

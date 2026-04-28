@@ -106,6 +106,15 @@ describe('useDayCalculation', () => {
 		});
 	});
 
+	describe('absence calculations', () => {
+		it('treats approved time off like a zero-target day', () => {
+			const { result } = renderHook(() => useDayCalculation([], false, true));
+
+			expect(result.current.baselineSeconds).toBe(0);
+			expect(result.current.missingSeconds).toBe(0);
+		});
+	});
+
 	describe('reactivity', () => {
 		it('should recalculate when worklogs change', () => {
 			const initialWorklogs = [

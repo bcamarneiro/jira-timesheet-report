@@ -78,6 +78,11 @@
 	border-color: var(--color-day-incomplete-border);
 }
 
+.absenceDay {
+	background: color-mix(in srgb, var(--color-warning-bg) 76%, var(--color-surface));
+	border-color: var(--color-warning-border);
+}
+
 .weekdayOvertime {
 	background: var(--color-day-overtime-bg);
 	border-color: var(--color-day-overtime-border);

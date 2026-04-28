@@ -12,7 +12,12 @@ import { fetchRescueTimeData } from '../../services/rescueTimeService';
 import { mergeSuggestions } from '../../services/suggestionMerger';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
+import {
+	buildJiraConnectionFingerprint,
+	useUIStore,
+} from '../../stores/useUIStore';
 import { useUserDataStore } from '../../stores/useUserDataStore';
+import { useAbsenceDays } from './useAbsenceDays';
 import { monthWorklogsQueryKey } from './useMonthWorklogs';
 
 interface WorklogEntry {
@@ -70,9 +75,17 @@ export function useDashboardDataFetcher() {
 	const templates = useUserDataStore((s) => s.templates);
 	const calendarMappings = useUserDataStore((s) => s.calendarMappings);
 	const queryClient = useQueryClient();
+	const hasAbsenceFeeds = (calendarFeeds ?? []).some(
+		(feed) => feed.type === 'absence' && feed.url.trim(),
+	);
+	const {
+		data: absenceDays,
+		isFetched: absenceDaysReady,
+	} = useAbsenceDays(weekStart, weekEnd, { enabled: hasAbsenceFeeds });
 
 	useEffect(() => {
 		if (!jiraHost || !apiToken) return;
+		if (hasAbsenceFeeds && !absenceDaysReady) return;
 
 		const controller = new AbortController();
 		const { signal } = controller;
@@ -183,6 +196,13 @@ export function useDashboardDataFetcher() {
 							allData = [...month1Data, ...month2Data];
 						}
 
+						useUIStore
+							.getState()
+							.markJiraConnectionEvidence(
+								buildJiraConnectionFingerprint(config),
+								'fetch',
+							);
+
 						return deriveWeekWorklogs(allData, email, weekStart, weekEnd);
 					} catch (e) {
 						if (!signal.aborted)
@@ -269,6 +289,7 @@ export function useDashboardDataFetcher() {
 				favorites,
 				templates,
 				timeRounding,
+				absenceDays,
 			});
 
 			// Batch all store updates together to avoid cascading re-renders
@@ -295,6 +316,9 @@ export function useDashboardDataFetcher() {
 		timeRounding,
 		weekStart,
 		weekEnd,
+		hasAbsenceFeeds,
+		absenceDaysReady,
+		absenceDays,
 		setLoading,
 		setError,
 		setWorklogsLoadingProgress,

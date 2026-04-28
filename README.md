@@ -86,16 +86,21 @@ Open `http://localhost:5174`.
 
 1. Open `Settings`
 2. Use the setup wizard to fill in Jira host, email, and API token
-3. Optionally set a local CORS proxy URL and reporting scope
+3. Leave `CORS Proxy` blank on the first attempt
 4. Run the built-in diagnostics and Jira connection test
-5. Save once the setup is marked ready
-6. Use `Dashboard` for your weekly workflow and `Reports` for team/month views
-7. Use `Backup`, `Share Pack`, and `Import` in `Settings` to move between full local restores and teammate-friendly setup packs
-8. Use `Reports` presets and share links when you want to reuse or hand off the same reporting slice
+5. Only add a local proxy URL if the browser or network blocks direct Jira access
+6. Save once the setup is marked ready
+7. Use `Dashboard` for your weekly workflow and `Reports` for team/month views
+8. Use `Backup`, `Share Pack`, and `Import` in `Settings` to move between full local restores and teammate-friendly setup packs
+9. Use `Reports` presets and share links when you want to reuse or hand off the same reporting slice
 
 ## CORS Proxy
 
-If the browser blocks Jira requests with CORS errors, run the included local proxy:
+You usually do not need a proxy.
+
+Start with direct browser access first. Leave the `CORS Proxy` field empty and run the Jira check.
+
+Only if the browser blocks Jira requests with CORS or network-style errors, run the included local proxy:
 
 ```bash
 npm run cors-proxy
@@ -103,7 +108,7 @@ npm run cors-proxy
 
 Then set `http://localhost:8081` in the `CORS Proxy` setting.
 
-For SOCKS5 environments:
+For SOCKS5 environments, keep the same local proxy URL in Settings and start the proxy with:
 
 ```bash
 npm run cors-proxy:socks

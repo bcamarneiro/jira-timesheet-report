@@ -1,3 +1,5 @@
+import type { AbsenceKind } from './absence';
+
 export interface WorklogSuggestion {
 	id: string;
 	source:
@@ -39,6 +41,7 @@ export interface DaySummary {
 	loggedSeconds: number;
 	targetSeconds: number;
 	gapSeconds: number;
+	absenceKind?: AbsenceKind;
 	suggestions: WorklogSuggestion[];
 	rescueTime?: RescueTimeDaySummary;
 }

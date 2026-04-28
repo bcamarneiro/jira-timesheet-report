@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState } from 'react';
 
 import type { EnrichedJiraWorklog } from '../../../types/jira';
+import type { AbsenceDay } from '../../services/absenceService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDayCalculation } from '../hooks/useDayCalculation';
 import { useWorklogOperations } from '../hooks/useWorklogOperations';
@@ -19,6 +20,8 @@ type Props = {
 	worklogs: EnrichedJiraWorklog[];
 	issueSummaries: Record<string, string>;
 	isWeekend: boolean;
+	isAbsent?: boolean;
+	absenceDay?: AbsenceDay;
 	isToday: boolean;
 };
 
@@ -28,6 +31,8 @@ export const DayCell: React.FC<Props> = ({
 	worklogs,
 	issueSummaries,
 	isWeekend,
+	isAbsent = false,
+	absenceDay,
 	isToday,
 }) => {
 	const canAdd = useConfigStore((s) => s.config.canAddWorklogs);
@@ -43,9 +48,10 @@ export const DayCell: React.FC<Props> = ({
 
 	const { createWorklog, updateWorklog, deleteWorklog, isLoading } =
 		useWorklogOperations();
+	const hasAbsence = isAbsent || !!absenceDay;
 
 	const { dayTotalSeconds, effectiveSeconds, missingSeconds } =
-		useDayCalculation(worklogs, isWeekend);
+		useDayCalculation(worklogs, isWeekend, hasAbsence);
 
 	const getDayClass = () => {
 		const classes = [styles.dayCell];
@@ -53,6 +59,8 @@ export const DayCell: React.FC<Props> = ({
 
 		if (isWeekend) {
 			classes.push(dayTotalSeconds > 0 ? styles.weekend : styles.weekendEmpty);
+		} else if (hasAbsence) {
+			classes.push(styles.absenceDay);
 		} else {
 			if (effectiveSeconds === 8 * 3600) classes.push(styles.weekdayComplete);
 			else if (effectiveSeconds < 8 * 3600)
@@ -152,6 +160,8 @@ export const DayCell: React.FC<Props> = ({
 					dayTotalSeconds={dayTotalSeconds}
 					missingSeconds={missingSeconds}
 					isWeekend={isWeekend}
+					isAbsent={hasAbsence}
+					absenceKind={absenceDay?.kind}
 				/>
 			</div>
 

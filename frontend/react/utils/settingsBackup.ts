@@ -1,6 +1,7 @@
 import {
 	createDefaultConfig,
 	normalizeConfig,
+	type AbsenceAssignment,
 	type CalendarFeed,
 	type Config,
 } from '../../stores/useConfigStore';
@@ -37,6 +38,18 @@ function normalizeCalendarFeed(
 		label: typeof feed.label === 'string' ? feed.label.trim() : '',
 		url,
 		type: feed.type === 'absence' ? 'absence' : 'suggestion',
+		absenceAttribution:
+			feed.type === 'absence'
+				? feed.absenceAttribution === 'shared'
+					? 'shared'
+					: feed.absenceAttribution === 'self'
+						? 'self'
+						: undefined
+				: undefined,
+		titleFilter:
+			typeof feed.titleFilter === 'string'
+				? feed.titleFilter.trim() || undefined
+				: undefined,
 	};
 }
 
@@ -61,6 +74,23 @@ function normalizeCalendarMapping(
 	};
 }
 
+function normalizeAbsenceAssignment(
+	assignment: Partial<AbsenceAssignment>,
+): AbsenceAssignment | null {
+	const pattern =
+		typeof assignment.pattern === 'string' ? assignment.pattern.trim() : '';
+	const userEmail =
+		typeof assignment.userEmail === 'string'
+			? assignment.userEmail.trim().toLowerCase()
+			: '';
+	if (!pattern || !userEmail) return null;
+
+	return {
+		pattern,
+		userEmail,
+	};
+}
+
 function createSharePackConfig(config: Config): Partial<Config> {
 	return {
 		jiraHost: config.jiraHost,
@@ -68,6 +98,7 @@ function createSharePackConfig(config: Config): Partial<Config> {
 		allowedUsers: config.allowedUsers,
 		gitlabHost: config.gitlabHost,
 		calendarFeeds: config.calendarFeeds,
+		absenceAssignments: config.absenceAssignments,
 	};
 }
 
@@ -145,6 +176,14 @@ export function parseSettingsBackup(
 						.map(normalizeCalendarFeed)
 						.filter((feed): feed is CalendarFeed => feed !== null)
 				: fallbackConfig.calendarFeeds,
+			absenceAssignments: Array.isArray(data.config.absenceAssignments)
+				? data.config.absenceAssignments
+						.map(normalizeAbsenceAssignment)
+						.filter(
+							(assignment): assignment is AbsenceAssignment =>
+								assignment !== null,
+						)
+				: fallbackConfig.absenceAssignments,
 		},
 		fallbackConfig,
 	);

@@ -1,9 +1,11 @@
 import type React from 'react';
 import { useState } from 'react';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
+import type { AbsenceDay } from '../../services/absenceService';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useCalendar } from '../hooks/useCalendar';
 import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
+import { countAbsenceWorkdaysInMonth } from '../utils/absence';
 import { getWorkingDaysInMonth, isoDateFromYMD } from '../utils/date';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
@@ -16,6 +18,7 @@ type Props = {
 	days: Record<string, EnrichedJiraWorklog[]>;
 	issueSummaries: Record<string, string>;
 	onDownloadUser: (user: string) => void;
+	absenceDays?: Map<string, AbsenceDay>;
 	defaultCollapsed?: boolean;
 };
 
@@ -24,6 +27,7 @@ export const TimesheetGrid: React.FC<Props> = ({
 	days,
 	issueSummaries,
 	onDownloadUser,
+	absenceDays,
 	defaultCollapsed = false,
 }) => {
 	const [collapsed, setCollapsed] = useState(defaultCollapsed);
@@ -42,7 +46,13 @@ export const TimesheetGrid: React.FC<Props> = ({
 	);
 
 	const targetSeconds =
-		getWorkingDaysInMonth(year, monthZeroIndexed) * 8 * 3600;
+		Math.max(
+			0,
+			getWorkingDaysInMonth(year, monthZeroIndexed) -
+				countAbsenceWorkdaysInMonth(absenceDays?.keys(), year, monthZeroIndexed),
+		) *
+		8 *
+		3600;
 	const totalHours = totalSeconds / 3600;
 	const targetHours = targetSeconds / 3600;
 	const pct = targetSeconds > 0 ? (totalSeconds / targetSeconds) * 100 : 0;
@@ -61,6 +71,8 @@ export const TimesheetGrid: React.FC<Props> = ({
 		const jsDate = new Date(Date.UTC(year, monthZeroIndexed, d));
 		const weekday = jsDate.getUTCDay();
 		const isWeekend = weekday === 0 || weekday === 6;
+		const absenceDay = absenceDays?.get(iso);
+		const isAbsent = !!absenceDay;
 
 		cells.push(
 			<DayCell
@@ -70,6 +82,8 @@ export const TimesheetGrid: React.FC<Props> = ({
 				worklogs={worklogs}
 				issueSummaries={issueSummaries}
 				isWeekend={isWeekend}
+				isAbsent={isAbsent}
+				absenceDay={absenceDay}
 				isToday={iso === todayIso}
 			/>,
 		);

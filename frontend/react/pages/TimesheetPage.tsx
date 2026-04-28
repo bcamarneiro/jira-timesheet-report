@@ -22,11 +22,13 @@ import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { toast } from '../components/ui/Toast';
 import { WorklogLoadingStatus } from '../components/ui/WorklogLoadingStatus';
+import { useAbsenceDaysByUser } from '../hooks/useAbsenceDays';
 import { useReportsURLState } from '../hooks/useReportsURLState';
 import { useDownload } from '../hooks/useDownload';
 import { useReportsTrendData } from '../hooks/useReportsTrendData';
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
+import { getUserAbsenceDayMap } from '../utils/absence';
 import { describeFreshness } from '../utils/dataFreshness';
 import { addDaysToIsoDate, monthLabel, parseIsoDateLocal } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
@@ -308,7 +310,14 @@ export const TimesheetPage: React.FC = () => {
 	const removeReportPreset = useUserDataStore(
 		(state) => state.removeReportPreset,
 	);
-	const { issueSummaries, users, grouped, visibleEntries } = useMemo(
+	const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+	const monthEnd = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(new Date(currentYear, currentMonth + 1, 0).getDate()).padStart(2, '0')}`;
+	const { data: monthlyAbsenceDaysByUser } = useAbsenceDaysByUser(
+		monthStart,
+		monthEnd,
+		{ enabled: viewMode === 'monthly' },
+	);
+	const { issueSummaries, users, userEmails, grouped, visibleEntries } = useMemo(
 		() => deriveMonthlyReportState(data, selectedUser, allowedUsers),
 		[data, selectedUser, allowedUsers],
 	);
@@ -784,6 +793,7 @@ export const TimesheetPage: React.FC = () => {
 							users={selectableUsers}
 							value={isValidUser ? selectedUser : ''}
 							onChange={handleUserChange}
+							label="Monthly focus"
 						/>
 						<MonthNavigator
 							label={monthLabel(currentYear, currentMonth)}
@@ -808,6 +818,8 @@ export const TimesheetPage: React.FC = () => {
 
 			<ReportsControlPanel
 				viewMode={viewMode}
+				selectedUserLabel={isValidUser ? selectedUser : null}
+				monthlyUserCount={users.length}
 				searchQuery={searchQuery}
 				onlyAttentionNeeded={onlyAttentionNeeded}
 				managerMode={managerMode}
@@ -897,10 +909,11 @@ export const TimesheetPage: React.FC = () => {
 						<div className={styles.emptyState}>
 							<div className={styles.emptyIcon}>&#128203;</div>
 							<div className={styles.emptyTitle}>No team data found</div>
-							<div className={styles.emptyDescription}>
-								No worklogs were found for this week. Make sure team members
-								have logged time, or configure allowed users in settings.
-							</div>
+								<div className={styles.emptyDescription}>
+									No worklogs were found for this week. Make sure team members
+									have logged time, or configure your team members list in
+									Settings.
+								</div>
 						</div>
 					)}
 
@@ -1104,6 +1117,10 @@ export const TimesheetPage: React.FC = () => {
 										days={selectedEntry}
 										issueSummaries={issueSummaries}
 										onDownloadUser={handleDownloadUser}
+										absenceDays={getUserAbsenceDayMap(
+											monthlyAbsenceDaysByUser,
+											userEmails[selectedUser],
+										)}
 									/>
 								) : (
 									<TimesheetGrid
@@ -1112,6 +1129,10 @@ export const TimesheetPage: React.FC = () => {
 										days={{}}
 										issueSummaries={issueSummaries}
 										onDownloadUser={handleDownloadUser}
+										absenceDays={getUserAbsenceDayMap(
+											monthlyAbsenceDaysByUser,
+											userEmails[selectedUser],
+										)}
 									/>
 								)}
 							</ErrorBoundary>
@@ -1127,6 +1148,8 @@ export const TimesheetPage: React.FC = () => {
 										entries={filteredVisibleEntries}
 										year={currentYear}
 										monthZeroIndexed={currentMonth}
+										userEmails={userEmails}
+										absenceDaysByUser={monthlyAbsenceDaysByUser}
 										onUserClick={handleUserChange}
 									/>
 								)}
@@ -1140,6 +1163,10 @@ export const TimesheetPage: React.FC = () => {
 											days={days}
 											issueSummaries={issueSummaries}
 											onDownloadUser={handleDownloadUser}
+											absenceDays={getUserAbsenceDayMap(
+												monthlyAbsenceDaysByUser,
+												userEmails[user],
+											)}
 										/>
 									</ErrorBoundary>
 								))}

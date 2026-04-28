@@ -128,7 +128,7 @@ At minimum, share:
 1. the hosted URL
 2. the onboarding guide
 3. a `Share Pack` if teammates should inherit the same Jira host, allowed users, JQL, or calendar mappings
-4. proxy guidance if CORS is expected to be a problem in your environment
+4. proxy guidance only if direct browser access is expected to fail in your environment
 
 Do not share:
 
@@ -157,9 +157,10 @@ Symptoms:
 
 Actions:
 
-- verify whether the environment needs the local CORS proxy
-- if yes, document the expected proxy URL clearly
-- for SOCKS5 environments, use `npm run cors-proxy:socks`
+- start by leaving the proxy field blank and testing direct browser access
+- verify whether the environment actually needs the local CORS proxy before telling people to use it
+- if it does, document the expected proxy URL clearly
+- for SOCKS5 environments, use `npm run cors-proxy:socks` behind the same local proxy URL
 
 ### 2. Reporting Scope Confusion
 

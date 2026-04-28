@@ -33,6 +33,7 @@ describe('monthWorklogs query key consistency', () => {
 				gitlabHost: '',
 				rescueTimeApiKey: '',
 				calendarFeeds: [],
+				absenceAssignments: [],
 				complianceReminderEnabled: false,
 				theme: 'system',
 				timeRounding: 'off',

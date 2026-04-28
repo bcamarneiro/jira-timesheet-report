@@ -76,10 +76,6 @@ export const DashboardPage: React.FC = () => {
 		heatmapMonthStart,
 		heatmapMonthEnd,
 	);
-	const vacationDates = useMemo(() => {
-		if (!absenceDays || absenceDays.size === 0) return undefined;
-		return new Set(absenceDays.keys());
-	}, [absenceDays]);
 	const closeAssistantModel = useMemo(
 		() =>
 			buildWeeklyCloseAssistantModel({
@@ -308,7 +304,7 @@ export const DashboardPage: React.FC = () => {
 							monthData={monthHeatmap.data}
 							month={monthHeatmap.month}
 							year={monthHeatmap.year}
-							vacationDates={vacationDates}
+							absenceDays={absenceDays}
 						/>
 					)}
 

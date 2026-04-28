@@ -327,7 +327,17 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 			};
 		}),
 
-	setLoading: (source, value) => set({ [loadingKeys[source]]: value }),
+	setLoading: (source, value) =>
+		set((state) =>
+			state[loadingKeys[source]] === value
+				? state
+				: { [loadingKeys[source]]: value },
+		),
 
-	setError: (source, value) => set({ [errorKeys[source]]: value }),
+	setError: (source, value) =>
+		set((state) =>
+			state[errorKeys[source]] === value
+				? state
+				: { [errorKeys[source]]: value },
+		),
 }));

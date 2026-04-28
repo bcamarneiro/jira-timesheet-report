@@ -76,6 +76,7 @@ module.exports = {
 	],
 	devServer: {
 		host: '127.0.0.1',
+		allowedHosts: 'all',
 		static: [
 			{
 				directory: path.join(__dirname, 'dist'),

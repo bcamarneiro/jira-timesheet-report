@@ -2,6 +2,10 @@ import type React from 'react';
 import { useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import {
+	buildJiraConnectionFingerprint,
+	useUIStore,
+} from '../../stores/useUIStore';
+import {
 	useSettingsFormStore,
 	type SettingsIntegrationTests,
 } from '../../stores/useSettingsFormStore';
@@ -22,6 +26,12 @@ export const SettingsPage: React.FC = () => {
 	const testCalendar = useSettingsFormStore((state) => state.testCalendar);
 	const testRescueTime = useSettingsFormStore((state) => state.testRescueTime);
 	const savedConfig = useConfigStore((state) => state.config);
+	const jiraConnectionEvidenceAt = useUIStore(
+		(state) => state.jiraConnectionEvidenceAt,
+	);
+	const jiraConnectionEvidenceFingerprint = useUIStore(
+		(state) => state.jiraConnectionEvidenceFingerprint,
+	);
 	const [checksRunning, setChecksRunning] = useState(false);
 	const [lastDiagnosticsRunAt, setLastDiagnosticsRunAt] = useState<
 		string | null
@@ -43,8 +53,18 @@ export const SettingsPage: React.FC = () => {
 	);
 	const canRunChecks =
 		canTestJira || canTestGitlab || hasCalendarFeeds || canTestRescueTime;
+	const savedConnectionEvidenceAt =
+		jiraConnectionEvidenceFingerprint ===
+		buildJiraConnectionFingerprint(savedConfig)
+			? jiraConnectionEvidenceAt
+			: null;
 
-	const model = buildSettingsSetupModel(formData, integrationTests, isDirty);
+	const model = buildSettingsSetupModel(
+		formData,
+		integrationTests,
+		isDirty,
+		savedConnectionEvidenceAt,
+	);
 
 	const jumpToSection = (sectionId: string) => {
 		document.getElementById(sectionId)?.scrollIntoView({
@@ -107,11 +127,23 @@ export const SettingsPage: React.FC = () => {
 						Use this page to connect Jira, run diagnostics, and save a setup
 						that makes Dashboard and Reports reliable for day-to-day use.
 					</p>
+					<p className={styles.helper}>
+						Start with Jira first and leave the proxy field blank on the first
+						attempt. Add a local proxy only if direct browser access is blocked.
+						Calendars, GitLab, and RescueTime can come later.
+					</p>
 				</div>
 				<div className={styles.heroChecklist}>
 					<div>
 						<strong>Core setup</strong>
 						<span>Connect Jira, run the check, and save a clean baseline.</span>
+					</div>
+					<div>
+						<strong>Access path</strong>
+						<span>
+							Try direct browser access first. Only add the local proxy if the
+							checks show your environment blocks Jira requests.
+						</span>
 					</div>
 					<div>
 						<strong>Optional signals</strong>
@@ -154,9 +186,8 @@ export const SettingsPage: React.FC = () => {
 					<div>
 						<h2>Configuration form</h2>
 						<p>
-							The wizard and diagnostics sit on top of the same saved
-							configuration. Change the fields here, then save when the setup
-							looks right.
+							The wizard and diagnostics read from the same configuration below.
+							Update the fields here, then save once the setup looks right.
 						</p>
 					</div>
 				</div>

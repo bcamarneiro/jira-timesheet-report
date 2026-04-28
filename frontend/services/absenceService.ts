@@ -1,5 +1,9 @@
-import type { CalendarFeed } from '../stores/useConfigStore';
+import type {
+	AbsenceAssignment,
+	CalendarFeed,
+} from '../stores/useConfigStore';
 import { logger } from '../react/utils/logger';
+import type { AbsenceKind } from '../../types/absence';
 
 /**
  * ICS parsing utilities — lightweight re-implementation of the subset needed
@@ -12,6 +16,41 @@ interface AbsenceEvent {
 	dtend: string;
 	rrule: string;
 	exdates: string[];
+}
+
+function isAbortError(error: unknown): boolean {
+	return (
+		(error instanceof DOMException && error.name === 'AbortError') ||
+		(error instanceof Error && error.name === 'AbortError')
+	);
+}
+
+function matchesTitleFilter(summary: string, titleFilter?: string): boolean {
+	if (!titleFilter?.trim()) return true;
+	return summary.toLowerCase().includes(titleFilter.trim().toLowerCase());
+}
+
+function getAbsenceAttributionMode(feed: CalendarFeed): 'self' | 'shared' {
+	return feed.absenceAttribution === 'shared' ? 'shared' : 'self';
+}
+
+export function classifyAbsenceKind(summary: string): AbsenceKind {
+	const normalized = summary.trim().toLowerCase();
+	if (normalized.includes('sick')) return 'sick';
+	if (normalized.includes('vacation')) return 'vacation';
+	return 'off';
+}
+
+function resolveAbsenceKind(
+	current: AbsenceKind,
+	next: AbsenceKind,
+): AbsenceKind {
+	const priority: Record<AbsenceKind, number> = {
+		off: 1,
+		vacation: 2,
+		sick: 3,
+	};
+	return priority[next] >= priority[current] ? next : current;
 }
 
 function unfoldLines(raw: string): string[] {
@@ -38,6 +77,13 @@ function parseIcsDate(value: string): string | null {
 		return `${y}-${m}-${d}`;
 	}
 	return null;
+}
+
+function toLocalDateStr(date: Date): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
 }
 
 function parseRRule(rrule: string): Record<string, string> {
@@ -155,7 +201,7 @@ function expandAbsenceDates(
 		const endDate = new Date(`${effectiveEnd}T00:00:00`);
 
 		while (cursor < endDate) {
-			const iso = cursor.toISOString().slice(0, 10);
+			const iso = toLocalDateStr(cursor);
 			if (iso >= rangeStart && iso <= rangeEnd && !exdateSet.has(iso)) {
 				// Skip weekends
 				const dow = cursor.getDay();
@@ -190,7 +236,7 @@ function expandAbsenceDates(
 	const maxOccurrences = count || 500;
 
 	const addIfInRange = (d: Date) => {
-		const iso = d.toISOString().slice(0, 10);
+		const iso = toLocalDateStr(d);
 		if (d >= rangeStartDate && d <= rangeEndDate && !exdateSet.has(iso)) {
 			const dow = d.getDay();
 			if (dow !== 0 && dow !== 6) {
@@ -243,23 +289,75 @@ function expandAbsenceDates(
 export interface AbsenceDay {
 	date: string;
 	reasons: string[];
+	kind: AbsenceKind;
 }
 
-/**
- * Fetch absence-type calendar feeds and extract all-day events as absence dates.
- * Returns a Map of date string → AbsenceDay with aggregated reasons.
- */
-export async function fetchAbsenceDays(
+export type UserAbsenceDays = Map<string, Map<string, AbsenceDay>>;
+
+function addAbsenceReason(
+	userAbsenceDays: UserAbsenceDays,
+	userEmail: string,
+	date: string,
+	reason: string,
+	kind: AbsenceKind,
+) {
+	const normalizedEmail = userEmail.trim().toLowerCase();
+	if (!normalizedEmail) return;
+
+	let userDates = userAbsenceDays.get(normalizedEmail);
+	if (!userDates) {
+		userDates = new Map();
+		userAbsenceDays.set(normalizedEmail, userDates);
+	}
+
+	const existing = userDates.get(date);
+	if (existing) {
+		if (!existing.reasons.includes(reason)) {
+			existing.reasons.push(reason);
+		}
+		existing.kind = resolveAbsenceKind(existing.kind, kind);
+		return;
+	}
+
+	userDates.set(date, {
+		date,
+		reasons: [reason],
+		kind,
+	});
+}
+
+function findMatchedUsers(
+	summary: string,
+	assignments: AbsenceAssignment[],
+): string[] {
+	const matched = assignments.filter((assignment) =>
+		summary.toLowerCase().includes(assignment.pattern.trim().toLowerCase()),
+	);
+
+	return [...new Set(matched.map((assignment) => assignment.userEmail))];
+}
+
+export async function fetchAbsenceDaysByUser(
 	feeds: CalendarFeed[],
+	assignments: AbsenceAssignment[],
+	currentUserEmail: string,
 	corsProxy: string,
 	rangeStart: string,
 	rangeEnd: string,
 	signal?: AbortSignal,
-): Promise<Map<string, AbsenceDay>> {
+): Promise<UserAbsenceDays> {
 	const absenceFeeds = feeds.filter(
-		(f) => f.type === 'absence' && f.url.trim(),
+		(feed) => feed.type === 'absence' && feed.url.trim(),
 	);
 	if (absenceFeeds.length === 0) return new Map();
+
+	const normalizedAssignments = assignments
+		.map((assignment) => ({
+			pattern: assignment.pattern.trim(),
+			userEmail: assignment.userEmail.trim().toLowerCase(),
+		}))
+		.filter((assignment) => assignment.pattern && assignment.userEmail);
+	const normalizedCurrentUser = currentUserEmail.trim().toLowerCase();
 
 	const results = await Promise.allSettled(
 		absenceFeeds.map(async (feed) => {
@@ -269,36 +367,84 @@ export async function fetchAbsenceDays(
 			const res = await fetch(url, { signal });
 			if (!res.ok) throw new Error(`Feed error: ${res.status}`);
 			const text = await res.text();
-			return { label: feed.label, events: parseAbsenceEvents(text) };
+			return {
+				label: feed.label,
+				absenceAttribution: getAbsenceAttributionMode(feed),
+				titleFilter: feed.titleFilter,
+				events: parseAbsenceEvents(text),
+			};
 		}),
 	);
 
-	const absenceMap = new Map<string, AbsenceDay>();
+	const userAbsenceDays: UserAbsenceDays = new Map();
 
 	for (const result of results) {
 		if (result.status !== 'fulfilled') {
-			logger.warn('[Absence] Feed failed:', result.reason);
+			if (!isAbortError(result.reason)) {
+				logger.warn('[Absence] Feed failed:', result.reason);
+			}
 			continue;
 		}
 
-		const { label, events } = result.value;
-		for (const event of events) {
+			const { label, absenceAttribution, titleFilter, events } = result.value;
+			for (const event of events) {
+				const matchedUsers =
+					absenceAttribution === 'shared'
+						? new Set(findMatchedUsers(event.summary, normalizedAssignments))
+						: new Set<string>();
+				if (
+					absenceAttribution === 'self' &&
+					normalizedCurrentUser &&
+					matchesTitleFilter(event.summary, titleFilter)
+				) {
+					matchedUsers.add(normalizedCurrentUser);
+				}
+				if (matchedUsers.size === 0) continue;
+
 			const dates = expandAbsenceDates(event, rangeStart, rangeEnd);
 			for (const { date, summary } of dates) {
-				const existing = absenceMap.get(date);
 				const reason = label ? `[${label}] ${summary}` : summary;
-				if (existing) {
-					existing.reasons.push(reason);
-				} else {
-					absenceMap.set(date, { date, reasons: [reason] });
+				const kind = classifyAbsenceKind(summary);
+				for (const userEmail of matchedUsers) {
+					addAbsenceReason(userAbsenceDays, userEmail, date, reason, kind);
 				}
 			}
 		}
 	}
 
+	if (signal?.aborted) {
+		return new Map();
+	}
+
 	logger.debug(
-		`[Absence] ${absenceFeeds.length} feeds → ${absenceMap.size} absence days in range ${rangeStart}..${rangeEnd}`,
+		`[Absence] ${absenceFeeds.length} feeds → ${userAbsenceDays.size} users with absences in range ${rangeStart}..${rangeEnd}`,
 	);
 
-	return absenceMap;
+	return userAbsenceDays;
+}
+
+/**
+ * Fetch absence-type calendar feeds and extract all-day events as absence dates.
+ * Returns a Map of date string → AbsenceDay with aggregated reasons.
+ */
+export async function fetchAbsenceDays(
+	feeds: CalendarFeed[],
+	assignments: AbsenceAssignment[],
+	currentUserEmail: string,
+	corsProxy: string,
+	rangeStart: string,
+	rangeEnd: string,
+	signal?: AbortSignal,
+): Promise<Map<string, AbsenceDay>> {
+	const userAbsenceDays = await fetchAbsenceDaysByUser(
+		feeds,
+		assignments,
+		currentUserEmail,
+		corsProxy,
+		rangeStart,
+		rangeEnd,
+		signal,
+	);
+
+	return userAbsenceDays.get(currentUserEmail.trim().toLowerCase()) ?? new Map();
 }

@@ -15,6 +15,18 @@ describe('useConfigStore helpers', () => {
 			corsProxy: ' http://localhost:8081/ ',
 			allowedUsers: ' one@example.com,  two@example.com ,, ',
 			gitlabHost: ' https://gitlab.example.com/ ',
+			calendarFeeds: [
+				{
+					label: ' Team absences ',
+					url: ' https://calendar.example.com/ooo.ics ',
+					type: 'absence',
+					absenceAttribution: 'self',
+					titleFilter: ' Bruno ',
+				},
+			],
+			absenceAssignments: [
+				{ pattern: ' Bruno ', userEmail: ' BRUNO@EXAMPLE.COM ' },
+			],
 		});
 
 		expect(config.jiraHost).toBe('jira.example.com');
@@ -23,6 +35,18 @@ describe('useConfigStore helpers', () => {
 		expect(config.corsProxy).toBe('http://localhost:8081');
 		expect(config.allowedUsers).toBe('one@example.com, two@example.com');
 		expect(config.gitlabHost).toBe('gitlab.example.com');
+		expect(config.calendarFeeds).toEqual([
+			{
+				label: 'Team absences',
+				url: 'https://calendar.example.com/ooo.ics',
+				type: 'absence',
+				absenceAttribution: 'self',
+				titleFilter: 'Bruno',
+			},
+		]);
+		expect(config.absenceAssignments).toEqual([
+			{ pattern: 'Bruno', userEmail: 'bruno@example.com' },
+		]);
 	});
 
 	it('migrates old persisted config into the current normalized shape', () => {
@@ -44,6 +68,30 @@ describe('useConfigStore helpers', () => {
 				label: 'Work',
 				url: 'https://calendar.test/feed',
 				type: 'suggestion',
+			},
+		]);
+	});
+
+	it('infers shared attribution for migrated absence feeds when assignments exist', () => {
+		const migrated = normalizeConfig({
+			calendarFeeds: [
+				{
+					label: 'Team vacations',
+					url: 'https://calendar.test/vacations.ics',
+					type: 'absence',
+				},
+			],
+			absenceAssignments: [
+				{ pattern: 'Bruno', userEmail: 'bruno@example.com' },
+			],
+		});
+
+		expect(migrated.calendarFeeds).toEqual([
+			{
+				label: 'Team vacations',
+				url: 'https://calendar.test/vacations.ics',
+				type: 'absence',
+				absenceAttribution: 'shared',
 			},
 		]);
 	});

@@ -47,6 +47,7 @@ describe('deriveMonthlyReportState', () => {
 		);
 
 		expect(state.issueSummaries['PROJ-100']).toBe('First issue');
+		expect(state.userEmails['Alex Thompson']).toBe('alex@example.com');
 	});
 
 	it('groups worklogs by user and local date', () => {

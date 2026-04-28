@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { WorklogSuggestion } from '../../../types/Suggestion';
-import { distributeSuggestionsToFillGap } from '../suggestionMerger';
+import {
+	distributeSuggestionsToFillGap,
+	mergeSuggestions,
+} from '../suggestionMerger';
 
 function makeSuggestion(
 	overrides: Partial<WorklogSuggestion> = {},
@@ -128,5 +131,33 @@ describe('distributeSuggestionsToFillGap', () => {
 
 		expect(result[0].suggestedSeconds).toBe(7200);
 		expect(result[0].suggestedTimeSpent).toBe('2h');
+	});
+});
+
+describe('mergeSuggestions', () => {
+	it('sets zero target on attributed time-off weekdays', () => {
+		const result = mergeSuggestions({
+			weekStart: '2026-03-09',
+			jiraSuggestions: [],
+			gitlabSuggestions: [],
+			calendarSuggestions: [],
+			rescueTimeData: new Map(),
+			existingWorklogs: [],
+			absenceDays: new Map([
+				[
+					'2026-03-10',
+					{
+						date: '2026-03-10',
+						reasons: ['Bruno C - Vacation'],
+						kind: 'vacation',
+					},
+				],
+			]),
+		});
+
+		const day = result.find((entry) => entry.date === '2026-03-10');
+		expect(day?.targetSeconds).toBe(0);
+		expect(day?.gapSeconds).toBe(0);
+		expect(day?.absenceKind).toBe('vacation');
 	});
 });

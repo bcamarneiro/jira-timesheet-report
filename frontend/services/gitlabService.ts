@@ -36,6 +36,67 @@ const MR_ACTIONS = new Set([
 ]);
 const REVIEW_ACTIONS = new Set(['commented on']);
 
+export function normalizeGitlabHost(gitlabHost: string): string {
+	return gitlabHost.replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+
+export function buildGitlabBaseUrl(
+	gitlabHost: string,
+	corsProxy: string,
+): string {
+	const cleanHost = normalizeGitlabHost(gitlabHost);
+	const gitlabOrigin = `https://${cleanHost}`;
+	return corsProxy
+		? `${corsProxy.replace(/\/$/, '')}/${gitlabOrigin}`
+		: gitlabOrigin;
+}
+
+async function describeGitlabErrorResponse(
+	res: Response,
+	cleanHost: string,
+): Promise<string> {
+	let detail = '';
+
+	try {
+		const body = (await res.text()).trim();
+		if (body) {
+			detail = body.length > 160 ? `${body.slice(0, 157)}...` : body;
+		}
+	} catch {
+		// ignore body parse failures
+	}
+
+	if (res.status === 401) {
+		return `GitLab rejected the token for ${cleanHost} (401). Check that the token is still active and has read_user or api scope.`;
+	}
+
+	if (res.status === 403) {
+		return `GitLab accepted the request but denied access on ${cleanHost} (403). Check account access and PAT scopes.`;
+	}
+
+	if (res.status === 404) {
+		return `Could not find the GitLab API on ${cleanHost} (404). Confirm the hostname and whether this self-hosted instance uses a custom base path.`;
+	}
+
+	return detail
+		? `GitLab API error on ${cleanHost}: ${res.status}. ${detail}`
+		: `GitLab API error on ${cleanHost}: ${res.status}.`;
+}
+
+export function describeGitlabConnectionError(
+	error: unknown,
+	cleanHost: string,
+): string {
+	if (
+		error instanceof TypeError ||
+		(error instanceof Error && /fetch|network/i.test(error.message))
+	) {
+		return `Could not reach ${cleanHost}. Check the hostname, VPN/certificate trust, or route the request through the CORS proxy.`;
+	}
+
+	return error instanceof Error ? error.message : 'GitLab connection failed';
+}
+
 function extractJiraKeys(text: string): string[] {
 	const matches = text.match(JIRA_KEY_RE);
 	return matches ? [...new Set(matches)] : [];
@@ -127,35 +188,35 @@ export async function fetchGitlabSuggestions(
 ): Promise<WorklogSuggestion[]> {
 	if (!gitlabToken || !gitlabHost) return [];
 
-	const cleanHost = gitlabHost.replace(/^https?:\/\//, '').replace(/\/$/, '');
-	const gitlabOrigin = `https://${cleanHost}`;
-	const baseUrl = corsProxy
-		? `${corsProxy.replace(/\/$/, '')}/${gitlabOrigin}`
-		: gitlabOrigin;
+	const cleanHost = normalizeGitlabHost(gitlabHost);
+	const baseUrl = buildGitlabBaseUrl(gitlabHost, corsProxy);
 
 	// Fetch up to 3 pages of events (60 events)
 	const allEvents: GitLabEvent[] = [];
-	for (let page = 1; page <= 3; page++) {
-		const params = new URLSearchParams({
-			per_page: '20',
-			page: String(page),
-			after: weekStart,
-			before: weekEnd,
-		});
-		const res = await fetch(`${baseUrl}/api/v4/events?${params}`, {
-			headers: {
-				'PRIVATE-TOKEN': gitlabToken,
-				Accept: 'application/json',
-			},
-			signal,
-		});
-		if (!res.ok) {
-			if (res.status === 401) throw new Error('Invalid GitLab token');
-			throw new Error(`GitLab API error: ${res.status}`);
+	try {
+		for (let page = 1; page <= 3; page++) {
+			const params = new URLSearchParams({
+				per_page: '20',
+				page: String(page),
+				after: weekStart,
+				before: weekEnd,
+			});
+			const res = await fetch(`${baseUrl}/api/v4/events?${params}`, {
+				headers: {
+					'PRIVATE-TOKEN': gitlabToken,
+					Accept: 'application/json',
+				},
+				signal,
+			});
+			if (!res.ok) {
+				throw new Error(await describeGitlabErrorResponse(res, cleanHost));
+			}
+			const events = (await res.json()) as GitLabEvent[];
+			allEvents.push(...events);
+			if (events.length < 20) break;
 		}
-		const events = (await res.json()) as GitLabEvent[];
-		allEvents.push(...events);
-		if (events.length < 20) break;
+	} catch (error) {
+		throw new Error(describeGitlabConnectionError(error, cleanHost));
 	}
 
 	// Group activities by (date, issueKey, activityType)

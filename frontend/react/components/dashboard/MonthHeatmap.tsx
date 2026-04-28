@@ -1,4 +1,6 @@
 import type React from 'react';
+import type { AbsenceDay } from '../../../services/absenceService';
+import { getAbsenceKindLabel } from '../../utils/absence';
 import { monthLabel } from '../../utils/date';
 import { formatHours } from '../../utils/format';
 import * as styles from './MonthHeatmap.module.css';
@@ -7,7 +9,7 @@ type Props = {
 	monthData: Map<string, number>;
 	month: number;
 	year: number;
-	vacationDates?: Set<string>;
+	absenceDays?: Map<string, AbsenceDay>;
 };
 
 const DAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -48,7 +50,7 @@ export const MonthHeatmap: React.FC<Props> = ({
 	monthData,
 	month,
 	year,
-	vacationDates,
+	absenceDays,
 }) => {
 	const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -95,7 +97,7 @@ export const MonthHeatmap: React.FC<Props> = ({
 	}
 
 	const legendLevels = ['empty', 'level1', 'level2', 'level3', 'level4'];
-	const showVacationLegend = vacationDates && vacationDates.size > 0;
+	const showAbsenceLegend = absenceDays && absenceDays.size > 0;
 	const totalLoggedSeconds = [...monthData.values()].reduce(
 		(sum, seconds) => sum + seconds,
 		0,
@@ -136,13 +138,14 @@ export const MonthHeatmap: React.FC<Props> = ({
 						);
 					}
 
-					const isVacation = vacationDates?.has(cell.dateStr);
-					const level = isVacation ? 'vacation' : getLevel(cell.seconds);
+					const absenceDay = absenceDays?.get(cell.dateStr);
+					const isTimeOff = !!absenceDay;
+					const level = isTimeOff ? 'vacation' : getLevel(cell.seconds);
 					const levelClass = cellLevelMap[level] ?? cellLevelMap.empty;
 					const weekendClass = cell.isWeekend ? styles.cellWeekend : '';
 					const hours = cell.seconds / 3600;
-					const title = isVacation
-						? `${cell.dateStr}: vacation/absence`
+					const title = isTimeOff
+						? `${cell.dateStr}: ${getAbsenceKindLabel(absenceDay.kind)}`
 						: hours > 0
 							? `${cell.dateStr}: ${formatHours(cell.seconds)}`
 							: `${cell.dateStr}: no time logged`;
@@ -161,12 +164,12 @@ export const MonthHeatmap: React.FC<Props> = ({
 			</ul>
 
 			<div className={styles.footer}>
-				{showVacationLegend && (
+				{showAbsenceLegend && (
 					<>
 						<div
 							className={`${styles.legendCell} ${styles.legendCellVacation}`}
 						/>
-						<span className={styles.legendLabel}>Vacation</span>
+						<span className={styles.legendLabel}>Time off</span>
 					</>
 				)}
 				<span className={styles.legendLabel}>Less</span>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { buildTeamSummaries } from '../utils/teamReports';
+import { useAbsenceDaysByUser } from './useAbsenceDays';
 import { useMonthWorklogs } from './useMonthWorklogs';
 import type { WorklogFetchProgress } from '../../../types/worklogLoading';
 
@@ -34,9 +35,16 @@ export function useTeamData(
 		enabled: enabled && spansMonths,
 		onProgress: setMonth2Progress,
 	});
+	const {
+		data: absenceDaysByUser,
+		isLoading: absencesLoading,
+		isFetching: absencesFetching,
+	} = useAbsenceDaysByUser(weekStart, weekEnd, { enabled });
 
-	const isLoading = month1.isLoading || (spansMonths && month2.isLoading);
-	const isFetching = month1.isFetching || (spansMonths && month2.isFetching);
+	const isLoading =
+		month1.isLoading || (spansMonths && month2.isLoading) || absencesLoading;
+	const isFetching =
+		month1.isFetching || (spansMonths && month2.isFetching) || absencesFetching;
 	const error = month1.error || month2.error;
 	const lastUpdatedAt = Math.max(
 		month1.dataUpdatedAt ?? 0,
@@ -70,6 +78,7 @@ export function useTeamData(
 			weekStart,
 			weekEnd,
 			config.allowedUsers,
+			absenceDaysByUser,
 		);
 	}, [
 		month1.data,
@@ -78,6 +87,7 @@ export function useTeamData(
 		weekStart,
 		weekEnd,
 		config.allowedUsers,
+		absenceDaysByUser,
 		isLoading,
 	]);
 

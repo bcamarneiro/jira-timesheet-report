@@ -1,6 +1,8 @@
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
+import type { UserAbsenceDays } from '../../services/absenceService';
+import { countAbsenceWorkdaysInMonth } from '../utils/absence';
 import { getWorkingDaysInMonth, isDateInMonth } from '../utils/date';
 import { getInitials } from '../utils/text';
 import { ProgressBar } from './ui/ProgressBar';
@@ -10,6 +12,8 @@ type Props = {
 	entries: [string, Record<string, EnrichedJiraWorklog[]>][];
 	year: number;
 	monthZeroIndexed: number;
+	userEmails?: Record<string, string>;
+	absenceDaysByUser?: UserAbsenceDays;
 	onUserClick?: (user: string) => void;
 };
 
@@ -20,12 +24,14 @@ export const OverviewTable: React.FC<Props> = ({
 	entries,
 	year,
 	monthZeroIndexed,
+	userEmails = {},
+	absenceDaysByUser,
 	onUserClick,
 }) => {
 	const [sortField, setSortField] = useState<SortField>('user');
 	const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
-	const targetHours = getWorkingDaysInMonth(year, monthZeroIndexed) * 8;
+	const baseTargetHours = getWorkingDaysInMonth(year, monthZeroIndexed) * 8;
 
 	const rows = useMemo(() => {
 		const computed = entries.map(([user, days]) => {
@@ -41,11 +47,19 @@ export const OverviewTable: React.FC<Props> = ({
 			}
 
 			const totalHours = totalSeconds / 3600;
+			const absenceHours =
+				countAbsenceWorkdaysInMonth(
+					absenceDaysByUser?.get(userEmails[user] ?? '')?.keys(),
+					year,
+					monthZeroIndexed,
+				) * 8;
+			const targetHours = Math.max(0, baseTargetHours - absenceHours);
 			return {
 				user,
 				totalHours,
 				worklogCount,
 				daysWorked: totalHours / 8,
+				targetHours,
 				pct: targetHours > 0 ? (totalHours / targetHours) * 100 : 0,
 			};
 		});
@@ -69,7 +83,16 @@ export const OverviewTable: React.FC<Props> = ({
 		});
 
 		return computed;
-	}, [entries, year, monthZeroIndexed, sortField, sortDirection, targetHours]);
+	}, [
+		entries,
+		year,
+		monthZeroIndexed,
+		sortField,
+		sortDirection,
+		baseTargetHours,
+		absenceDaysByUser,
+		userEmails,
+	]);
 
 	const grandTotalHours = rows.reduce((sum, r) => sum + r.totalHours, 0);
 	const grandTotalWorklogs = rows.reduce((sum, r) => sum + r.worklogCount, 0);

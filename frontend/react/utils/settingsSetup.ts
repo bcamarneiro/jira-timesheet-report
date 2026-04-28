@@ -28,6 +28,15 @@ export interface SurfaceReadinessModel {
 	detail: string;
 }
 
+export interface AccessPathGuidanceModel {
+	title: string;
+	status: SetupStatus;
+	summary: string;
+	detail: string;
+	checklist: string[];
+	sectionId: string;
+}
+
 export interface SettingsSetupModel {
 	status: SetupStatus;
 	headline: string;
@@ -43,6 +52,7 @@ export interface SettingsSetupModel {
 		dashboard: SurfaceReadinessModel;
 		reports: SurfaceReadinessModel;
 	};
+	accessPath: AccessPathGuidanceModel;
 	quickFacts: {
 		allowedUsersCount: number;
 		configuredSignalCount: number;
@@ -86,7 +96,7 @@ function summarizeConfiguredSources({
 	}
 	if (absenceFeedCount > 0) {
 		labels.push(
-			`${absenceFeedCount} absence calendar${absenceFeedCount === 1 ? '' : 's'}`,
+			`${absenceFeedCount} time off calendar${absenceFeedCount === 1 ? '' : 's'}`,
 		);
 	}
 
@@ -105,6 +115,7 @@ export function buildSettingsSetupModel(
 	config: Config,
 	integrationTests: SettingsIntegrationTests,
 	isDirty: boolean,
+	jiraConnectionEvidenceAt: string | null = null,
 ): SettingsSetupModel {
 	const allowedUsersCount = splitCsv(config.allowedUsers).length;
 	const suggestionFeedCount = (config.calendarFeeds ?? []).filter(
@@ -132,13 +143,24 @@ export function buildSettingsSetupModel(
 
 	const hasConnectionCredentials = missingConnectionFields.length === 0;
 	const jiraResult = integrationTests.jira.result;
+	const hasProxy = !!config.corsProxy.trim();
+	const proxyLabel = config.corsProxy.trim();
+	const hasSavedJiraEvidence =
+		!!jiraConnectionEvidenceAt && hasConnectionCredentials && !isDirty;
+	const jiraEvidenceLabel = jiraConnectionEvidenceAt
+		? new Date(jiraConnectionEvidenceAt).toLocaleString()
+		: null;
 	const jiraStatus: SetupStatus = !hasConnectionCredentials
 		? 'pending'
 		: integrationTests.jira.loading
 			? 'warning'
 			: jiraResult?.success
 				? 'ready'
-				: 'warning';
+				: jiraResult?.success === false
+					? 'warning'
+					: hasSavedJiraEvidence
+						? 'ready'
+						: 'warning';
 
 	const scopeStatus: SetupStatus =
 		config.jqlFilter.trim() || allowedUsersCount > 0 ? 'ready' : 'warning';
@@ -165,11 +187,11 @@ export function buildSettingsSetupModel(
 
 	const verifyStatus: SetupStatus = !hasConnectionCredentials
 		? 'pending'
-		: !jiraResult?.success || isDirty
+		: !(jiraResult?.success === true || hasSavedJiraEvidence) || isDirty
 			? 'warning'
 			: 'ready';
 
-	const coreReady = jiraResult?.success === true && !isDirty;
+	const coreReady = (jiraResult?.success === true || hasSavedJiraEvidence) && !isDirty;
 	const overallStatus: SetupStatus = coreReady
 		? 'ready'
 		: hasConnectionCredentials
@@ -177,22 +199,28 @@ export function buildSettingsSetupModel(
 			: 'pending';
 
 	const connectionDetail = !hasConnectionCredentials
-		? `Add ${joinList(missingConnectionFields)} to connect to Jira.`
+		? `Add ${joinList(missingConnectionFields)} to connect to Jira. Leave CORS Proxy blank unless direct browser access later fails.`
 		: integrationTests.jira.loading
 			? 'Checking your Jira account and worklog permissions now.'
 			: jiraResult?.success
-				? `${jiraResult.message}${config.corsProxy.trim() ? ` via ${config.corsProxy.trim()}` : ''}`
-				: (jiraResult?.message ??
-					'Run the Jira check once to confirm the account and auto-detect permissions.');
+				? hasProxy
+					? `${jiraResult.message} via ${proxyLabel}.`
+					: `${jiraResult.message}. Direct browser access is working, so no proxy is needed right now.`
+				: hasSavedJiraEvidence
+					? hasProxy
+						? `Recent Jira data fetches already succeeded through ${proxyLabel}${jiraEvidenceLabel ? ` on ${jiraEvidenceLabel}` : ''}.`
+						: `Recent Jira data fetches already succeeded directly from the browser${jiraEvidenceLabel ? ` on ${jiraEvidenceLabel}` : ''}.`
+					: (jiraResult?.message ??
+						'Run the Jira check once to confirm the account and auto-detect permissions.');
 
 	const scopeDetail =
 		config.jqlFilter.trim() && allowedUsersCount > 0
-			? `JQL is narrowing the issue set and Reports is scoped to ${allowedUsersCount} allowed user${allowedUsersCount === 1 ? '' : 's'}.`
+			? `JQL is narrowing the issue set and Reports is scoped to ${allowedUsersCount} team member${allowedUsersCount === 1 ? '' : 's'}.`
 			: config.jqlFilter.trim()
 				? 'JQL is narrowing the issue set; Reports will include everyone this Jira account can see.'
 				: allowedUsersCount > 0
-					? `Reports is scoped to ${allowedUsersCount} allowed user${allowedUsersCount === 1 ? '' : 's'}.`
-					: 'No scope filters yet, so Reports will use all issues and users visible to this Jira account.';
+					? `Reports is scoped to ${allowedUsersCount} team member${allowedUsersCount === 1 ? '' : 's'}.`
+					: 'No JQL or team roster yet, so Reports will use all issues and users visible to this Jira account.';
 
 	const signalsDetail =
 		configuredSignalCount === 0
@@ -205,8 +233,8 @@ export function buildSettingsSetupModel(
 		? 'Save becomes relevant after you add the Jira connection details.'
 		: isDirty
 			? 'You have form changes that are not live yet. Save when you are happy with the setup.'
-			: jiraResult?.success
-				? 'Saved settings match the verified configuration.'
+			: jiraResult?.success || hasSavedJiraEvidence
+				? 'Saved settings match a Jira configuration that has already proved itself.'
 				: 'Settings are saved, but the Jira connection still needs verification.';
 
 	const steps: SetupStepModel[] = [
@@ -327,8 +355,46 @@ export function buildSettingsSetupModel(
 	const reportsDetail = !coreReady
 		? 'Verify the Jira connection first so weekly and monthly reports have a trusted data source.'
 		: allowedUsersCount > 0
-			? `Ready and scoped to ${allowedUsersCount} allowed user${allowedUsersCount === 1 ? '' : 's'}.`
+			? `Ready and scoped to ${allowedUsersCount} team member${allowedUsersCount === 1 ? '' : 's'}.`
 			: 'Ready and currently shows everyone visible to this Jira account.';
+
+	const accessPathStatus: SetupStatus = !hasConnectionCredentials
+		? 'pending'
+		: jiraStatus === 'ready'
+			? 'ready'
+			: 'warning';
+	const accessPath: AccessPathGuidanceModel = hasProxy
+		? {
+				title: 'Using a local Jira proxy',
+				status: accessPathStatus,
+				summary: `Jira traffic is currently going through ${proxyLabel} before it reaches Jira.`,
+				detail:
+					jiraResult?.success || hasSavedJiraEvidence
+						? 'Keep the proxy only because this environment needs it. If you want to retry direct browser access later, clear the field and run the Jira check again.'
+						: 'The proxy is configured, but Jira still needs review. Double-check the proxy URL first, then the upstream VPN, certificate, or SOCKS setup behind it.',
+				checklist: [
+					'Use the same proxy URL for both normal and SOCKS-backed local proxy runs.',
+					'If your team uses a SOCKS5 upstream, start the local proxy with npm run cors-proxy:socks and keep this URL pointed at the local proxy.',
+					'If you want to test direct browser access again later, clear the field and re-run the Jira check.',
+				],
+				sectionId: SETTINGS_SECTION_IDS.connection,
+			}
+		: {
+				title: 'Try direct browser access first',
+				status: accessPathStatus,
+				summary:
+					'Leave CORS Proxy blank on the first attempt. The app can usually talk to Jira directly from the browser.',
+				detail:
+					jiraResult?.success || hasSavedJiraEvidence
+						? 'Direct browser access is already working, so no proxy is needed for this setup right now.'
+						: 'Only add a local proxy if the Jira check fails because the browser or network is blocking direct access, not because of a bad host or token.',
+				checklist: [
+					'Start with Jira host, email, and API token only.',
+					'If the Jira check later fails due to browser, certificate, VPN, or CORS restrictions, run npm run cors-proxy and set http://localhost:8081 here.',
+					'Only use npm run cors-proxy:socks when your environment specifically requires a SOCKS5 upstream.',
+				],
+				sectionId: SETTINGS_SECTION_IDS.connection,
+			};
 
 	const headline = coreReady
 		? configuredSignalCount > 0
@@ -371,6 +437,7 @@ export function buildSettingsSetupModel(
 				detail: reportsDetail,
 			},
 		},
+		accessPath,
 		quickFacts: {
 			allowedUsersCount,
 			configuredSignalCount,

@@ -73,6 +73,46 @@ export const DiagnosticsPanel: React.FC<Props> = ({
 				) : null}
 			</div>
 
+			<article className={styles.accessCard}>
+				<div className={styles.accessHeader}>
+					<div>
+						<p className={styles.kicker}>Jira access path</p>
+						<h3>{model.accessPath.title}</h3>
+						<p className={styles.description}>{model.accessPath.summary}</p>
+					</div>
+					<span
+						className={`${styles.statusBadge} ${statusClassMap[model.accessPath.status]}`}
+					>
+						{statusLabelMap[model.accessPath.status]}
+					</span>
+				</div>
+				<p className={styles.description}>{model.accessPath.detail}</p>
+				<ul className={styles.checklist}>
+					{model.accessPath.checklist.map((item) => (
+						<li key={item}>{item}</li>
+					))}
+				</ul>
+				<div className={styles.rowActions}>
+					<Button
+						type="button"
+						variant="secondary"
+						onClick={() => onJumpToSection(model.accessPath.sectionId)}
+					>
+						Open Jira connection
+					</Button>
+					{canRunChecks ? (
+						<Button
+							type="button"
+							variant="secondary"
+							onClick={onRunAvailableChecks}
+							disabled={checksRunning}
+						>
+							{checksRunning ? 'Running...' : 'Run checks'}
+						</Button>
+					) : null}
+				</div>
+			</article>
+
 			<div className={styles.surfaceGrid}>
 				{Object.values(model.surfaces).map((surface) => (
 					<article key={surface.label} className={styles.surfaceCard}>

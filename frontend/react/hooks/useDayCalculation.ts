@@ -2,13 +2,18 @@ import { useMemo } from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
 import { BASELINE_HOURS } from '../constants/timesheet';
 
-export function useDayCalculation(worklogs: JiraWorklog[], isWeekend: boolean) {
+export function useDayCalculation(
+	worklogs: JiraWorklog[],
+	isWeekend: boolean,
+	isAbsent = false,
+) {
 	const calculations = useMemo(() => {
 		const dayTotalSeconds = worklogs.reduce(
 			(sum, wl) => sum + wl.timeSpentSeconds,
 			0,
 		);
-		const baselineSeconds = isWeekend ? 0 : BASELINE_HOURS * 3600;
+		const baselineSeconds =
+			isWeekend || isAbsent ? 0 : BASELINE_HOURS * 3600;
 		const effectiveSeconds = dayTotalSeconds;
 		const missingSeconds = Math.max(0, baselineSeconds - effectiveSeconds);
 
@@ -18,7 +23,7 @@ export function useDayCalculation(worklogs: JiraWorklog[], isWeekend: boolean) {
 			effectiveSeconds,
 			missingSeconds,
 		};
-	}, [worklogs, isWeekend]);
+	}, [worklogs, isWeekend, isAbsent]);
 
 	return calculations;
 }

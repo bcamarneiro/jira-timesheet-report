@@ -57,6 +57,38 @@ describe('buildTeamSummaries', () => {
 		expect(summaries[2]?.totalSeconds).toBe(0);
 		expect(summaries[2]?.targetSeconds).toBe(40 * 3600);
 	});
+
+	it('reduces a member target when a shared absence assignment covers part of the week', () => {
+		const absenceDaysByUser = new Map([
+			[
+				'bob@example.com',
+				new Map([
+					[
+						'2026-03-05',
+						{ date: '2026-03-05', reasons: ['[Team PTO] Vacation - Bob'] },
+					],
+				]),
+			],
+		]);
+
+		const summaries = buildTeamSummaries(
+			[
+				createWorklog(
+					'bob@example.com',
+					'Bob',
+					'2026-03-04T09:00:00.000+0000',
+					32 * 3600,
+				),
+			],
+			'2026-03-02',
+			'2026-03-08',
+			'bob@example.com',
+			absenceDaysByUser,
+		);
+
+		expect(summaries[0]?.targetSeconds).toBe(32 * 3600);
+		expect(summaries[0]?.gapSeconds).toBe(0);
+	});
 });
 
 describe('buildManagerTrendModel', () => {
@@ -115,5 +147,37 @@ describe('buildManagerTrendModel', () => {
 				currentLoggedSeconds: 24 * 3600,
 			},
 		]);
+	});
+
+	it('uses reduced targets when absences are attributed during the trend window', () => {
+		const absenceDaysByUser = new Map([
+			[
+				'bob@example.com',
+				new Map([
+					[
+						'2026-03-11',
+						{ date: '2026-03-11', reasons: ['[Team PTO] Vacation - Bob'] },
+					],
+				]),
+			],
+		]);
+
+		const model = buildManagerTrendModel(
+			[
+				createWorklog(
+					'bob@example.com',
+					'Bob',
+					'2026-03-11T09:00:00.000+0000',
+					32 * 3600,
+				),
+			],
+			'2026-03-09',
+			1,
+			'bob@example.com',
+			absenceDaysByUser,
+		);
+
+		expect(model.weeks[0]?.totalGapSeconds).toBe(0);
+		expect(model.weeks[0]?.complianceRate).toBe(100);
 	});
 });

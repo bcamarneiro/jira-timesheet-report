@@ -92,6 +92,11 @@
 	background: var(--color-warning);
 }
 
+.timeOff {
+	border-color: var(--color-warning-border);
+	background: color-mix(in srgb, var(--color-warning-bg) 72%, var(--color-surface));
+}
+
 .empty {
 	border-color: var(--color-error);
 	opacity: 0.7;

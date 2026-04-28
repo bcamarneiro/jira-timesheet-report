@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import type { Config } from './useConfigStore';
 import { getPersistStorage } from './persistStorage';
 
 interface UIPreferences {
@@ -23,6 +24,11 @@ interface UIState {
 	// Product adoption preferences
 	installPromptDismissed: boolean;
 
+	// Persisted evidence that the saved Jira connection has already worked
+	jiraConnectionEvidenceAt: string | null;
+	jiraConnectionEvidenceFingerprint: string | null;
+	jiraConnectionEvidenceSource: 'test' | 'fetch' | null;
+
 	// Actions
 	setSelectedTab: (tab: 'home' | 'timesheet' | 'settings') => void;
 	updatePreferences: (prefs: Partial<UIPreferences>) => void;
@@ -31,9 +37,15 @@ interface UIState {
 	resetPreferences: () => void;
 	dismissInstallPrompt: () => void;
 	resetInstallPrompt: () => void;
+	markJiraConnectionEvidence: (
+		fingerprint: string,
+		source: 'test' | 'fetch',
+		at?: string,
+	) => void;
+	clearJiraConnectionEvidence: () => void;
 }
 
-export const UI_STORAGE_VERSION = 1;
+export const UI_STORAGE_VERSION = 2;
 
 const defaultPreferences: UIPreferences = {
 	hideWeekends: false,
@@ -55,6 +67,21 @@ function normalizeExpandedUsers(
 }
 
 function normalizeUIPersistedState(persisted: Partial<UIState> | undefined) {
+	const jiraConnectionEvidenceAt =
+		typeof persisted?.jiraConnectionEvidenceAt === 'string'
+			? persisted.jiraConnectionEvidenceAt
+			: null;
+	const jiraConnectionEvidenceFingerprint =
+		typeof persisted?.jiraConnectionEvidenceFingerprint === 'string' &&
+		persisted.jiraConnectionEvidenceFingerprint.trim()
+			? persisted.jiraConnectionEvidenceFingerprint
+			: null;
+	const jiraConnectionEvidenceSource =
+		persisted?.jiraConnectionEvidenceSource === 'test' ||
+		persisted?.jiraConnectionEvidenceSource === 'fetch'
+			? persisted.jiraConnectionEvidenceSource
+			: null;
+
 	return {
 		preferences: {
 			...defaultPreferences,
@@ -66,7 +93,27 @@ function normalizeUIPersistedState(persisted: Partial<UIState> | undefined) {
 				: '',
 		expandedUsers: normalizeExpandedUsers(persisted?.expandedUsers),
 		installPromptDismissed: persisted?.installPromptDismissed === true,
+		jiraConnectionEvidenceAt:
+			jiraConnectionEvidenceAt && jiraConnectionEvidenceFingerprint
+				? jiraConnectionEvidenceAt
+				: null,
+		jiraConnectionEvidenceFingerprint,
+		jiraConnectionEvidenceSource:
+			jiraConnectionEvidenceAt && jiraConnectionEvidenceFingerprint
+				? jiraConnectionEvidenceSource
+				: null,
 	};
+}
+
+export function buildJiraConnectionFingerprint(
+	config: Pick<Config, 'jiraHost' | 'email' | 'apiToken' | 'corsProxy'>,
+): string {
+	return [
+		config.jiraHost.trim().toLowerCase(),
+		config.email.trim().toLowerCase(),
+		config.apiToken.trim(),
+		config.corsProxy.trim(),
+	].join('::');
 }
 
 export function migratePersistedUIState(
@@ -90,6 +137,9 @@ export const useUIStore = create<UIState>()(
 			selectedProject: '',
 			expandedUsers: {},
 			installPromptDismissed: false,
+			jiraConnectionEvidenceAt: null,
+			jiraConnectionEvidenceFingerprint: null,
+			jiraConnectionEvidenceSource: null,
 
 			setSelectedTab: (tab: 'home' | 'timesheet' | 'settings') => {
 				set({ selectedTab: tab });
@@ -136,6 +186,22 @@ export const useUIStore = create<UIState>()(
 			resetInstallPrompt: () => {
 				set({ installPromptDismissed: false });
 			},
+
+			markJiraConnectionEvidence: (fingerprint, source, at) => {
+				set({
+					jiraConnectionEvidenceAt: at ?? new Date().toISOString(),
+					jiraConnectionEvidenceFingerprint: fingerprint,
+					jiraConnectionEvidenceSource: source,
+				});
+			},
+
+			clearJiraConnectionEvidence: () => {
+				set({
+					jiraConnectionEvidenceAt: null,
+					jiraConnectionEvidenceFingerprint: null,
+					jiraConnectionEvidenceSource: null,
+				});
+			},
 		}),
 		{
 			name: 'jira-timesheet-ui',
@@ -148,6 +214,10 @@ export const useUIStore = create<UIState>()(
 				selectedProject: state.selectedProject,
 				expandedUsers: state.expandedUsers,
 				installPromptDismissed: state.installPromptDismissed,
+				jiraConnectionEvidenceAt: state.jiraConnectionEvidenceAt,
+				jiraConnectionEvidenceFingerprint:
+					state.jiraConnectionEvidenceFingerprint,
+				jiraConnectionEvidenceSource: state.jiraConnectionEvidenceSource,
 			}),
 			merge: (persisted, current) => {
 				const persistedState = normalizeUIPersistedState(

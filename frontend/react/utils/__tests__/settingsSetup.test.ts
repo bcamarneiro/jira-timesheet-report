@@ -24,6 +24,7 @@ const baseConfig: Config = {
 	gitlabHost: '',
 	rescueTimeApiKey: '',
 	calendarFeeds: [],
+	absenceAssignments: [],
 	complianceReminderEnabled: false,
 	theme: 'system',
 	timeRounding: 'off',
@@ -46,6 +47,7 @@ describe('buildSettingsSetupModel', () => {
 		expect(model.headline).toBe('Start with your Jira account details');
 		expect(model.steps[0]?.status).toBe('pending');
 		expect(model.surfaces.dashboard.status).toBe('pending');
+		expect(model.accessPath.title).toBe('Try direct browser access first');
 		expect(
 			model.diagnostics.find((item) => item.id === 'jira')?.detail,
 		).toContain('Jira host');
@@ -71,6 +73,7 @@ describe('buildSettingsSetupModel', () => {
 		);
 		expect(model.surfaces.dashboard.status).toBe('ready');
 		expect(model.surfaces.reports.status).toBe('ready');
+		expect(model.accessPath.summary).toContain('Leave CORS Proxy blank');
 	});
 
 	it('surfaces optional source failures without blocking the whole setup model', () => {
@@ -110,6 +113,61 @@ describe('buildSettingsSetupModel', () => {
 		expect(
 			model.diagnostics.find((item) => item.id === 'signals')?.detail,
 		).toContain('GitLab');
-		expect(model.surfaces.reports.detail).toContain('2 allowed users');
+		expect(model.surfaces.reports.detail).toContain('2 team members');
+	});
+
+	it('treats recent successful Jira fetch evidence as ready when the form is clean', () => {
+		const model = buildSettingsSetupModel(
+			baseConfig,
+			emptyTests,
+			false,
+			'2026-04-08T10:00:00.000Z',
+		);
+
+		expect(model.status).toBe('ready');
+		expect(model.steps[0]?.status).toBe('ready');
+		expect(model.steps[3]?.status).toBe('ready');
+		expect(model.diagnostics.find((item) => item.id === 'jira')?.detail).toContain(
+			'Recent Jira data fetches already succeeded',
+		);
+	});
+
+	it('does not trust old Jira fetch evidence when the form is dirty', () => {
+		const model = buildSettingsSetupModel(
+			{
+				...baseConfig,
+				corsProxy: 'http://localhost:8081',
+			},
+			emptyTests,
+			true,
+			'2026-04-08T10:00:00.000Z',
+		);
+
+		expect(model.status).toBe('warning');
+		expect(model.steps[0]?.status).toBe('warning');
+		expect(model.steps[3]?.status).toBe('warning');
+		expect(model.accessPath.title).toBe('Using a local Jira proxy');
+		expect(model.accessPath.detail).toContain('proxy is configured');
+	});
+
+	it('explains the local proxy path once a proxy is configured and verified', () => {
+		const model = buildSettingsSetupModel(
+			{
+				...baseConfig,
+				corsProxy: 'http://localhost:8081',
+			},
+			{
+				...emptyTests,
+				jira: {
+					loading: false,
+					result: { success: true, message: 'Connected as Bruno' },
+				},
+			},
+			false,
+		);
+
+		expect(model.accessPath.title).toBe('Using a local Jira proxy');
+		expect(model.accessPath.summary).toContain('http://localhost:8081');
+		expect(model.accessPath.checklist[1]).toContain('npm run cors-proxy:socks');
 	});
 });

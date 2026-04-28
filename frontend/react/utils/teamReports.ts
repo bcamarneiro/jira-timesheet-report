@@ -1,5 +1,7 @@
 import type { WorklogItem } from '../../services/monthWorklogService';
 import type { TeamMemberSummary } from '../../services/teamService';
+import type { UserAbsenceDays } from '../../services/absenceService';
+import { countAbsenceWorkdaysInRange } from './absence';
 import { addDaysToIsoDate, toLocalDateString } from './date';
 
 const SECONDS_PER_DAY = 28800; // 8h
@@ -46,6 +48,7 @@ export function buildTeamSummaries(
 	weekStart: string,
 	weekEnd: string,
 	allowedUsers: string,
+	absenceDaysByUser?: UserAbsenceDays,
 ): TeamMemberSummary[] {
 	const allowedSet = parseAllowedUsers(allowedUsers);
 	const memberMap = new Map<
@@ -93,7 +96,6 @@ export function buildTeamSummaries(
 	const effectiveEnd = weekEnd >= todayStr ? yesterdayStr : weekEnd;
 	const weekdays = getWeekdaysBetween(weekStart, weekEnd);
 	const targetWeekdays = getWeekdaysBetween(weekStart, effectiveEnd);
-	const targetSeconds = targetWeekdays.length * SECONDS_PER_DAY;
 
 	const summaries: TeamMemberSummary[] = [];
 	for (const [email, member] of memberMap) {
@@ -101,6 +103,16 @@ export function buildTeamSummaries(
 		const totalSeconds = [...member.dailySeconds.values()].reduce(
 			(sum, seconds) => sum + seconds,
 			0,
+		);
+		const memberAbsenceDates = absenceDaysByUser?.get(email)?.keys();
+		const absenceDays = countAbsenceWorkdaysInRange(
+			memberAbsenceDates,
+			weekStart,
+			effectiveEnd,
+		);
+		const targetSeconds = Math.max(
+			0,
+			(targetWeekdays.length - absenceDays) * SECONDS_PER_DAY,
 		);
 
 		for (const day of weekdays) {
@@ -153,6 +165,7 @@ export function buildManagerTrendModel(
 	endWeekStart: string,
 	trendWeeks: number,
 	allowedUsers: string,
+	absenceDaysByUser?: UserAbsenceDays,
 ): ManagerTrendModel {
 	const weekStarts = Array.from({ length: trendWeeks }, (_, index) =>
 		addDaysToIsoDate(endWeekStart, -7 * (trendWeeks - 1 - index)),
@@ -164,6 +177,7 @@ export function buildManagerTrendModel(
 			weekStart,
 			weekEnd,
 			allowedUsers,
+			absenceDaysByUser,
 		);
 		const totalSeconds = members.reduce(
 			(sum, member) => sum + member.totalSeconds,
