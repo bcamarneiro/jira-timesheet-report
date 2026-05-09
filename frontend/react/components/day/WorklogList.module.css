@@ -16,6 +16,7 @@
 }
 
 .sectionHeader {
+	margin: 0;
 	font-size: var(--text-xs);
 	font-weight: var(--font-semibold);
 	color: var(--color-text-muted);

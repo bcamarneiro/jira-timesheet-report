@@ -43,9 +43,9 @@ export const WorklogList: React.FC<Props> = ({
 
 			{backdated.length > 0 && (
 				<div className={styles.section}>
-					<div className={styles.sectionHeader}>
+					<h3 className={styles.sectionHeader}>
 						Backdated submissions ({backdated.length})
-					</div>
+					</h3>
 					{backdated.map((wl) => (
 						<WorklogItem
 							key={wl.id}
@@ -60,12 +60,12 @@ export const WorklogList: React.FC<Props> = ({
 
 			{ghosts && ghosts.length > 0 && (
 				<div className={styles.section}>
-					<div
+					<h3
 						className={styles.sectionHeader}
 						title="Reconciled in another month — does not count toward this day"
 					>
 						Reconciled later ({ghosts.length})
-					</div>
+					</h3>
 					{ghosts.map((g) => (
 						<GhostWorklogItem key={`ghost-${g.worklog.id}`} ghost={g} />
 					))}
