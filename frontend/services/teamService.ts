@@ -1,4 +1,5 @@
-import { toLocalDateString } from '../react/utils/date';
+import { addDaysToIsoDate } from '../react/utils/date';
+import { classifyWorklog } from '../react/utils/worklogClassifier';
 import type { Config } from '../stores/useConfigStore';
 
 export interface TeamMemberSummary {
@@ -8,6 +9,13 @@ export interface TeamMemberSummary {
 	totalSeconds: number;
 	targetSeconds: number;
 	gapSeconds: number;
+	/** Seconds among `totalSeconds` whose `loggedOn` falls in the visible week
+	 *  but were intended for an earlier date (Pattern A or jira-native).
+	 *  Drives the `Backdated (h)` column in the team CSV. Optional so synthetic
+	 *  test fixtures and other producers (e.g. `teamReports.buildTeamSummaries`)
+	 *  can omit it; consumers default to 0. */
+	backdatedSeconds?: number;
+	backdatedCount?: number;
 }
 
 const SECONDS_PER_DAY = 28800; // 8h
@@ -50,6 +58,8 @@ function getWeekdaysBetween(start: string, end: string): string[] {
 interface WorklogEntry {
 	author: { emailAddress?: string; displayName?: string };
 	started: string;
+	created?: string;
+	comment?: string;
 	timeSpentSeconds: number;
 }
 
@@ -79,8 +89,14 @@ export async function fetchTeamWorklogs(
 		'X-Atlassian-Token': 'no-check',
 	};
 
+	// Widen the JQL window by ±1 week so cross-week backdated worklogs (those
+	// whose `started` falls outside the visible week but whose classifier
+	// `loggedOn` is inside) are still fetched. Final bucketing happens
+	// client-side via `classifyWorklog(wl).loggedOn`.
+	const fetchStart = addDaysToIsoDate(weekStart, -7);
+	const fetchEnd = addDaysToIsoDate(weekEnd, 7);
 	const jql = encodeURIComponent(
-		`worklogDate >= "${weekStart}" AND worklogDate <= "${weekEnd}"`,
+		`worklogDate >= "${fetchStart}" AND worklogDate <= "${fetchEnd}"`,
 	);
 
 	// Step 1: Search with embedded worklogs
@@ -126,10 +142,11 @@ export async function fetchTeamWorklogs(
 		}
 
 		if (embedded.total <= embedded.maxResults) {
-			// All worklogs are in the embedded response — filter by date in JS
+			// All worklogs are in the embedded response — filter via classifier
+			// against the (canonical, narrow) visible week.
 			for (const wl of embedded.worklogs) {
-				const day = toLocalDateString(wl.started);
-				if (day >= weekStart && day <= weekEnd) {
+				const day = classifyWorklog(wl).loggedOn;
+				if (day && day >= weekStart && day <= weekEnd) {
 					allWorklogs.push(wl);
 				}
 			}
@@ -138,10 +155,11 @@ export async function fetchTeamWorklogs(
 		}
 	}
 
-	// Fetch full worklogs only for truncated issues
+	// Fetch full worklogs only for truncated issues, using the WIDER window
+	// so cross-week backdates can still surface client-side.
 	if (truncatedKeys.length > 0) {
-		const weekStartMillis = new Date(weekStart).getTime();
-		const weekEndMillis = new Date(`${weekEnd}T23:59:59.999`).getTime();
+		const fetchStartMillis = new Date(fetchStart).getTime();
+		const fetchEndMillis = new Date(`${fetchEnd}T23:59:59.999`).getTime();
 		const batchSize = 10;
 
 		for (let i = 0; i < truncatedKeys.length; i += batchSize) {
@@ -152,7 +170,7 @@ export async function fetchTeamWorklogs(
 						const res = await fetch(
 							buildUrl(
 								config,
-								`/rest/api/2/issue/${key}/worklog?startedAfter=${weekStartMillis}&startedBefore=${weekEndMillis}`,
+								`/rest/api/2/issue/${key}/worklog?startedAfter=${fetchStartMillis}&startedBefore=${fetchEndMillis}`,
 							),
 							{ headers, signal },
 						);
@@ -182,10 +200,16 @@ export async function fetchTeamWorklogs(
 			)
 		: null;
 
-	// Collect worklogs grouped by author email
+	// Collect worklogs grouped by author email, bucketed via classifier
+	// so Pattern A and Pattern B backdates land under their `loggedOn`.
 	const memberMap = new Map<
 		string,
-		{ displayName: string; dailySeconds: Map<string, number> }
+		{
+			displayName: string;
+			dailySeconds: Map<string, number>;
+			backdatedSeconds: number;
+			backdatedCount: number;
+		}
 	>();
 
 	for (const wl of allWorklogs) {
@@ -195,20 +219,27 @@ export async function fetchTeamWorklogs(
 		// Filter by allowed users if configured
 		if (allowedSet && !allowedSet.has(email)) continue;
 
-		const day = toLocalDateString(wl.started);
-		if (day < weekStart || day > weekEnd) continue;
+		const c = classifyWorklog(wl);
+		const day = c.loggedOn;
+		if (!day || day < weekStart || day > weekEnd) continue;
 
 		let member = memberMap.get(email);
 		if (!member) {
 			member = {
 				displayName: wl.author.displayName || email,
 				dailySeconds: new Map(),
+				backdatedSeconds: 0,
+				backdatedCount: 0,
 			};
 			memberMap.set(email, member);
 		}
 
 		const existing = member.dailySeconds.get(day) || 0;
 		member.dailySeconds.set(day, existing + wl.timeSpentSeconds);
+		if (c.isBackdated) {
+			member.backdatedSeconds += wl.timeSpentSeconds;
+			member.backdatedCount += 1;
+		}
 	}
 
 	// Ensure all allowed users appear even with zero hours
@@ -218,6 +249,8 @@ export async function fetchTeamWorklogs(
 				memberMap.set(email, {
 					displayName: email,
 					dailySeconds: new Map(),
+					backdatedSeconds: 0,
+					backdatedCount: 0,
 				});
 			}
 		}
@@ -255,6 +288,8 @@ export async function fetchTeamWorklogs(
 			totalSeconds,
 			targetSeconds,
 			gapSeconds,
+			backdatedSeconds: member.backdatedSeconds,
+			backdatedCount: member.backdatedCount,
 		});
 	}
 

@@ -32,6 +32,8 @@ function makeMember(
 		totalSeconds: 37.5 * 3600,
 		targetSeconds: 40 * 3600,
 		gapSeconds: 2.5 * 3600,
+		backdatedSeconds: 0,
+		backdatedCount: 0,
 		...overrides,
 	};
 }
@@ -52,12 +54,41 @@ describe('buildTeamCsv', () => {
 		expect(gapIdx).toBe(backdatedIdx + 1);
 	});
 
-	it('emits 0.0 in the Backdated column until teamService surfaces it', () => {
+	it('emits 0.0 in the Backdated column when no entries are backdated', () => {
 		const csv = buildTeamCsv([makeMember()], weekdays, fixedProvenance);
 		const lines = csv.split('\n');
 		const memberRow = lines[1].split(';');
-		// Backdated value sits second-from-last (before Gap).
 		expect(memberRow.at(-2)).toBe('0.0');
+	});
+
+	it('renders backdatedSeconds (in hours, 1dp) in the Backdated column', () => {
+		const csv = buildTeamCsv(
+			[makeMember({ backdatedSeconds: 8 * 3600, backdatedCount: 1 })],
+			weekdays,
+			fixedProvenance,
+		);
+		const memberRow = csv.split('\n')[1].split(';');
+		expect(memberRow.at(-2)).toBe('8.0');
+	});
+
+	it('averages backdatedSeconds across the team for the Team Average row', () => {
+		const csv = buildTeamCsv(
+			[
+				makeMember({ backdatedSeconds: 8 * 3600, backdatedCount: 1 }),
+				makeMember({
+					email: 'bob@example.com',
+					displayName: 'Bob',
+					backdatedSeconds: 4 * 3600,
+					backdatedCount: 1,
+				}),
+			],
+			weekdays,
+			fixedProvenance,
+		);
+		const lines = csv.split('\n');
+		const avgRow = lines[3].split(';'); // header, two members, avg, footer
+		expect(avgRow[0]).toBe('Team Average');
+		expect(avgRow.at(-2)).toBe('6.0'); // (8 + 4) / 2
 	});
 
 	it('appends a provenance footer line in the canonical format', () => {

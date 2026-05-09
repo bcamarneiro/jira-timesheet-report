@@ -51,9 +51,7 @@ export function buildTeamCsv(
 			return hours > 0 ? hours.toFixed(1) : '0';
 		});
 
-		// TODO(audit-#1): teamService still buckets by `started`; backdated count
-		// is 0 here until that's fixed. Surface 0 to keep the column shape stable.
-		const backdatedHours = '0.0';
+		const backdatedHours = ((m.backdatedSeconds ?? 0) / 3600).toFixed(1);
 
 		return [
 			csvEscape(m.displayName),
@@ -76,6 +74,10 @@ export function buildTeamCsv(
 		});
 		const avgTotal =
 			members.reduce((sum, m) => sum + m.totalSeconds, 0) / count / 3600;
+		const avgBackdated =
+			members.reduce((sum, m) => sum + (m.backdatedSeconds ?? 0), 0) /
+			count /
+			3600;
 		const avgGap =
 			members.reduce((sum, m) => sum + m.gapSeconds, 0) / count / 3600;
 
@@ -85,7 +87,7 @@ export function buildTeamCsv(
 				'',
 				...avgCells,
 				avgTotal.toFixed(1),
-				'0.0',
+				avgBackdated.toFixed(1),
 				avgGap.toFixed(1),
 			].join(SEP),
 		);
