@@ -31,10 +31,9 @@ function formatDate(dateStr: string): string {
 	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function formatActivityTime(seconds: number): string {
-	const h = seconds / 3600;
-	if (h >= 1) return `${h.toFixed(1)}h`;
-	return `${Math.round(seconds / 60)}m`;
+export function formatActivityTime(seconds: number): string {
+	if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+	return formatHours(seconds);
 }
 
 export const DayCard = memo<Props>(function DayCard({
