@@ -6,6 +6,7 @@ import type { AbsenceDay } from '../../services/absenceService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDayCalculation } from '../hooks/useDayCalculation';
 import { useWorklogOperations } from '../hooks/useWorklogOperations';
+import type { GhostEntry } from '../utils/projectDays';
 import * as styles from './DayCell.module.css';
 import { DaySummary } from './day/DaySummary';
 import { WorklogList } from './day/WorklogList';
@@ -18,6 +19,7 @@ type Props = {
 	iso: string;
 	dayNumber: number;
 	worklogs: EnrichedJiraWorklog[];
+	ghosts?: GhostEntry[];
 	issueSummaries: Record<string, string>;
 	isWeekend: boolean;
 	isAbsent?: boolean;
@@ -29,6 +31,7 @@ export const DayCell: React.FC<Props> = ({
 	iso,
 	dayNumber,
 	worklogs,
+	ghosts,
 	issueSummaries,
 	isWeekend,
 	isAbsent = false,
@@ -152,6 +155,7 @@ export const DayCell: React.FC<Props> = ({
 				</div>
 				<WorklogList
 					worklogs={worklogs}
+					ghosts={ghosts}
 					issueSummaries={issueSummaries}
 					onEdit={canEdit ? handleEditWorklog : undefined}
 					onDelete={canDelete ? (wl) => setWorklogToDelete(wl) : undefined}

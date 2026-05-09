@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
 import type { AbsenceDay } from '../../services/absenceService';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
@@ -7,6 +7,7 @@ import { useCalendar } from '../hooks/useCalendar';
 import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
 import { countAbsenceWorkdaysInMonth } from '../utils/absence';
 import { getWorkingDaysInMonth, isoDateFromYMD } from '../utils/date';
+import { projectDays } from '../utils/projectDays';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
 import * as styles from './TimesheetGrid.module.css';
@@ -39,8 +40,10 @@ export const TimesheetGrid: React.FC<Props> = ({
 		monthZeroIndexed,
 	);
 
+	const projected = useMemo(() => projectDays(days), [days]);
+
 	const { totalSeconds } = useMonthTotalCalculation(
-		days,
+		projected.loggedDays,
 		year,
 		monthZeroIndexed,
 	);
@@ -71,7 +74,8 @@ export const TimesheetGrid: React.FC<Props> = ({
 
 	for (let d = 1; d <= numDays; d++) {
 		const iso = isoDateFromYMD(year, monthZeroIndexed, d);
-		const worklogs = days[iso] || [];
+		const worklogs = projected.loggedDays[iso] || [];
+		const ghosts = projected.ghostsByDay[iso];
 		const jsDate = new Date(Date.UTC(year, monthZeroIndexed, d));
 		const weekday = jsDate.getUTCDay();
 		const isWeekend = weekday === 0 || weekday === 6;
@@ -84,6 +88,7 @@ export const TimesheetGrid: React.FC<Props> = ({
 				iso={iso}
 				dayNumber={d}
 				worklogs={worklogs}
+				ghosts={ghosts}
 				issueSummaries={issueSummaries}
 				isWeekend={isWeekend}
 				isAbsent={isAbsent}

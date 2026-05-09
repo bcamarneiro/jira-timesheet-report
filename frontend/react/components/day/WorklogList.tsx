@@ -1,10 +1,14 @@
 import type React from 'react';
 import type { EnrichedJiraWorklog } from '../../../../types/jira';
+import type { GhostEntry } from '../../utils/projectDays';
+import { classifyWorklog } from '../../utils/worklogClassifier';
+import { GhostWorklogItem } from './GhostWorklogItem';
 import { WorklogItem } from './WorklogItem';
 import * as styles from './WorklogList.module.css';
 
 type Props = {
 	worklogs: EnrichedJiraWorklog[];
+	ghosts?: GhostEntry[];
 	issueSummaries: Record<string, string>;
 	onEdit?: (worklog: EnrichedJiraWorklog) => void;
 	onDelete?: (worklog: EnrichedJiraWorklog) => void;
@@ -12,13 +16,22 @@ type Props = {
 
 export const WorklogList: React.FC<Props> = ({
 	worklogs,
+	ghosts,
 	issueSummaries,
 	onEdit,
 	onDelete,
 }) => {
+	const regular: EnrichedJiraWorklog[] = [];
+	const backdated: EnrichedJiraWorklog[] = [];
+
+	for (const wl of worklogs) {
+		if (classifyWorklog(wl).isBackdated) backdated.push(wl);
+		else regular.push(wl);
+	}
+
 	return (
 		<div className={styles.list}>
-			{worklogs.map((wl) => (
+			{regular.map((wl) => (
 				<WorklogItem
 					key={wl.id}
 					worklog={wl}
@@ -27,6 +40,37 @@ export const WorklogList: React.FC<Props> = ({
 					onDelete={onDelete}
 				/>
 			))}
+
+			{backdated.length > 0 && (
+				<div className={styles.section}>
+					<div className={styles.sectionHeader}>
+						Backdated submissions ({backdated.length})
+					</div>
+					{backdated.map((wl) => (
+						<WorklogItem
+							key={wl.id}
+							worklog={wl}
+							issueSummaries={issueSummaries}
+							onEdit={onEdit}
+							onDelete={onDelete}
+						/>
+					))}
+				</div>
+			)}
+
+			{ghosts && ghosts.length > 0 && (
+				<div className={styles.section}>
+					<div
+						className={styles.sectionHeader}
+						title="Reconciled in another month — does not count toward this day"
+					>
+						Reconciled later ({ghosts.length})
+					</div>
+					{ghosts.map((g) => (
+						<GhostWorklogItem key={`ghost-${g.worklog.id}`} ghost={g} />
+					))}
+				</div>
+			)}
 		</div>
 	);
 };
