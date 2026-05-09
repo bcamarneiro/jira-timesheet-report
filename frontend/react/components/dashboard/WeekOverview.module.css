@@ -73,6 +73,30 @@
 	font-size: var(--text-xs);
 	font-weight: var(--font-medium);
 	color: var(--color-text-secondary);
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+/*
+ * Ghost dot — signals "this day has worklogs that were reconciled later
+ * (intendedFor here, but loggedOn outside this week)". Striped to mirror
+ * the GhostWorklogItem vocabulary, but a tight pure-CSS dot fits the chip.
+ */
+.ghostDot {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	border: 1px dashed var(--color-text-tertiary);
+	background: repeating-linear-gradient(
+		135deg,
+		transparent,
+		transparent 2px,
+		var(--color-surface-hover) 2px,
+		var(--color-surface-hover) 3px
+	);
+	flex: 0 0 auto;
 }
 
 /* Status variants */

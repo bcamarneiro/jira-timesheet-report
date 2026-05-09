@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { DaySummary } from '../../../../types/Suggestion';
 import { useDashboardStore } from '../../../stores/useDashboardStore';
 import { useWorklogOperations } from '../../hooks/useWorklogOperations';
@@ -42,6 +42,12 @@ export const DayCard = memo<Props>(function DayCard({
 	focusedSuggestionIndex,
 }) {
 	const fillDayGap = useDashboardStore((s) => s.fillDayGap);
+	const weekGhosts = useDashboardStore((s) => s.weekGhosts);
+	const dayGhosts = useMemo(
+		() => weekGhosts.filter((g) => g.date === day.date),
+		[weekGhosts, day.date],
+	);
+	const [ghostsExpanded, setGhostsExpanded] = useState(false);
 	const markMultipleSuggestionsLogged = useDashboardStore(
 		(s) => s.markMultipleSuggestionsLogged,
 	);
@@ -220,6 +226,59 @@ export const DayCard = memo<Props>(function DayCard({
 						No suggestions available for this day
 					</div>
 				)}
+
+			{/*
+			 * Reconciled later: worklogs whose intendedFor is this day but were
+			 * logged in another week. They render here as a courtesy reference and
+			 * NEVER count toward day.loggedSeconds or day.gapSeconds — those values
+			 * come from useDashboardStore and the dataFetcher excludes ghosts from
+			 * the worklog projection that drives gap math.
+			 */}
+			{dayGhosts.length > 0 && (
+				<div className={styles.ghosts}>
+					<button
+						type="button"
+						className={styles.ghostsToggle}
+						onClick={() => setGhostsExpanded((v) => !v)}
+						aria-expanded={ghostsExpanded}
+						aria-controls={`day-ghosts-${day.date}`}
+					>
+						Reconciled later ({dayGhosts.length})
+					</button>
+					{ghostsExpanded && (
+						<ul
+							id={`day-ghosts-${day.date}`}
+							className={styles.ghostsList}
+							aria-label={`${dayGhosts.length} worklog${
+								dayGhosts.length === 1 ? '' : 's'
+							} reconciled later for ${day.date}`}
+						>
+							{dayGhosts.map((g, i) => (
+								<li
+									key={`${g.intendedFor}-${g.loggedOn}-${g.issueKey ?? 'unknown'}-${i}`}
+									className={styles.ghostItem}
+									role="note"
+									title={`Submitted on ${g.loggedOn} (${g.daysLate}d after this date). Counts toward ${g.loggedOn}, not this day.`}
+									aria-label={`Backdated worklog: ${formatHours(g.timeSpentSeconds)}, does not count toward this day, submitted on ${g.loggedOn}`}
+								>
+									<span className={styles.ghostHours}>
+										{formatHours(g.timeSpentSeconds)}
+									</span>
+									{g.issueKey && (
+										<span className={styles.ghostIssue}>{g.issueKey}</span>
+									)}
+									<span className={styles.ghostArrow} aria-hidden="true">
+										→
+									</span>
+									<span className={styles.ghostLoggedOn}>
+										logged {g.loggedOn}
+									</span>
+								</li>
+							))}
+						</ul>
+					)}
+				</div>
+			)}
 		</div>
 	);
 });

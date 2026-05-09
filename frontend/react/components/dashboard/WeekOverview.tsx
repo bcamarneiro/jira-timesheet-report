@@ -1,5 +1,9 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import type { DaySummary } from '../../../../types/Suggestion';
+import {
+	useDashboardStore,
+	type WeekGhostEntry,
+} from '../../../stores/useDashboardStore';
 import {
 	getAbsenceKindLabel,
 	getAbsenceKindShortLabel,
@@ -28,6 +32,16 @@ export const WeekOverview = memo<Props>(function WeekOverview({ days }) {
 	const todayStr = toLocalDateString(new Date());
 	const totalPct =
 		totalTarget > 0 ? Math.round((totalLogged / totalTarget) * 100) : 0;
+	const weekGhosts = useDashboardStore((s) => s.weekGhosts);
+	const ghostsByDay = useMemo(() => {
+		const map = new Map<string, WeekGhostEntry[]>();
+		for (const g of weekGhosts) {
+			const list = map.get(g.date);
+			if (list) list.push(g);
+			else map.set(g.date, [g]);
+		}
+		return map;
+	}, [weekGhosts]);
 
 	return (
 		<div className={styles.container}>
@@ -54,12 +68,24 @@ export const WeekOverview = memo<Props>(function WeekOverview({ days }) {
 								: day.loggedSeconds > 0
 									? 'partially logged'
 									: 'empty';
+					const ghosts = ghostsByDay.get(day.date) ?? [];
+					const ghostCount = ghosts.length;
+					const baseTitle = `${DAY_NAMES[day.dayOfWeek]} ${day.date}: ${day.loggedSeconds > 0 ? formatHours(day.loggedSeconds) : day.targetSeconds === 0 && !day.isWeekend ? getAbsenceKindLabel(day.absenceKind) : day.isWeekend ? 'weekend' : '0h logged'}`;
+					const ghostTitle =
+						ghostCount > 0
+							? `\n${ghosts.map((g) => `→ logged ${g.loggedOn}`).join('\n')}`
+							: '';
+					const baseAria = `${DAY_NAMES[day.dayOfWeek]} ${day.date}, ${status}, ${day.loggedSeconds > 0 ? formatHours(day.loggedSeconds) : day.targetSeconds === 0 && !day.isWeekend ? getAbsenceKindLabel(day.absenceKind).toLowerCase() : day.isWeekend ? 'weekend' : '0 hours logged'}`;
+					const ariaLabel =
+						ghostCount > 0
+							? `${baseAria}, ${ghostCount} reconciled later`
+							: baseAria;
 					return (
 						<li
 							key={day.date}
 							className={`${styles.day} ${getDayStatus(day)} ${isToday ? styles.today : ''}`}
-							title={`${DAY_NAMES[day.dayOfWeek]} ${day.date}: ${day.loggedSeconds > 0 ? formatHours(day.loggedSeconds) : day.targetSeconds === 0 && !day.isWeekend ? getAbsenceKindLabel(day.absenceKind) : day.isWeekend ? 'weekend' : '0h logged'}`}
-							aria-label={`${DAY_NAMES[day.dayOfWeek]} ${day.date}, ${status}, ${day.loggedSeconds > 0 ? formatHours(day.loggedSeconds) : day.targetSeconds === 0 && !day.isWeekend ? getAbsenceKindLabel(day.absenceKind).toLowerCase() : day.isWeekend ? 'weekend' : '0 hours logged'}`}
+							title={`${baseTitle}${ghostTitle}`}
+							aria-label={ariaLabel}
 						>
 							<div className={styles.dayName}>{DAY_NAMES[day.dayOfWeek]}</div>
 							<div className={styles.dayDate}>
@@ -76,6 +102,13 @@ export const WeekOverview = memo<Props>(function WeekOverview({ days }) {
 										: day.isWeekend
 											? ''
 											: '0h'}
+								{ghostCount > 0 && (
+									<span
+										className={styles.ghostDot}
+										aria-hidden="true"
+										data-testid="week-overview-ghost-dot"
+									/>
+								)}
 							</div>
 						</li>
 					);
