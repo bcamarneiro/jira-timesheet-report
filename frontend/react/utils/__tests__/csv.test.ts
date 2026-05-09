@@ -1,252 +1,318 @@
 import { describe, expect, it } from 'vitest';
 import type { EnrichedJiraWorklog } from '../../../../types/jira';
-import { buildCsvForUser } from '../csv';
+import {
+	buildSummaryCsv,
+	buildTimesheetCsv,
+	buildTimesheetFilename,
+} from '../csv';
 import { sanitizeFilename } from '../downloadFile';
 
-describe('buildCsvForUser', () => {
-	const mockIssue = {
-		id: '12345',
-		key: 'PROJ-123',
-		fields: {
-			summary: 'Test Issue',
-		},
-	};
+const FROZEN_TIME = '2026-05-08T10:00:00.000Z';
+const PROVENANCE = {
+	jiraHost: 'mock.atlassian.net',
+	sourceVersion: 'test',
+	generatedAt: FROZEN_TIME,
+};
 
-	const mockAuthor = {
-		displayName: 'John Doe',
-		emailAddress: 'john@example.com',
-		accountId: 'acc123',
-		active: true,
-	};
+const HEADER =
+	'Name;TicketKey;TicketName;IntendedDate;LoggedDate;DaysLate;IsBackdated;BackdateSource;BookedHours';
 
-	it('should generate CSV with correct headers and total row', () => {
-		const data: EnrichedJiraWorklog[] = [];
-		const issueSummaries: Record<string, string> = {};
+const mockIssue = {
+	id: '12345',
+	key: 'PROJ-123',
+	fields: { summary: 'Test Issue' },
+};
+const author = {
+	displayName: 'John Doe',
+	emailAddress: 'john@example.com',
+	accountId: 'acc123',
+	active: true,
+};
 
-		const result = buildCsvForUser(data, issueSummaries);
+function entry(over: Partial<EnrichedJiraWorklog>): EnrichedJiraWorklog {
+	return {
+		id: '1',
+		started: '2025-01-15T10:00:00.000Z',
+		created: '2025-01-15T10:00:00.000Z',
+		timeSpentSeconds: 7200,
+		author,
+		issue: mockIssue,
+		...over,
+	} as EnrichedJiraWorklog;
+}
+
+describe('buildTimesheetCsv', () => {
+	it('emits header, total, backdated, and provenance for an empty input', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [],
+			issueSummaries: {},
+			policy: 'logged',
+			period: { year: 2025, month: 0 },
+			provenance: PROVENANCE,
+		});
 		const lines = result.split('\n');
-
-		expect(lines).toHaveLength(2); // header + total row
-		expect(lines[0]).toBe(
-			'Name;TicketKey;TicketName;OriginalIntendedDate;ActualLoggedDate;BookedTime',
+		expect(lines[0]).toBe(HEADER);
+		expect(lines[1]).toBe(';;;;;;;Total;0.00');
+		expect(lines[2]).toBe(';;;;;;;Backdated;0.00');
+		expect(lines[3]).toBe(
+			'# generated=2026-05-08T10:00:00.000Z jira=mock.atlassian.net policy=logged period=2025-01 version=test',
 		);
-		expect(lines[1]).toBe(';;;;Total;0.00');
 	});
 
-	it('should export a simple worklog correctly', () => {
-		const data: EnrichedJiraWorklog[] = [
-			{
-				id: '1',
-				started: '2025-01-15T10:00:00.000Z',
-				timeSpentSeconds: 7200, // 2 hours
-				author: mockAuthor,
-				issue: mockIssue,
-				comment: 'Some work done',
-			} as EnrichedJiraWorklog,
-		];
-
-		const issueSummaries: Record<string, string> = {
-			'12345': 'Test Issue Summary',
-		};
-
-		const result = buildCsvForUser(data, issueSummaries);
+	it('emits a non-backdated row with both dates equal', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [entry({ comment: 'Some work' })],
+			issueSummaries: { '12345': 'Test Issue Summary' },
+			policy: 'logged',
+			period: { year: 2025, month: 0 },
+			provenance: PROVENANCE,
+		});
 		const lines = result.split('\n');
-
-		expect(lines).toHaveLength(3); // header + 1 row + total row
-		expect(lines[0]).toBe(
-			'Name;TicketKey;TicketName;OriginalIntendedDate;ActualLoggedDate;BookedTime',
-		);
 		expect(lines[1]).toBe(
-			'John Doe;PROJ-123;Test Issue Summary;;2025/01/15;2.00',
+			'John Doe;PROJ-123;Test Issue Summary;2025-01-15;2025-01-15;0;false;none;2.00',
 		);
-		expect(lines[2]).toBe(';;;;Total;2.00');
 	});
 
-	it('should extract OriginalIntendedDate from retroactive worklog comment', () => {
-		const data: EnrichedJiraWorklog[] = [
-			{
-				id: '1',
-				started: '2025-02-05T10:00:00.000Z',
-				timeSpentSeconds: 3600, // 1 hour
-				author: mockAuthor,
-				issue: mockIssue,
-				comment: 'Work from before. Original Worklog Date was: 2025/01/20',
-			} as EnrichedJiraWorklog,
-		];
-
-		const issueSummaries: Record<string, string> = {
-			'12345': 'Test Issue',
-		};
-
-		const result = buildCsvForUser(data, issueSummaries);
+	it('classifies and surfaces a Pattern A (comment-marker) backdate', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [
+				entry({
+					started: '2025-02-05T10:00:00.000Z',
+					created: '2025-02-05T10:00:00.000Z',
+					timeSpentSeconds: 3600,
+					comment: 'Original Worklog Date was: 2025/01/20',
+				}),
+			],
+			issueSummaries: { '12345': 'Test Issue' },
+			policy: 'logged',
+			period: { year: 2025, month: 1 },
+			provenance: PROVENANCE,
+		});
 		const lines = result.split('\n');
-
 		expect(lines[1]).toBe(
-			'John Doe;PROJ-123;Test Issue;2025/01/20;2025/02/05;1.00',
+			'John Doe;PROJ-123;Test Issue;2025-01-20;2025-02-05;16;true;comment;1.00',
 		);
 	});
 
-	it('should handle CSV special characters in names and summaries', () => {
-		const data: EnrichedJiraWorklog[] = [
-			{
-				id: '1',
-				started: '2025-01-15T10:00:00.000Z',
-				timeSpentSeconds: 1800, // 0.5 hours
-				author: {
-					...mockAuthor,
-					displayName: 'Jane, Doe',
-				},
-				issue: mockIssue,
-			} as EnrichedJiraWorklog,
-		];
-
-		const issueSummaries: Record<string, string> = {
-			'12345': 'Issue with "quotes" and, commas',
-		};
-
-		const result = buildCsvForUser(data, issueSummaries);
+	it('classifies a Pattern B (jira-native) backdate', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [
+				entry({
+					started: '2025-09-28T10:00:00.000Z',
+					created: '2025-10-02T10:00:00.000Z',
+					timeSpentSeconds: 28800,
+					comment: '',
+				}),
+			],
+			issueSummaries: {},
+			policy: 'logged',
+			period: { year: 2025, month: 9 },
+			provenance: PROVENANCE,
+		});
 		const lines = result.split('\n');
-
 		expect(lines[1]).toBe(
-			'"Jane, Doe";PROJ-123;"Issue with ""quotes"" and, commas";;2025/01/15;0.50',
+			'John Doe;PROJ-123;Test Issue;2025-09-28;2025-10-02;4;true;jira-native;8.00',
 		);
 	});
 
-	it('should handle multiple worklogs', () => {
-		const data: EnrichedJiraWorklog[] = [
-			{
-				id: '1',
-				started: '2025-01-15T10:00:00.000Z',
-				timeSpentSeconds: 3600,
-				author: mockAuthor,
-				issue: mockIssue,
-			} as EnrichedJiraWorklog,
-			{
-				id: '2',
-				started: '2025-01-16T14:00:00.000Z',
-				timeSpentSeconds: 7200,
-				author: mockAuthor,
-				issue: {
-					...mockIssue,
-					id: '12346',
-					key: 'PROJ-124',
-				},
-			} as EnrichedJiraWorklog,
-		];
+	it('policy=logged keeps a backdate in the logged month, drops it from the intended month', () => {
+		const w = entry({
+			started: '2025-09-28T10:00:00.000Z',
+			created: '2025-10-02T10:00:00.000Z',
+			timeSpentSeconds: 28800,
+			comment: '',
+		});
 
-		const issueSummaries: Record<string, string> = {
-			'12345': 'First Issue',
-			'12346': 'Second Issue',
-		};
+		const loggedMonth = buildTimesheetCsv({
+			worklogs: [w],
+			issueSummaries: {},
+			policy: 'logged',
+			period: { year: 2025, month: 9 },
+			provenance: PROVENANCE,
+		}).split('\n');
+		const intendedMonth = buildTimesheetCsv({
+			worklogs: [w],
+			issueSummaries: {},
+			policy: 'logged',
+			period: { year: 2025, month: 8 },
+			provenance: PROVENANCE,
+		}).split('\n');
 
-		const result = buildCsvForUser(data, issueSummaries);
-		const lines = result.split('\n');
-
-		expect(lines).toHaveLength(4); // header + 2 rows + total row
-		expect(lines[1]).toBe('John Doe;PROJ-123;First Issue;;2025/01/15;1.00');
-		expect(lines[2]).toBe('John Doe;PROJ-124;Second Issue;;2025/01/16;2.00');
-		expect(lines[3]).toBe(';;;;Total;3.00'); // 1 + 2 = 3 hours
+		// header + 1 data row + total + backdated + provenance
+		expect(loggedMonth).toHaveLength(5);
+		// header + total + backdated + provenance (no data rows)
+		expect(intendedMonth).toHaveLength(4);
 	});
 
-	it('should sort worklogs by actual logged date and then deterministic tie-breakers', () => {
-		const data: EnrichedJiraWorklog[] = [
-			{
-				id: '3',
-				started: '2025-01-16T14:00:00.000Z',
-				timeSpentSeconds: 7200,
-				author: mockAuthor,
-				issue: {
-					...mockIssue,
-					id: '12346',
-					key: 'PROJ-124',
-				},
-			} as EnrichedJiraWorklog,
-			{
-				id: '1',
-				started: '2025-01-15T14:00:00.000Z',
-				timeSpentSeconds: 1800,
-				author: mockAuthor,
-				issue: {
-					...mockIssue,
-					id: '12347',
-					key: 'PROJ-125',
-				},
-			} as EnrichedJiraWorklog,
-			{
-				id: '2',
-				started: '2025-01-15T09:00:00.000Z',
-				timeSpentSeconds: 3600,
-				author: mockAuthor,
-				issue: mockIssue,
-				comment: 'Retroactive. Original Worklog Date was: 2025/01/10',
-			} as EnrichedJiraWorklog,
-		];
+	it('policy=intended places the backdate in the intended month instead', () => {
+		const w = entry({
+			started: '2025-09-28T10:00:00.000Z',
+			created: '2025-10-02T10:00:00.000Z',
+			timeSpentSeconds: 28800,
+			comment: '',
+		});
 
-		const issueSummaries: Record<string, string> = {
-			'12345': 'First Issue',
-			'12346': 'Second Issue',
-			'12347': 'Third Issue',
-		};
+		const intendedMonth = buildTimesheetCsv({
+			worklogs: [w],
+			issueSummaries: {},
+			policy: 'intended',
+			period: { year: 2025, month: 8 },
+			provenance: PROVENANCE,
+		}).split('\n');
+		const loggedMonth = buildTimesheetCsv({
+			worklogs: [w],
+			issueSummaries: {},
+			policy: 'intended',
+			period: { year: 2025, month: 9 },
+			provenance: PROVENANCE,
+		}).split('\n');
 
-		const result = buildCsvForUser(data, issueSummaries);
-		const lines = result.split('\n');
-
-		expect(lines[1]).toBe(
-			'John Doe;PROJ-123;First Issue;2025/01/10;2025/01/15;1.00',
-		);
-		expect(lines[2]).toBe('John Doe;PROJ-125;Third Issue;;2025/01/15;0.50');
-		expect(lines[3]).toBe('John Doe;PROJ-124;Second Issue;;2025/01/16;2.00');
+		expect(intendedMonth).toHaveLength(5);
+		expect(loggedMonth).toHaveLength(4);
 	});
 
-	it('should handle missing issue summary', () => {
-		const data: EnrichedJiraWorklog[] = [
-			{
-				id: '1',
-				started: '2025-01-15T10:00:00.000Z',
-				timeSpentSeconds: 3600,
-				author: mockAuthor,
-				issue: mockIssue,
-			} as EnrichedJiraWorklog,
-		];
-
-		const issueSummaries: Record<string, string> = {};
-
-		const result = buildCsvForUser(data, issueSummaries);
-		const lines = result.split('\n');
-
-		expect(lines[1]).toBe('John Doe;PROJ-123;;;2025/01/15;1.00');
-	});
-
-	it('should format time with 2 decimal places', () => {
-		const testCases = [
-			{ seconds: 3600, expected: '1.00' }, // 1 hour
-			{ seconds: 1800, expected: '0.50' }, // 0.5 hours
-			{ seconds: 5400, expected: '1.50' }, // 1.5 hours
-			{ seconds: 3666, expected: '1.02' }, // 1.018333... hours
-		];
-
-		for (const testCase of testCases) {
-			const data: EnrichedJiraWorklog[] = [
-				{
+	it('totals reconcile to filtered rows and a Backdated subtotal is emitted', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [
+				entry({
 					id: '1',
-					started: '2025-01-15T10:00:00.000Z',
-					timeSpentSeconds: testCase.seconds,
-					author: mockAuthor,
-					issue: mockIssue,
-				} as EnrichedJiraWorklog,
-			];
+					started: '2025-10-02T10:00:00.000Z',
+					created: '2025-10-02T10:00:00.000Z',
+					timeSpentSeconds: 14400,
+					comment: '',
+				}),
+				entry({
+					id: '2',
+					started: '2025-09-28T10:00:00.000Z',
+					created: '2025-10-02T10:00:00.000Z',
+					timeSpentSeconds: 28800,
+					comment: '',
+				}),
+			],
+			issueSummaries: {},
+			policy: 'logged',
+			period: { year: 2025, month: 9 },
+			provenance: PROVENANCE,
+		}).split('\n');
 
-			const result = buildCsvForUser(data, {});
-			const lines = result.split('\n');
-			const time = lines[1].split(';')[5];
+		expect(result.find((l) => l.startsWith(';;;;;;;Total;'))).toBe(
+			';;;;;;;Total;12.00',
+		);
+		expect(result.find((l) => l.startsWith(';;;;;;;Backdated;'))).toBe(
+			';;;;;;;Backdated;8.00',
+		);
+	});
 
-			expect(time).toBe(testCase.expected);
-		}
+	it('escapes special characters in names and ticket summaries', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [
+				entry({
+					timeSpentSeconds: 1800,
+					author: { ...author, displayName: 'Jane, Doe' },
+				}),
+			],
+			issueSummaries: { '12345': 'Issue with "quotes" and, commas' },
+			policy: 'logged',
+			period: { year: 2025, month: 0 },
+			provenance: PROVENANCE,
+		}).split('\n');
+
+		expect(result[1]).toBe(
+			'"Jane, Doe";PROJ-123;"Issue with ""quotes"" and, commas";2025-01-15;2025-01-15;0;false;none;0.50',
+		);
+	});
+
+	it('uses ISO dates only', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [entry({})],
+			issueSummaries: {},
+			policy: 'logged',
+			period: { year: 2025, month: 0 },
+			provenance: PROVENANCE,
+		});
+		expect(result).not.toMatch(/\d{4}\/\d{2}\/\d{2}/);
+	});
+
+	it('sorts deterministically: primary date, secondary date, ticket key, id', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [
+				entry({
+					id: '3',
+					started: '2025-01-16T14:00:00.000Z',
+					created: '2025-01-16T14:00:00.000Z',
+					issue: { ...mockIssue, id: '12346', key: 'PROJ-124' },
+				}),
+				entry({
+					id: '1',
+					started: '2025-01-15T14:00:00.000Z',
+					created: '2025-01-15T14:00:00.000Z',
+					timeSpentSeconds: 1800,
+					issue: { ...mockIssue, id: '12347', key: 'PROJ-125' },
+				}),
+				entry({
+					id: '2',
+					started: '2025-01-15T09:00:00.000Z',
+					created: '2025-01-15T09:00:00.000Z',
+					timeSpentSeconds: 3600,
+					comment: 'Original Worklog Date was: 2025/01/10',
+				}),
+			],
+			issueSummaries: {
+				'12345': 'First',
+				'12346': 'Second',
+				'12347': 'Third',
+			},
+			policy: 'logged',
+			period: { year: 2025, month: 0 },
+			provenance: PROVENANCE,
+		}).split('\n');
+
+		expect(result[1]).toContain('PROJ-123;First;2025-01-10;2025-01-15');
+		expect(result[2]).toContain('PROJ-125;Third;2025-01-15;2025-01-15');
+		expect(result[3]).toContain('PROJ-124;Second;2025-01-16;2025-01-16');
+	});
+});
+
+describe('buildSummaryCsv', () => {
+	it('lists per-user totals plus backdated columns and a provenance footer', () => {
+		const result = buildSummaryCsv({
+			summaries: [
+				{
+					user: 'Alice',
+					totalHours: 160,
+					backdatedHours: 8,
+					worklogCount: 22,
+					backdatedCount: 1,
+					daysWorked: 20,
+				},
+			],
+			policy: 'logged',
+			period: { year: 2025, month: 9 },
+			provenance: PROVENANCE,
+		});
+
+		expect(result).toContain(
+			'User;DaysWorked;Entries;BackdatedEntries;TotalHours;BackdatedHours',
+		);
+		expect(result).toContain('Alice;20.0;22;1;160.00;8.00');
+		expect(result).toMatch(/policy=logged/);
+		expect(result).toMatch(/period=2025-10/);
+	});
+});
+
+describe('buildTimesheetFilename', () => {
+	it('encodes user, period, and policy', () => {
+		expect(
+			buildTimesheetFilename('Sarah Johnson', 'logged', {
+				year: 2025,
+				month: 9,
+			}),
+		).toBe('timesheet_Sarah-Johnson_2025-10_logged.csv');
 	});
 });
 
 describe('sanitizeFilename', () => {
-	it('should replace unsafe filename characters', () => {
+	it('replaces unsafe filename characters', () => {
 		expect(sanitizeFilename('Sarah / QA: Sprint 1.csv')).toBe(
 			'Sarah-QA-Sprint-1.csv',
 		);

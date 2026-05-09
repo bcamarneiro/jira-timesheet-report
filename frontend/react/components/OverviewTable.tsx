@@ -5,8 +5,9 @@ import type { UserAbsenceDays } from '../../services/absenceService';
 import { countAbsenceWorkdaysInMonth } from '../utils/absence';
 import { getWorkingDaysInMonth, isDateInMonth } from '../utils/date';
 import { getInitials } from '../utils/text';
-import { ProgressBar } from './ui/ProgressBar';
+import { classifyWorklog } from '../utils/worklogClassifier';
 import * as styles from './OverviewTable.module.css';
+import { ProgressBar } from './ui/ProgressBar';
 
 type Props = {
 	entries: [string, Record<string, EnrichedJiraWorklog[]>][];
@@ -38,9 +39,15 @@ export const OverviewTable: React.FC<Props> = ({
 			let totalSeconds = 0;
 			let worklogCount = 0;
 
-			for (const [dateKey, worklogs] of Object.entries(days)) {
-				if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
+			// Bucket each worklog by its classified `loggedOn` (the same
+			// logged-policy rule used by TimesheetGrid and CSV exports).
+			// Without this, OverviewTable disagreed with the calendar grid for
+			// Pattern B (jira-native) backdated entries.
+			for (const worklogs of Object.values(days)) {
 				for (const wl of worklogs) {
+					const c = classifyWorklog(wl);
+					if (!c.loggedOn) continue;
+					if (!isDateInMonth(c.loggedOn, year, monthZeroIndexed)) continue;
 					totalSeconds += wl.timeSpentSeconds ?? 0;
 					worklogCount++;
 				}

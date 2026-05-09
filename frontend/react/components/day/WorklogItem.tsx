@@ -1,14 +1,9 @@
 import type React from 'react';
 import type { EnrichedJiraWorklog } from '../../../../types/jira';
 import { useConfigStore } from '../../../stores/useConfigStore';
-import { useTimesheetStore } from '../../../stores/useTimesheetStore';
-import { isRetroactiveWorklog } from '../../utils/csv';
 import { formatHours } from '../../utils/format';
-import {
-	getRetroactiveDays,
-	isRetroactivelyLogged,
-} from '../../utils/retroactive';
 import { truncate } from '../../utils/text';
+import { classifyWorklog } from '../../utils/worklogClassifier';
 import * as styles from './WorklogItem.module.css';
 
 type Props = {
@@ -24,27 +19,19 @@ export const WorklogItem: React.FC<Props> = ({
 	onEdit,
 	onDelete,
 }) => {
-	// Access stores directly - no prop drilling!
 	const jiraDomain = useConfigStore((state) => state.config.jiraHost);
-	const currentYear = useTimesheetStore((state) => state.currentYear);
-	const currentMonth = useTimesheetStore((state) => state.currentMonth);
 	const keyOrId = worklog.issue?.key ?? worklog.issueId;
 	const issueTitle =
 		issueSummaries[worklog.issue?.key ?? ''] ||
 		issueSummaries[worklog.issue?.id ?? ''] ||
 		worklog.issue?.fields.summary ||
 		'';
-	const comment = worklog.comment || '';
-	const created = worklog.created as string | undefined;
-	const started = worklog.started as string | undefined;
-	const isRetroactive =
-		isRetroactiveWorklog(worklog, currentYear, currentMonth) ||
-		isRetroactivelyLogged(created, started);
-	const retroactiveDays = getRetroactiveDays(created, started);
-	const retroactiveLabel =
-		retroactiveDays > 0
-			? `Logged ${retroactiveDays}d after the work date`
-			: 'Logged in current month but belongs to previous month';
+	const comment = typeof worklog.comment === 'string' ? worklog.comment : '';
+	const classified = classifyWorklog(worklog);
+	const isRetroactive = classified.isBackdated;
+	const retroactiveLabel = isRetroactive
+		? `Logged ${classified.daysLate}d after the work date (intended ${classified.intendedFor}, logged ${classified.loggedOn})`
+		: '';
 	const tooltip = [
 		issueTitle ? `Issue: ${issueTitle}` : '',
 		comment ? `Comment: ${truncate(comment)}` : '',

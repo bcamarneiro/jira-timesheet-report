@@ -1,12 +1,15 @@
 import type { EnrichedJiraWorklog, GroupedWorklogs } from '../../../types/jira';
+import { useConfigStore } from '../../stores/useConfigStore';
 import {
-	buildCsvForUser,
+	type AggregationPolicy,
 	buildSummaryCsv,
+	buildTimesheetCsv,
+	buildTimesheetFilename,
 	download,
 	type UserSummary,
 } from '../utils/csv';
 import { sanitizeFilename } from '../utils/downloadFile';
-import { isDateInMonth } from '../utils/date';
+import { classifyWorklog } from '../utils/worklogClassifier';
 
 export function formatMonthlyExportSegment(
 	year: number,
@@ -15,40 +18,38 @@ export function formatMonthlyExportSegment(
 	return `${year}-${String(monthZeroIndexed + 1).padStart(2, '0')}`;
 }
 
-/**
- * Filter worklogs to only include those within the specified month.
- */
-function filterWorklogsByMonth(
+function flattenUserWorklogs(
 	userWorklogs: Record<string, EnrichedJiraWorklog[]>,
-	year: number,
-	month: number,
 ): EnrichedJiraWorklog[] {
-	const filtered: EnrichedJiraWorklog[] = [];
-	for (const [dateKey, worklogs] of Object.entries(userWorklogs)) {
-		if (isDateInMonth(dateKey, year, month)) {
-			filtered.push(...worklogs);
-		}
+	const out: EnrichedJiraWorklog[] = [];
+	for (const list of Object.values(userWorklogs)) {
+		out.push(...list);
 	}
-	return filtered;
+	return out;
 }
 
-/**
- * Compute summary stats for a user's worklogs in a given month.
- */
 function computeUserSummary(
 	user: string,
-	userWorklogs: Record<string, EnrichedJiraWorklog[]>,
-	year: number,
-	month: number,
+	worklogs: EnrichedJiraWorklog[],
+	policy: AggregationPolicy,
+	period: { year: number; month: number },
 ): UserSummary {
+	const expected = `${period.year}-${String(period.month + 1).padStart(2, '0')}`;
 	let totalSeconds = 0;
+	let backdatedSeconds = 0;
 	let worklogCount = 0;
+	let backdatedCount = 0;
 
-	for (const [dateKey, worklogs] of Object.entries(userWorklogs)) {
-		if (!isDateInMonth(dateKey, year, month)) continue;
-		for (const wl of worklogs) {
-			totalSeconds += wl.timeSpentSeconds ?? 0;
-			worklogCount++;
+	for (const wl of worklogs) {
+		const c = classifyWorklog(wl);
+		const key = policy === 'logged' ? c.loggedOn : c.intendedFor;
+		if (!key.startsWith(expected)) continue;
+		const seconds = wl.timeSpentSeconds ?? 0;
+		totalSeconds += seconds;
+		worklogCount++;
+		if (c.isBackdated) {
+			backdatedSeconds += seconds;
+			backdatedCount++;
 		}
 	}
 
@@ -56,24 +57,37 @@ function computeUserSummary(
 	return {
 		user,
 		totalHours,
+		backdatedHours: backdatedSeconds / 3600,
 		worklogCount,
+		backdatedCount,
 		daysWorked: totalHours / 8,
 	};
 }
 
+const DEFAULT_POLICY: AggregationPolicy = 'logged';
+
 export function useDownload() {
+	const jiraHost = useConfigStore((state) => state.config.jiraHost);
+
+	const provenance = { jiraHost: jiraHost || 'unknown' };
+
 	const downloadUser = (
 		user: string,
 		grouped: GroupedWorklogs,
 		issueSummaries: Record<string, string>,
 		year: number,
 		month: number,
+		policy: AggregationPolicy = DEFAULT_POLICY,
 	) => {
-		const userWorklogs = grouped[user] || {};
-		const filteredWorklogs = filterWorklogsByMonth(userWorklogs, year, month);
-		const csvContent = buildCsvForUser(filteredWorklogs, issueSummaries);
-		const monthSegment = formatMonthlyExportSegment(year, month);
-		download(sanitizeFilename(`${user}-${monthSegment}.csv`), csvContent);
+		const worklogs = flattenUserWorklogs(grouped[user] || {});
+		const csvContent = buildTimesheetCsv({
+			worklogs,
+			issueSummaries,
+			policy,
+			period: { year, month },
+			provenance,
+		});
+		download(buildTimesheetFilename(user, policy, { year, month }), csvContent);
 	};
 
 	const downloadAll = (
@@ -82,23 +96,40 @@ export function useDownload() {
 		issueSummaries: Record<string, string>,
 		year: number,
 		month: number,
+		policy: AggregationPolicy = DEFAULT_POLICY,
 	) => {
 		const summaries: UserSummary[] = [];
-		const monthSegment = formatMonthlyExportSegment(year, month);
 
 		for (const user of users) {
-			const userWorklogs = grouped[user] || {};
-			const filteredWorklogs = filterWorklogsByMonth(userWorklogs, year, month);
-			const csvContent = buildCsvForUser(filteredWorklogs, issueSummaries);
-			download(sanitizeFilename(`${user}-${monthSegment}.csv`), csvContent);
-
-			summaries.push(computeUserSummary(user, userWorklogs, year, month));
+			const worklogs = flattenUserWorklogs(grouped[user] || {});
+			const csvContent = buildTimesheetCsv({
+				worklogs,
+				issueSummaries,
+				policy,
+				period: { year, month },
+				provenance,
+			});
+			download(
+				buildTimesheetFilename(user, policy, { year, month }),
+				csvContent,
+			);
+			summaries.push(
+				computeUserSummary(user, worklogs, policy, { year, month }),
+			);
 		}
 
-		// Download the summary CSV with all users
 		if (users.length > 1) {
-			const summaryCsv = buildSummaryCsv(summaries, year, month);
-			download(sanitizeFilename(`summary-${monthSegment}.csv`), summaryCsv);
+			const summaryCsv = buildSummaryCsv({
+				summaries,
+				policy,
+				period: { year, month },
+				provenance,
+			});
+			const segment = formatMonthlyExportSegment(year, month);
+			download(
+				sanitizeFilename(`summary-${segment}-${policy}.csv`),
+				summaryCsv,
+			);
 		}
 	};
 

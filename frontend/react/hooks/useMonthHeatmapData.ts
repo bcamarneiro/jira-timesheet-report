@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { parseIsoDateLocal } from '../utils/date';
+import { classifyWorklog } from '../utils/worklogClassifier';
 import { useMonthWorklogs } from './useMonthWorklogs';
 
 interface MonthHeatmapResult {
@@ -32,7 +33,7 @@ export function useMonthHeatmapData(): MonthHeatmapResult {
 
 		for (const wl of worklogs) {
 			if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
-			const day = (wl.started ?? '').slice(0, 10);
+			const day = classifyWorklog(wl).loggedOn;
 			if (day) {
 				dayMap.set(day, (dayMap.get(day) ?? 0) + (wl.timeSpentSeconds ?? 0));
 			}

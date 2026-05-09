@@ -1,14 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import type { EnrichedJiraWorklog } from '../../../types/jira';
+import type { WorklogFetchProgress } from '../../../types/worklogLoading';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
-import { useMonthWorklogs } from './useMonthWorklogs';
-import type { WorklogFetchProgress } from '../../../types/worklogLoading';
+import { monthWorklogsQueryKey, useMonthWorklogs } from './useMonthWorklogs';
+
+function adjacentMonths(year: number, month: number) {
+	const prev =
+		month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 };
+	const next =
+		month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 };
+	return { prev, next };
+}
 
 /**
- * Hook that fetches timesheet data via the shared month worklog query
- * and populates the Zustand store.
+ * Fetches the visible month and merges any prefetched adjacent months from
+ * the query cache. The wider window gives the day projector the data it
+ * needs to render ghost entries for backdated worklogs whose `started`
+ * date falls in an adjacent month.
  *
- * TanStack Query handles caching, deduplication, and background refetching.
+ * Adjacent months are fetched in the background via `prefetchAdjacent` —
+ * they never gate the UI. If they arrive after the calendar has rendered,
+ * the store updates and ghosts appear automatically.
  */
 export function useTimesheetDataFetcher(options?: { enabled?: boolean }) {
 	const enabled = options?.enabled ?? true;
@@ -16,28 +30,148 @@ export function useTimesheetDataFetcher(options?: { enabled?: boolean }) {
 	const currentMonth = useTimesheetStore((state) => state.currentMonth);
 	const setData = useTimesheetStore((state) => state.setData);
 	const jqlFilter = useConfigStore((state) => state.config.jqlFilter);
+	const jiraHost = useConfigStore((state) => state.config.jiraHost);
+	const corsProxy = useConfigStore((state) => state.config.corsProxy);
+	const queryClient = useQueryClient();
 	const [worklogProgress, setWorklogProgress] =
 		useState<WorklogFetchProgress | null>(null);
 
-	const query = useMonthWorklogs(currentYear, currentMonth, {
+	const { prev, next } = useMemo(
+		() => adjacentMonths(currentYear, currentMonth),
+		[currentYear, currentMonth],
+	);
+
+	const mainQuery = useMonthWorklogs(currentYear, currentMonth, {
 		jqlFilter: jqlFilter || undefined,
 		prefetchAdjacent: enabled,
 		enabled,
 		onProgress: setWorklogProgress,
 	});
 
-	// Sync data to store (cast to EnrichedJiraWorklog — same JSON shape)
 	useEffect(() => {
-		if (query.data) {
-			setData(query.data);
+		const main = mainQuery.data;
+		if (!main) return;
+
+		const prevKey = monthWorklogsQueryKey(
+			prev.year,
+			prev.month,
+			jiraHost,
+			corsProxy,
+			false,
+			jqlFilter || '',
+		);
+		const nextKey = monthWorklogsQueryKey(
+			next.year,
+			next.month,
+			jiraHost,
+			corsProxy,
+			false,
+			jqlFilter || '',
+		);
+		const prevData =
+			(queryClient.getQueryData(prevKey) as
+				| EnrichedJiraWorklog[]
+				| undefined) ?? undefined;
+		const nextData =
+			(queryClient.getQueryData(nextKey) as
+				| EnrichedJiraWorklog[]
+				| undefined) ?? undefined;
+
+		const merged: EnrichedJiraWorklog[] = [];
+		const seen = new Set<string>();
+		for (const list of [main, prevData, nextData]) {
+			if (!list) continue;
+			for (const wl of list as EnrichedJiraWorklog[]) {
+				const key = wl.id ?? '';
+				if (key && seen.has(key)) continue;
+				if (key) seen.add(key);
+				merged.push(wl);
+			}
 		}
-	}, [query.data, setData]);
+		setData(merged);
+	}, [
+		mainQuery.data,
+		queryClient,
+		prev.year,
+		prev.month,
+		next.year,
+		next.month,
+		jiraHost,
+		corsProxy,
+		jqlFilter,
+		setData,
+	]);
+
+	// Re-merge when adjacent months arrive in the cache. We subscribe to the
+	// queryClient to pick up adjacent-month landings without forcing them as
+	// gating queries.
+	useEffect(() => {
+		if (!mainQuery.data) return;
+		const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+			if (event?.type !== 'updated') return;
+			const key = event.query.queryKey;
+			if (!Array.isArray(key) || key[0] !== 'monthWorklogs') return;
+			const matchesPrev = key[1] === prev.year && key[2] === prev.month;
+			const matchesNext = key[1] === next.year && key[2] === next.month;
+			if (!matchesPrev && !matchesNext) return;
+			const main = mainQuery.data;
+			if (!main) return;
+
+			const prevKey = monthWorklogsQueryKey(
+				prev.year,
+				prev.month,
+				jiraHost,
+				corsProxy,
+				false,
+				jqlFilter || '',
+			);
+			const nextKey = monthWorklogsQueryKey(
+				next.year,
+				next.month,
+				jiraHost,
+				corsProxy,
+				false,
+				jqlFilter || '',
+			);
+			const prevData = queryClient.getQueryData(prevKey) as
+				| EnrichedJiraWorklog[]
+				| undefined;
+			const nextData = queryClient.getQueryData(nextKey) as
+				| EnrichedJiraWorklog[]
+				| undefined;
+
+			const merged: EnrichedJiraWorklog[] = [];
+			const seen = new Set<string>();
+			for (const list of [main, prevData, nextData]) {
+				if (!list) continue;
+				for (const wl of list) {
+					const k = wl.id ?? '';
+					if (k && seen.has(k)) continue;
+					if (k) seen.add(k);
+					merged.push(wl);
+				}
+			}
+			setData(merged);
+		});
+		return unsubscribe;
+	}, [
+		mainQuery.data,
+		queryClient,
+		prev.year,
+		prev.month,
+		next.year,
+		next.month,
+		jiraHost,
+		corsProxy,
+		jqlFilter,
+		setData,
+	]);
 
 	return {
-		...query,
-		errorMessage: query.error
-			? query.error instanceof Error
-				? `Failed to fetch data from Jira: ${query.error.message}`
+		...mainQuery,
+		errorMessage: mainQuery.error
+			? mainQuery.error instanceof Error
+				? `Failed to fetch data from Jira: ${mainQuery.error.message}`
 				: 'An unknown error occurred.'
 			: null,
 		worklogProgress,

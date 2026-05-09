@@ -17,6 +17,7 @@ import {
 	useUIStore,
 } from '../../stores/useUIStore';
 import { useUserDataStore } from '../../stores/useUserDataStore';
+import { classifyWorklog } from '../utils/worklogClassifier';
 import { useAbsenceDays } from './useAbsenceDays';
 import { monthWorklogsQueryKey } from './useMonthWorklogs';
 
@@ -39,7 +40,7 @@ function deriveWeekWorklogs(
 
 	for (const wl of worklogs) {
 		if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
-		const day = (wl.started ?? '').slice(0, 10);
+		const day = classifyWorklog(wl).loggedOn;
 		if (day >= weekStart && day <= weekEnd) {
 			entries.push({
 				date: day,
