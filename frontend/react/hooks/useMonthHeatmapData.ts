@@ -1,12 +1,54 @@
 import { useMemo } from 'react';
+import type { EnrichedJiraWorklog } from '../../../types/jira';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { parseIsoDateLocal } from '../utils/date';
 import { classifyWorklog } from '../utils/worklogClassifier';
 import { useMonthWorklogs } from './useMonthWorklogs';
 
+interface MonthHeatmapBuckets {
+	data: Map<string, number>;
+	backdatedSeconds: Map<string, number>;
+}
+
+/**
+ * Pure helper: bucket worklogs into per-day totals and per-day backdated
+ * totals using the classifier. Exported for unit testing.
+ */
+export function buildMonthHeatmapBuckets(
+	worklogs: EnrichedJiraWorklog[] | undefined,
+	email: string,
+): MonthHeatmapBuckets {
+	const dayMap = new Map<string, number>();
+	const backdated = new Map<string, number>();
+	if (!worklogs) return { data: dayMap, backdatedSeconds: backdated };
+
+	const lowerEmail = email.toLowerCase();
+
+	for (const wl of worklogs) {
+		if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
+		const c = classifyWorklog(wl);
+		const day = c.loggedOn;
+		const seconds = wl.timeSpentSeconds ?? 0;
+		if (day) {
+			dayMap.set(day, (dayMap.get(day) ?? 0) + seconds);
+			if (c.isBackdated) {
+				backdated.set(day, (backdated.get(day) ?? 0) + seconds);
+			}
+		}
+	}
+	return { data: dayMap, backdatedSeconds: backdated };
+}
+
 interface MonthHeatmapResult {
 	data: Map<string, number>;
+	/**
+	 * Per-day backdated seconds: portion of `data[day]` that came from
+	 * worklogs whose intendedFor predates loggedOn. Drives a stripe overlay
+	 * on the heatmap so users can tell "this day's hours include backdated
+	 * work" without changing the cell's total.
+	 */
+	backdatedSeconds: Map<string, number>;
 	isLoading: boolean;
 	month: number;
 	year: number;
@@ -25,21 +67,10 @@ export function useMonthHeatmapData(): MonthHeatmapResult {
 		prefetchAdjacent: true,
 	});
 
-	const data = useMemo(() => {
-		const dayMap = new Map<string, number>();
-		if (!worklogs) return dayMap;
+	const { data, backdatedSeconds } = useMemo(
+		() => buildMonthHeatmapBuckets(worklogs, email),
+		[worklogs, email],
+	);
 
-		const lowerEmail = email.toLowerCase();
-
-		for (const wl of worklogs) {
-			if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
-			const day = classifyWorklog(wl).loggedOn;
-			if (day) {
-				dayMap.set(day, (dayMap.get(day) ?? 0) + (wl.timeSpentSeconds ?? 0));
-			}
-		}
-		return dayMap;
-	}, [worklogs, email]);
-
-	return { data, isLoading, month, year };
+	return { data, backdatedSeconds, isLoading, month, year };
 }

@@ -304,6 +304,7 @@ export const DashboardPage: React.FC = () => {
 					{monthHeatmap.data.size > 0 && (
 						<MonthHeatmap
 							monthData={monthHeatmap.data}
+							backdatedSeconds={monthHeatmap.backdatedSeconds}
 							month={monthHeatmap.month}
 							year={monthHeatmap.year}
 							absenceDays={absenceDays}

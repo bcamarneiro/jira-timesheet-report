@@ -53,12 +53,33 @@ export interface WeekWorklogEntry {
 	comment?: string;
 }
 
+/**
+ * A "ghost reconciliation" — a worklog whose intendedFor falls in the visible
+ * week but whose loggedOn falls outside it. Surfaces on its intended day as a
+ * non-counting placeholder, mirroring the Reports Monthly contract. Ghost
+ * seconds NEVER contribute to a day's loggedSeconds or gapSeconds.
+ */
+export interface WeekGhostEntry {
+	/** Same as intendedFor — the day the ghost should render on. */
+	date: string;
+	/** ISO date the worklog was actually logged (loggedOn from classifier). */
+	loggedOn: string;
+	/** ISO date the work was intended for. */
+	intendedFor: string;
+	/** Calendar days between intendedFor and loggedOn. */
+	daysLate: number;
+	issueKey?: string;
+	issueSummary?: string;
+	timeSpentSeconds: number;
+}
+
 interface DashboardState {
 	weekStart: string;
 	weekEnd: string;
 
 	daySummaries: DaySummary[];
 	weekWorklogs: WeekWorklogEntry[];
+	weekGhosts: WeekGhostEntry[];
 
 	isLoadingWorklogs: boolean;
 	isLoadingJiraSuggestions: boolean;
@@ -83,6 +104,7 @@ interface DashboardState {
 	goToCurrentWeek: () => void;
 	setDaySummaries: (summaries: DaySummary[]) => void;
 	setWeekWorklogs: (worklogs: WeekWorklogEntry[]) => void;
+	setWeekGhosts: (ghosts: WeekGhostEntry[]) => void;
 	markSuggestionLogged: (suggestionId: string) => void;
 	unmarkSuggestionLogged: (suggestionId: string) => void;
 	markMultipleSuggestionsLogged: (ids: string[]) => void;
@@ -124,6 +146,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
 	daySummaries: [],
 	weekWorklogs: [],
+	weekGhosts: [],
 
 	isLoadingWorklogs: false,
 	isLoadingJiraSuggestions: false,
@@ -163,6 +186,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 	setDaySummaries: (summaries) => set({ daySummaries: summaries }),
 
 	setWeekWorklogs: (worklogs) => set({ weekWorklogs: worklogs }),
+
+	setWeekGhosts: (ghosts) => set({ weekGhosts: ghosts }),
 
 	markSuggestionLogged: (suggestionId) =>
 		set((state) => ({

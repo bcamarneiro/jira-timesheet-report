@@ -7,6 +7,12 @@ import * as styles from './MonthHeatmap.module.css';
 
 type Props = {
 	monthData: Map<string, number>;
+	/**
+	 * Optional per-day backdated seconds. When > 0 for a day, an overlay
+	 * stripe is drawn on the cell to indicate the day's totals include
+	 * backdated worklogs. The total hours shown stay unchanged.
+	 */
+	backdatedSeconds?: Map<string, number>;
 	month: number;
 	year: number;
 	absenceDays?: Map<string, AbsenceDay>;
@@ -48,6 +54,7 @@ function isWeekend(dayOfWeek: number): boolean {
 
 export const MonthHeatmap: React.FC<Props> = ({
 	monthData,
+	backdatedSeconds,
 	month,
 	year,
 	absenceDays,
@@ -144,16 +151,21 @@ export const MonthHeatmap: React.FC<Props> = ({
 					const levelClass = cellLevelMap[level] ?? cellLevelMap.empty;
 					const weekendClass = cell.isWeekend ? styles.cellWeekend : '';
 					const hours = cell.seconds / 3600;
-					const title = isTimeOff
+					const backdated = backdatedSeconds?.get(cell.dateStr) ?? 0;
+					const hasBackdated = backdated > 0 && !isTimeOff;
+					const baseTitle = isTimeOff
 						? `${cell.dateStr}: ${getAbsenceKindLabel(absenceDay.kind)}`
 						: hours > 0
 							? `${cell.dateStr}: ${formatHours(cell.seconds)}`
 							: `${cell.dateStr}: no time logged`;
+					const title = hasBackdated
+						? `${baseTitle} (includes ${formatHours(backdated)} backdated)`
+						: baseTitle;
 
 					return (
 						<li
 							key={cell.dateStr}
-							className={`${styles.cell} ${levelClass} ${weekendClass}`}
+							className={`${styles.cell} ${levelClass} ${weekendClass} ${hasBackdated ? styles.cellBackdated : ''}`}
 							title={title}
 							aria-label={title}
 						>
