@@ -182,6 +182,39 @@ for (const loggedDay of mikeRetroactiveDays) {
 	worklogId++;
 }
 
+// Alex Thompson - 2 jira-native (Pattern B) backdated worklogs:
+// `started` is in September 2025 (the intended day), `created` is in
+// October 2025 (the day it was reconciled in Jira). No comment marker —
+// these rely on the classifier's jira-native heuristic.
+const alexPatternBPairs: Array<{ intended: number; logged: number }> = [
+	{ intended: 26, logged: 6 }, // intended 2025-09-26, logged 2025-10-06
+	{ intended: 29, logged: 9 }, // intended 2025-09-29, logged 2025-10-09
+];
+
+for (const pair of alexPatternBPairs) {
+	const intendedDate = `2025-09-${pair.intended.toString().padStart(2, '0')}`;
+	const loggedDate = `2025-10-${pair.logged.toString().padStart(2, '0')}`;
+
+	MockWorklogsSimple.push({
+		self: `https://mock.atlassian.net/rest/api/2/issue/PROJ-100/worklog/${worklogId}`,
+		id: worklogId.toString(),
+		issueId: 'PROJ-100',
+		issueKey: 'PROJ-100',
+		author: alexUser,
+		updateAuthor: alexUser,
+		comment: 'Reconciled later (no marker)',
+		// Pattern B convention: started = intended date (in the past),
+		// created = the day someone actually entered it in Jira.
+		created: `${loggedDate}T15:00:00.000-0300`,
+		updated: `${loggedDate}T15:00:00.000-0300`,
+		started: `${intendedDate}T09:00:00.000-0300`,
+		timeSpent: '8h',
+		timeSpentSeconds: 28800,
+	});
+
+	worklogId++;
+}
+
 logger.debug('[MOCK DATA] Generated mock worklogs:');
 logger.debug(
 	`  - Alex: ${MockWorklogsSimple.filter((w) => w.author.displayName === 'Alex Thompson').length} worklogs (expected: 23 × 8h = 184h)`,

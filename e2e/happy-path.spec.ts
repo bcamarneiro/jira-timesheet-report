@@ -391,7 +391,12 @@ test.describe('Reports Monthly View', () => {
 	});
 
 	test('shows calendar with weekday headers', async ({ page }) => {
-		// Calendar headers are "Sun", "Mon" etc. (CSS uppercases visually)
+		// Wait for the calendar grid to render before sampling body text — the
+		// monthly view shows a loading state while the worklog query lands.
+		await page
+			.locator('[class*="weekdayLabel"]')
+			.first()
+			.waitFor({ state: 'visible', timeout: 15000 });
 		const body = await page.textContent('body');
 		expect(body).toContain('Sun');
 		expect(body).toContain('Mon');
