@@ -3,6 +3,7 @@ import type { JiraIssue } from '../../types/JiraIssue';
 import type { JiraWorklog } from '../../types/JiraWorklog';
 import {
 	addDaysToIsoDate,
+	getMondayOfWeek,
 	parseIsoDateLocal,
 	toLocalDateString,
 } from '../react/utils/date';
@@ -25,13 +26,7 @@ const devUser = {
 };
 
 // ── Date helpers ────────────────────────────────────────────────────
-function getMonday(date: Date): string {
-	const d = new Date(date);
-	const day = d.getDay();
-	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-	d.setDate(diff);
-	return toLocalDateString(d);
-}
+const getMonday = getMondayOfWeek;
 
 function getWeekdays(monday: string): string[] {
 	return Array.from({ length: 5 }, (_, index) =>
@@ -152,9 +147,33 @@ const mockIssues = uniqueIssueKeys.map((key) => {
 	return issue;
 });
 
+/**
+ * Parse the `worklogDate >= "YYYY-MM-DD" AND worklogDate <= "YYYY-MM-DD"`
+ * clause out of a JQL string. Returns null if absent. Permissive: tolerates
+ * single quotes, missing AND/clauses, and surrounding whitespace.
+ */
+function parseWorklogDateRange(
+	jql: string,
+): { from?: string; to?: string } | null {
+	const fromMatch = jql.match(
+		/worklogDate\s*>=\s*['"]([0-9]{4}-[0-9]{2}-[0-9]{2})['"]/i,
+	);
+	const toMatch = jql.match(
+		/worklogDate\s*<=\s*['"]([0-9]{4}-[0-9]{2}-[0-9]{2})['"]/i,
+	);
+	if (!fromMatch && !toMatch) return null;
+	return {
+		from: fromMatch?.[1],
+		to: toMatch?.[1],
+	};
+}
+
 // ── MSW Handlers ────────────────────────────────────────────────────
 export const handlers = [
-	// Search issues — returns worklog data embedded when fields include "worklog"
+	// Search issues — returns worklog data embedded when fields include "worklog".
+	// Honours `worklogDate >= … AND worklogDate <= …` JQL clauses by filtering
+	// the embedded worklogs to that window (so production + offline tests
+	// exercise the same JQL escaping path).
 	http.get('https://*.atlassian.net/rest/api/2/search', ({ request }) => {
 		const url = new URL(request.url);
 		const jql = url.searchParams.get('jql') || '';
@@ -162,17 +181,33 @@ export const handlers = [
 
 		logger.debug('[MSW] Intercepted Jira issue search:', { jql, fields });
 
-		const filteredIssues = mockIssues.filter(
-			(issue) => worklogsByIssue[issue.key]?.length > 0,
-		);
+		const dateRange = parseWorklogDateRange(jql);
+		const inRange = (started: string | undefined): boolean => {
+			if (!dateRange) return true;
+			const day = (started ?? '').slice(0, 10);
+			if (!day) return false;
+			if (dateRange.from && day < dateRange.from) return false;
+			if (dateRange.to && day > dateRange.to) return false;
+			return true;
+		};
+
+		// Step 1: filter each issue's worklogs by the date range, then drop
+		// issues that have no surviving worklogs (mirrors Jira's behaviour:
+		// `worklogDate` constrains issues, not just embedded worklogs).
+		const filteredIssues = mockIssues
+			.map((issue) => ({
+				issue,
+				worklogs: (worklogsByIssue[issue.key] ?? []).filter((wl) =>
+					inRange(wl.started),
+				),
+			}))
+			.filter(({ worklogs }) => worklogs.length > 0);
 
 		// If the request asks for worklog fields, embed them in the response
 		const includeWorklogs = fields.includes('worklog');
 
-		const issues = filteredIssues.map((issue) => {
+		const issues = filteredIssues.map(({ issue, worklogs }) => {
 			if (!includeWorklogs) return issue;
-
-			const issueWorklogs = worklogsByIssue[issue.key] || [];
 			return {
 				...issue,
 				fields: {
@@ -180,15 +215,15 @@ export const handlers = [
 					worklog: {
 						startAt: 0,
 						maxResults: 50,
-						total: issueWorklogs.length,
-						worklogs: issueWorklogs,
+						total: worklogs.length,
+						worklogs,
 					},
 				},
 			};
 		});
 
 		logger.debug(
-			`[MSW] Returning ${issues.length} issues (worklogs embedded: ${includeWorklogs})`,
+			`[MSW] Returning ${issues.length} issues (worklogs embedded: ${includeWorklogs}, dateRange: ${JSON.stringify(dateRange)})`,
 		);
 
 		return HttpResponse.json({
