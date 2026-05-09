@@ -76,6 +76,31 @@ export function addDaysToIsoDate(dateStr: string, days: number): string {
 	return toLocalDateString(date);
 }
 
+/**
+ * Append the local TZ offset to a `YYYY-MM-DDTHH:MM` string so Jira can
+ * interpret it unambiguously. Output: `YYYY-MM-DDTHH:MM:00.000±HHMM`.
+ *
+ * Used at every site that POSTs/PUTs a worklog `started` field.
+ *
+ * Idempotent: if the input already ends with a `±HHMM` offset, returns it
+ * unchanged.
+ */
+export function withLocalOffset(localDateTime: string): string {
+	// If the input already carries a `±HHMM` offset, leave it alone.
+	if (/[+-]\d{4}$/.test(localDateTime)) return localDateTime;
+
+	const date = new Date(localDateTime);
+	const offsetMinutes = -date.getTimezoneOffset();
+	const sign = offsetMinutes >= 0 ? '+' : '-';
+	const abs = Math.abs(offsetMinutes);
+	const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+	const mm = String(abs % 60).padStart(2, '0');
+	// Normalise to `YYYY-MM-DDTHH:MM:00.000` then append offset.
+	const base =
+		localDateTime.length === 16 ? `${localDateTime}:00.000` : localDateTime;
+	return `${base}${sign}${hh}${mm}`;
+}
+
 export function formatDateTimeLocalValue(date: Date): string {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, '0');

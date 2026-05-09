@@ -3,7 +3,11 @@ import type { DaySummary } from '../../../../types/Suggestion';
 import { useDashboardStore } from '../../../stores/useDashboardStore';
 import { useWorklogOperations } from '../../hooks/useWorklogOperations';
 import { getAbsenceKindLabel } from '../../utils/absence';
-import { parseIsoDateLocal, toLocalDateString } from '../../utils/date';
+import {
+	parseIsoDateLocal,
+	toLocalDateString,
+	withLocalOffset,
+} from '../../utils/date';
 import { formatHours } from '../../utils/format';
 import { toast } from '../ui/Toast';
 import * as styles from './DayCard.module.css';
@@ -74,7 +78,7 @@ export const DayCard = memo<Props>(function DayCard({
 				issueKey: s.issueKey,
 				timeSpent: s.suggestedTimeSpent,
 				comment: '',
-				started: `${s.date}T09:00`,
+				started: withLocalOffset(`${s.date}T09:00`),
 			}));
 
 			if (params.length === 0) {
