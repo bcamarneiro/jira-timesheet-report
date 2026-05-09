@@ -31,7 +31,7 @@ interface WorklogEntry {
 }
 
 /** Derive WorklogEntry[] from the shared month query, filtered to a week range */
-function deriveWeekWorklogs(
+export function deriveWeekWorklogs(
 	worklogs: WorklogItem[],
 	email: string,
 	weekStart: string,
@@ -56,6 +56,44 @@ function deriveWeekWorklogs(
 	}
 
 	return entries;
+}
+
+/**
+ * Derive ghost reconciliations for a week: worklogs whose intendedFor falls
+ * inside [weekStart, weekEnd] but whose loggedOn falls OUTSIDE the range.
+ * These render on the dashboard as non-counting placeholders on intendedFor.
+ */
+export function deriveWeekGhosts(
+	worklogs: WorklogItem[],
+	email: string,
+	weekStart: string,
+	weekEnd: string,
+): import('../../stores/useDashboardStore').WeekGhostEntry[] {
+	const lowerEmail = email.toLowerCase();
+	const ghosts: import('../../stores/useDashboardStore').WeekGhostEntry[] = [];
+
+	for (const wl of worklogs) {
+		if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
+		const c = classifyWorklog(wl);
+		if (!c.isBackdated) continue;
+		if (!c.intendedFor || !c.loggedOn) continue;
+		if (c.intendedFor === c.loggedOn) continue; // not a ghost
+		const inWeek = c.intendedFor >= weekStart && c.intendedFor <= weekEnd;
+		const loggedOutside = c.loggedOn < weekStart || c.loggedOn > weekEnd;
+		if (!inWeek || !loggedOutside) continue;
+
+		ghosts.push({
+			date: c.intendedFor,
+			intendedFor: c.intendedFor,
+			loggedOn: c.loggedOn,
+			daysLate: c.daysLate,
+			issueKey: wl.issue?.key,
+			issueSummary: wl.issue?.fields?.summary as string | undefined,
+			timeSpentSeconds: wl.timeSpentSeconds ?? 0,
+		});
+	}
+
+	return ghosts;
 }
 
 export function useDashboardDataFetcher() {
@@ -157,7 +195,7 @@ export function useDashboardDataFetcher() {
 				);
 
 			const [
-				worklogs,
+				worklogsResult,
 				jiraSuggestions,
 				gitlabSuggestions,
 				calendarSuggestions,
@@ -209,14 +247,17 @@ export function useDashboardDataFetcher() {
 								'fetch',
 							);
 
-						return deriveWeekWorklogs(allData, email, weekStart, weekEnd);
+						return {
+							entries: deriveWeekWorklogs(allData, email, weekStart, weekEnd),
+							ghosts: deriveWeekGhosts(allData, email, weekStart, weekEnd),
+						};
 					} catch (e) {
 						if (!signal.aborted)
 							setError(
 								'worklogs',
 								e instanceof Error ? e.message : 'Failed to fetch worklogs',
 							);
-						return [] as WorklogEntry[];
+						return { entries: [] as WorklogEntry[], ghosts: [] };
 					} finally {
 						setLoading('worklogs', false);
 						setWorklogsLoadingProgress(null);
@@ -280,6 +321,9 @@ export function useDashboardDataFetcher() {
 
 			if (signal.aborted) return;
 
+			const worklogs = worklogsResult.entries;
+			const weekGhosts = worklogsResult.ghosts;
+
 			// Store worklogs with issueKey for weekly summary export
 			const worklogsWithKey = worklogs.filter(
 				(w): w is WorklogEntry & { issueKey: string } => !!w.issueKey,
@@ -298,9 +342,12 @@ export function useDashboardDataFetcher() {
 				absenceDays,
 			});
 
-			// Batch all store updates together to avoid cascading re-renders
+			// Batch all store updates together to avoid cascading re-renders.
+			// `weekGhosts` is a separate field — gap calculations run off
+			// `loggedSeconds` only, so ghosts never affect day/week totals.
 			useDashboardStore.setState({
 				weekWorklogs: worklogsWithKey,
+				weekGhosts,
 				daySummaries: summaries,
 				lastFetchedAt: new Date().toISOString(),
 			});
