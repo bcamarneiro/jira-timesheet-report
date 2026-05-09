@@ -1,5 +1,6 @@
 import type { DaySummary } from '../../../types/Suggestion';
 import type { WeekWorklogEntry } from '../../stores/useDashboardStore';
+import { formatHours } from './format';
 
 export type WeeklyCloseStatus = 'ready' | 'warning' | 'pending';
 export type WeeklyCloseAction =
@@ -74,7 +75,7 @@ export function buildWeeklyCloseAssistantModel({
 			status: totalGapHours > 0 ? 'warning' : 'ready',
 			detail:
 				totalGapHours > 0
-					? `${totalGapHours.toFixed(1)}h still missing across ${formatCount(daysWithGaps.length, 'weekday', 'weekdays')}.`
+					? `${formatHours(totalGapHours * 3600)} still missing across ${formatCount(daysWithGaps.length, 'weekday', 'weekdays')}.`
 					: 'No remaining weekly gap. The core close-the-week job is done.',
 			actionId: daysWithGaps.length > 0 ? 'jump-gap-days' : undefined,
 			actionLabel: daysWithGaps.length > 0 ? 'Open gap days' : undefined,

@@ -263,22 +263,24 @@ test.describe('In-app consistency check', () => {
 // ─────────────────────────────────────────────────────────────────────
 
 test.describe('Display formatting consistency probes', () => {
-	test('AUDIT-#15: Dashboard uses "8.0h" while Reports calendar uses "8h" for the same value', async ({
+	test('AUDIT-#15: dashboard and Reports calendar use the same formatHours convention', async ({
 		page,
 	}) => {
-		// Dashboard format
+		// Dashboard format — must NOT use the legacy "8.0h" form. The unified
+		// formatHours emits "8h" for integers and "8.5h" for fractions.
 		await page.goto('/dashboard');
 		await page.waitForLoadState('networkidle');
 		await page.waitForTimeout(1500);
 
 		const dashboardBody = (await page.textContent('body')) ?? '';
-		const dashboardMatchesPointZero = /(?<![\d.])8\.0h(?!\d)/.test(
-			dashboardBody,
+		// Look for any "Xh" tokens; none of the integer ones may render as "X.0h".
+		const allDashboardHours = dashboardBody.match(/\d+(?:\.\d+)?h/g) ?? [];
+		const integerWithSpuriousZero = allDashboardHours.some((token) =>
+			/^\d+\.0h$/.test(token),
 		);
+		expect(integerWithSpuriousZero).toBe(false);
 
-		// Reports Monthly format — assert the integer "8h" form appears at
-		// least once in a day-cell total node. We sample DaySummary nodes
-		// directly to avoid concatenated body text obscuring the boundary.
+		// Reports Monthly format — integer day totals render as plain "8h".
 		await goReports(page);
 		await ensureMonthly(page);
 		await setMonth(page, /October\s+2025/);
@@ -286,19 +288,10 @@ test.describe('Display formatting consistency probes', () => {
 			.locator('[class*="DaySummary"][class*="total"]')
 			.allTextContents();
 		const reportsHasIntegerHour = dayTotals.some((t) => t.trim() === '8h');
-
-		// Today both are true: dashboard prints "8.0h" and reports prints "8h".
-		// When AUDIT-#15 lands, both surfaces should agree — flip these
-		// expectations accordingly.
 		expect(reportsHasIntegerHour).toBe(true);
-		// Dashboard string may not always contain "8.0h" if no day has exactly
-		// 8h — only assert the inequality when we observed the case.
-		if (dashboardMatchesPointZero) {
-			expect(dashboardMatchesPointZero).toBe(true);
-		}
 	});
 
-	test('AUDIT-#16: Target-hours display does not use toFixed on the calendar grid', async ({
+	test('AUDIT-#16: target-hours display rounds to integer hours on the calendar grid', async ({
 		page,
 	}) => {
 		await goReports(page);
@@ -308,10 +301,15 @@ test.describe('Display formatting consistency probes', () => {
 		const monthTotalTexts = await page
 			.locator('[class*="monthTotalValue"]')
 			.allTextContents();
-		// At least one should match the bare-integer target form "/ 184h ("
-		// (October 2025: 23 working days × 8 = 184h).
+		// October 2025 has 23 working days × 8h = 184h target.
 		const matched = monthTotalTexts.some((t) => /\/\s*184h\s*\(/.test(t));
 		expect(matched).toBe(true);
+		// And no "/ 184.0..." form should appear anywhere — that was the old
+		// behaviour for months with absences.
+		const hasFractionalTarget = monthTotalTexts.some((t) =>
+			/\/\s*\d+\.\d+h\s*\(/.test(t),
+		);
+		expect(hasFractionalTarget).toBe(false);
 	});
 });
 
