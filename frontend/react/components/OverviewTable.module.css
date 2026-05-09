@@ -51,6 +51,11 @@
 	outline-offset: -2px;
 }
 
+.zeroHourRow td {
+	color: var(--color-text-secondary);
+	opacity: 0.65;
+}
+
 .userCell {
 	width: 30%;
 }

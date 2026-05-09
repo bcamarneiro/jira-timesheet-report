@@ -368,6 +368,7 @@ export const TimesheetPage: React.FC = () => {
 	const weekdays = getWeekdays(weekStart);
 	const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 	const allMonthlyEntries = useMemo(() => Object.entries(grouped), [grouped]);
+	const normalizedSelectedUser = selectedUser.trim().toLowerCase();
 	const filteredTeamMembers = useMemo(
 		() =>
 			teamMembers.filter((member) => {
@@ -377,15 +378,34 @@ export const TimesheetPage: React.FC = () => {
 					includesSearch(member.email, normalizedSearchQuery);
 				if (!matchesQuery) return false;
 				if (onlyAttentionNeeded && member.gapSeconds === 0) return false;
+				if (
+					normalizedSelectedUser.length > 0 &&
+					member.displayName.trim().toLowerCase() !== normalizedSelectedUser
+				) {
+					return false;
+				}
 				return true;
 			}),
-		[teamMembers, normalizedSearchQuery, onlyAttentionNeeded],
+		[
+			teamMembers,
+			normalizedSearchQuery,
+			onlyAttentionNeeded,
+			normalizedSelectedUser,
+		],
 	);
-	const isValidUser = selectedUser !== '' && users.includes(selectedUser);
+	const weeklyUsers = useMemo(
+		() => teamMembers.map((member) => member.displayName),
+		[teamMembers],
+	);
+	const focusUserList = viewMode === 'weekly' ? weeklyUsers : users;
+	const isValidUser =
+		selectedUser !== '' && focusUserList.includes(selectedUser);
 	const filteredUsers = useMemo(() => {
-		if (normalizedSearchQuery.length === 0) return users;
-		return users.filter((user) => includesSearch(user, normalizedSearchQuery));
-	}, [users, normalizedSearchQuery]);
+		if (normalizedSearchQuery.length === 0) return focusUserList;
+		return focusUserList.filter((user) =>
+			includesSearch(user, normalizedSearchQuery),
+		);
+	}, [focusUserList, normalizedSearchQuery]);
 	const selectableUsers = useMemo(() => {
 		if (isValidUser && !filteredUsers.includes(selectedUser)) {
 			return [selectedUser, ...filteredUsers];
@@ -819,13 +839,20 @@ export const TimesheetPage: React.FC = () => {
 						/>
 					</>
 				) : (
-					<WeekNavigator
-						weekStart={weekStart}
-						weekEnd={weekEnd}
-						onPrev={goToPrevWeek}
-						onNext={goToNextWeek}
-						onToday={goToCurrentWeek}
-					/>
+					<>
+						<UserSelector
+							users={selectableUsers}
+							value={isValidUser ? selectedUser : ''}
+							onChange={handleUserChange}
+						/>
+						<WeekNavigator
+							weekStart={weekStart}
+							weekEnd={weekEnd}
+							onPrev={goToPrevWeek}
+							onNext={goToNextWeek}
+							onToday={goToCurrentWeek}
+						/>
+					</>
 				)}
 
 				<div className={styles.toolbarRight}>
