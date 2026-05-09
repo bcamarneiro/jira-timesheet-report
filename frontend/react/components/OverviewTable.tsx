@@ -3,14 +3,25 @@ import { useMemo, useState } from 'react';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
 import { getWorkingDaysInMonth, isDateInMonth } from '../utils/date';
 import { getInitials } from '../utils/text';
-import { ProgressBar } from './ui/ProgressBar';
 import * as styles from './OverviewTable.module.css';
+import { ProgressBar } from './ui/ProgressBar';
 
 type Props = {
 	entries: [string, Record<string, EnrichedJiraWorklog[]>][];
 	year: number;
 	monthZeroIndexed: number;
 	onUserClick?: (user: string) => void;
+	/**
+	 * When true, users from `allUsers` that are missing from `entries` (or have
+	 * zero hours in the period) are still rendered as muted rows. Defaults to
+	 * false so the existing Monthly-view behaviour is preserved.
+	 */
+	includeZeroHourUsers?: boolean;
+	/**
+	 * Full population of users that should be considered when
+	 * `includeZeroHourUsers` is true (e.g. the configured `allowedUsers`).
+	 */
+	allUsers?: string[];
 };
 
 type SortField = 'user' | 'days' | 'entries' | 'hours';
@@ -21,6 +32,8 @@ export const OverviewTable: React.FC<Props> = ({
 	year,
 	monthZeroIndexed,
 	onUserClick,
+	includeZeroHourUsers = false,
+	allUsers,
 }) => {
 	const [sortField, setSortField] = useState<SortField>('user');
 	const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -50,6 +63,21 @@ export const OverviewTable: React.FC<Props> = ({
 			};
 		});
 
+		if (includeZeroHourUsers && allUsers) {
+			const present = new Set(computed.map((row) => row.user));
+			for (const user of allUsers) {
+				if (!present.has(user)) {
+					computed.push({
+						user,
+						totalHours: 0,
+						worklogCount: 0,
+						daysWorked: 0,
+						pct: 0,
+					});
+				}
+			}
+		}
+
 		computed.sort((a, b) => {
 			let cmp: number;
 			switch (sortField) {
@@ -69,7 +97,16 @@ export const OverviewTable: React.FC<Props> = ({
 		});
 
 		return computed;
-	}, [entries, year, monthZeroIndexed, sortField, sortDirection, targetHours]);
+	}, [
+		entries,
+		year,
+		monthZeroIndexed,
+		sortField,
+		sortDirection,
+		targetHours,
+		includeZeroHourUsers,
+		allUsers,
+	]);
 
 	const grandTotalHours = rows.reduce((sum, r) => sum + r.totalHours, 0);
 	const grandTotalWorklogs = rows.reduce((sum, r) => sum + r.worklogCount, 0);
@@ -141,7 +178,14 @@ export const OverviewTable: React.FC<Props> = ({
 					{rows.map((row) => (
 						<tr
 							key={row.user}
-							className={onUserClick ? styles.clickableRow : undefined}
+							className={
+								[
+									onUserClick ? styles.clickableRow : '',
+									row.totalHours === 0 ? styles.zeroHourRow : '',
+								]
+									.filter(Boolean)
+									.join(' ') || undefined
+							}
 							onClick={() => onUserClick?.(row.user)}
 							onKeyDown={(event) => {
 								if (

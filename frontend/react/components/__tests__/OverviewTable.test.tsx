@@ -1,0 +1,104 @@
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import type { EnrichedJiraWorklog } from '../../../../types/jira';
+import { OverviewTable } from '../OverviewTable';
+
+type Entry = [string, Record<string, EnrichedJiraWorklog[]>];
+
+function makeWorklog(seconds: number): EnrichedJiraWorklog {
+	return {
+		timeSpentSeconds: seconds,
+		issue: { id: '1', key: 'JIRA-1', fields: { summary: 'x' } },
+	} as EnrichedJiraWorklog;
+}
+
+const sarah: Entry = [
+	'Sarah Johnson',
+	{
+		'2026-05-01': [makeWorklog(3600 * 5)],
+		'2026-05-02': [makeWorklog(3600 * 3)],
+	},
+];
+const alex: Entry = ['Alex Doe', { '2026-05-01': [makeWorklog(3600 * 4)] }];
+
+function getDataRows(): HTMLTableRowElement[] {
+	const tbody = document.querySelector('tbody');
+	if (!tbody) return [];
+	return Array.from(tbody.querySelectorAll('tr')).filter(
+		(row) => !row.textContent?.startsWith('Total ('),
+	) as HTMLTableRowElement[];
+}
+
+describe('OverviewTable filtering and inclusion policy', () => {
+	it('renders only the focused user when caller filters entries to one user', () => {
+		render(
+			<OverviewTable entries={[sarah]} year={2026} monthZeroIndexed={4} />,
+		);
+		expect(screen.getByText('Sarah Johnson')).toBeInTheDocument();
+		expect(screen.queryByText('Alex Doe')).not.toBeInTheDocument();
+	});
+
+	it('renders all provided users when no filter is applied', () => {
+		render(
+			<OverviewTable
+				entries={[sarah, alex]}
+				year={2026}
+				monthZeroIndexed={4}
+			/>,
+		);
+		expect(screen.getByText('Sarah Johnson')).toBeInTheDocument();
+		expect(screen.getByText('Alex Doe')).toBeInTheDocument();
+	});
+
+	it('hides zero-hour users by default (Monthly behaviour preserved)', () => {
+		render(
+			<OverviewTable
+				entries={[sarah]}
+				year={2026}
+				monthZeroIndexed={4}
+				allUsers={['Sarah Johnson', 'Ghost User']}
+			/>,
+		);
+		expect(screen.queryByText('Ghost User')).not.toBeInTheDocument();
+	});
+
+	it('includes zero-hour users from allUsers when includeZeroHourUsers is true', () => {
+		render(
+			<OverviewTable
+				entries={[sarah]}
+				year={2026}
+				monthZeroIndexed={4}
+				includeZeroHourUsers
+				allUsers={['Sarah Johnson', 'Ghost User']}
+			/>,
+		);
+		expect(screen.getByText('Ghost User')).toBeInTheDocument();
+		// Zero-hour row shows 0.0h
+		const ghostRow = screen.getByText('Ghost User').closest('tr');
+		expect(ghostRow).not.toBeNull();
+		expect(
+			within(ghostRow as HTMLElement).getByText('0.0h'),
+		).toBeInTheDocument();
+	});
+
+	it('sorts by Hours without crashing when zero-hour rows are present', () => {
+		render(
+			<OverviewTable
+				entries={[sarah, alex]}
+				year={2026}
+				monthZeroIndexed={4}
+				includeZeroHourUsers
+				allUsers={['Sarah Johnson', 'Alex Doe', 'Ghost User']}
+			/>,
+		);
+		const hoursButton = screen.getByRole('button', { name: /Hours/ });
+		// Click once: ascending (zero-hour user first)
+		fireEvent.click(hoursButton);
+		const ascRows = getDataRows();
+		expect(ascRows[0]).toHaveTextContent('Ghost User');
+		// Click again: descending (Sarah, with most hours, first)
+		fireEvent.click(hoursButton);
+		const descRows = getDataRows();
+		expect(descRows[0]).toHaveTextContent('Sarah Johnson');
+	});
+});
