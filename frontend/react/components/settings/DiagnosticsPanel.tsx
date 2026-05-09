@@ -1,11 +1,11 @@
 import type React from 'react';
 import { SETTINGS_SECTION_IDS } from '../../constants/settingsSections';
-import { Button } from '../ui/Button';
 import type {
 	SettingsSetupModel,
 	SetupStatus,
 	SurfaceReadinessModel,
 } from '../../utils/settingsSetup';
+import { Button } from '../ui/Button';
 import * as styles from './DiagnosticsPanel.module.css';
 
 type Props = {

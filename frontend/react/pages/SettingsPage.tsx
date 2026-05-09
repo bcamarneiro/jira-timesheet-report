@@ -2,18 +2,18 @@ import type React from 'react';
 import { useState } from 'react';
 import { useConfigStore } from '../../stores/useConfigStore';
 import {
+	type SettingsIntegrationTests,
+	useSettingsFormStore,
+} from '../../stores/useSettingsFormStore';
+import {
 	buildJiraConnectionFingerprint,
 	useUIStore,
 } from '../../stores/useUIStore';
-import {
-	useSettingsFormStore,
-	type SettingsIntegrationTests,
-} from '../../stores/useSettingsFormStore';
-import { buildSettingsSetupModel } from '../utils/settingsSetup';
-import { toast } from '../components/ui/Toast';
 import { DiagnosticsPanel } from '../components/settings/DiagnosticsPanel';
 import { SettingsForm } from '../components/settings/SettingsForm';
 import { SetupWizard } from '../components/settings/SetupWizard';
+import { toast } from '../components/ui/Toast';
+import { buildSettingsSetupModel } from '../utils/settingsSetup';
 import * as styles from './SettingsPage.module.css';
 
 export const SettingsPage: React.FC = () => {

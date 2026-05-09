@@ -1,11 +1,11 @@
 import type React from 'react';
 import type { TeamMemberSummary } from '../../../services/teamService';
+import { parseIsoDateLocal } from '../../utils/date';
+import { formatHours } from '../../utils/format';
 import type {
 	ManagerTrendModel,
 	TeamTrendPoint,
 } from '../../utils/teamReports';
-import { formatHours } from '../../utils/format';
-import { parseIsoDateLocal } from '../../utils/date';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Spinner } from '../ui/Spinner';
 import { StatCard } from '../ui/StatCard';

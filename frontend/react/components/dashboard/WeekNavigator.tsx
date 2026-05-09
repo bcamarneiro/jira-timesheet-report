@@ -1,5 +1,5 @@
-import { parseIsoDateLocal } from '../../utils/date';
 import type React from 'react';
+import { parseIsoDateLocal } from '../../utils/date';
 import * as styles from './WeekNavigator.module.css';
 
 type Props = {

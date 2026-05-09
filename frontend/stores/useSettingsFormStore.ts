@@ -1,12 +1,12 @@
 import { create } from 'zustand';
+import { toLocalDateString } from '../react/utils/date';
+import { logger } from '../react/utils/logger';
 import {
 	buildGitlabBaseUrl,
 	describeGitlabConnectionError,
 	normalizeGitlabHost,
 } from '../services/gitlabService';
-import { logger } from '../react/utils/logger';
-import { toLocalDateString } from '../react/utils/date';
-import { normalizeConfig, type Config, useConfigStore } from './useConfigStore';
+import { type Config, normalizeConfig, useConfigStore } from './useConfigStore';
 import { buildJiraConnectionFingerprint, useUIStore } from './useUIStore';
 
 export interface IntegrationTestResult {

@@ -1,6 +1,6 @@
-import type { AbsenceAssignment, CalendarFeed } from '../stores/useConfigStore';
-import { logger } from '../react/utils/logger';
 import type { AbsenceKind } from '../../types/absence';
+import { logger } from '../react/utils/logger';
+import type { AbsenceAssignment, CalendarFeed } from '../stores/useConfigStore';
 
 /**
  * ICS parsing utilities — lightweight re-implementation of the subset needed

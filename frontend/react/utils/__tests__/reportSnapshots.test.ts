@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { TeamMemberSummary } from '../../../services/teamService';
 import type { EnrichedJiraWorklog } from '../../../../types/jira';
+import type { TeamMemberSummary } from '../../../services/teamService';
 import {
 	buildReportsSnapshotHtml,
 	buildReportsSnapshotMarkdown,

@@ -1,12 +1,12 @@
 import { HttpResponse, http } from 'msw';
 import type { JiraIssue } from '../../types/JiraIssue';
 import type { JiraWorklog } from '../../types/JiraWorklog';
-import { logger } from '../react/utils/logger';
 import {
 	addDaysToIsoDate,
 	parseIsoDateLocal,
 	toLocalDateString,
 } from '../react/utils/date';
+import { logger } from '../react/utils/logger';
 import MockIssueSummariesSimple from './MockIssueSummariesSimple';
 import MockWorklogsSimple from './MockWorklogsSimple';
 

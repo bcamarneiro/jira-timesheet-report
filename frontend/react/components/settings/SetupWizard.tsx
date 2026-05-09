@@ -1,11 +1,11 @@
 import type React from 'react';
-import { ProgressBar } from '../ui/ProgressBar';
-import { Button } from '../ui/Button';
 import type {
 	SettingsSetupModel,
 	SetupStatus,
 	SetupStepModel,
 } from '../../utils/settingsSetup';
+import { Button } from '../ui/Button';
+import { ProgressBar } from '../ui/ProgressBar';
 import * as styles from './SetupWizard.module.css';
 
 type Props = {

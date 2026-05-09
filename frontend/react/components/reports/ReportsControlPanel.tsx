@@ -1,12 +1,12 @@
 import type React from 'react';
 import { useState } from 'react';
 import type { ReportPreset } from '../../../stores/useUserDataStore';
-import type { FreshnessTone } from '../../utils/dataFreshness';
 import type {
 	ReportsSortDirection,
 	ReportsSortField,
 	ReportsViewMode,
 } from '../../hooks/useReportsURLState';
+import type { FreshnessTone } from '../../utils/dataFreshness';
 import { Button } from '../ui/Button';
 import * as styles from './ReportsControlPanel.module.css';
 

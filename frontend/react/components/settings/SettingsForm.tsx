@@ -13,11 +13,11 @@ import {
 	parseSettingsBackup,
 } from '../../utils/settingsBackup';
 import { Button } from '../ui/Button';
+import { toast } from '../ui/Toast';
 import { AllowedUsersInput } from './AllowedUsersInput';
 import { CalendarMappingsEditor } from './CalendarMappingsEditor';
-import { TeamAbsenceAssignmentsEditor } from './TeamAbsenceAssignmentsEditor';
-import { toast } from '../ui/Toast';
 import * as styles from './SettingsForm.module.css';
+import { TeamAbsenceAssignmentsEditor } from './TeamAbsenceAssignmentsEditor';
 
 type FeedEntry = {
 	feed: CalendarFeed;

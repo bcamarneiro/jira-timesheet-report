@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { Config } from './useConfigStore';
 import { getPersistStorage } from './persistStorage';
+import type { Config } from './useConfigStore';
 
 interface UIPreferences {
 	hideWeekends: boolean;

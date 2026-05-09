@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
+import type { WorklogFetchProgress } from '../../../types/worklogLoading';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { buildTeamSummaries } from '../utils/teamReports';
 import { useAbsenceDaysByUser } from './useAbsenceDays';
 import { useMonthWorklogs } from './useMonthWorklogs';
-import type { WorklogFetchProgress } from '../../../types/worklogLoading';
 
 export function useTeamData(
 	weekStart: string,

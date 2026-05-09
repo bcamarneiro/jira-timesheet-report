@@ -1,7 +1,7 @@
-import { logger } from '../react/utils/logger';
 import type { EnrichedJiraWorklog, JiraUser } from '../../types/jira';
-import type { Config } from '../stores/useConfigStore';
 import type { WorklogFetchProgress } from '../../types/worklogLoading';
+import { logger } from '../react/utils/logger';
+import type { Config } from '../stores/useConfigStore';
 
 export type WorklogAuthor = JiraUser;
 export type WorklogItem = EnrichedJiraWorklog;

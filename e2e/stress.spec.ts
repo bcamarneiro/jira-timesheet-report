@@ -100,9 +100,15 @@ test.describe('Reports — chaotic interaction', () => {
 	test('navigating away mid-load does not throw', async ({ page }) => {
 		await goReports(page);
 		// Don't wait for load — go straight to dashboard.
-		await page.getByRole('navigation').getByRole('link', { name: 'Dashboard' }).click();
+		await page
+			.getByRole('navigation')
+			.getByRole('link', { name: 'Dashboard' })
+			.click();
 		await expect(page).toHaveURL(/dashboard/);
-		await page.getByRole('navigation').getByRole('link', { name: 'Reports' }).click();
+		await page
+			.getByRole('navigation')
+			.getByRole('link', { name: 'Reports' })
+			.click();
 		await expect(page).toHaveURL(/reports/);
 		await ensureMonthly(page);
 		await expect(
@@ -147,7 +153,9 @@ test.describe('Reports — chaotic interaction', () => {
 				.locator('[class*="monthTotalValue"]')
 				.allTextContents();
 			for (const t of totalsTexts) {
-				const match = t.match(/([0-9]+(?:\.[0-9]+)?)h\s*\/\s*([0-9]+(?:\.[0-9]+)?)h/);
+				const match = t.match(
+					/([0-9]+(?:\.[0-9]+)?)h\s*\/\s*([0-9]+(?:\.[0-9]+)?)h/,
+				);
 				if (!match) continue;
 				const total = Number(match[1]);
 				const target = Number(match[2]);
@@ -168,7 +176,10 @@ test.describe('Dashboard — interaction sanity', () => {
 		await page.goto('/dashboard');
 		await page.waitForLoadState('networkidle');
 
-		const prev = page.getByRole('button', { name: 'Previous week', exact: true });
+		const prev = page.getByRole('button', {
+			name: 'Previous week',
+			exact: true,
+		});
 		const next = page.getByRole('button', { name: 'Next week', exact: true });
 		await expect(prev).toBeVisible();
 		await expect(next).toBeVisible();

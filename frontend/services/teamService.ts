@@ -1,5 +1,5 @@
-import type { Config } from '../stores/useConfigStore';
 import { toLocalDateString } from '../react/utils/date';
+import type { Config } from '../stores/useConfigStore';
 
 export interface TeamMemberSummary {
 	email: string;

@@ -1,6 +1,6 @@
 import type React from 'react';
-import { Button } from '../ui/Button';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
+import { Button } from '../ui/Button';
 import * as styles from './PWAInstallCard.module.css';
 
 export const PWAInstallCard: React.FC = () => {

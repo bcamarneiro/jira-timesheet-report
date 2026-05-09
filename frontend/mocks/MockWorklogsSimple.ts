@@ -1,5 +1,5 @@
-import { logger } from '../react/utils/logger';
 import type { JiraWorklog } from '../../types/JiraWorklog';
+import { logger } from '../react/utils/logger';
 
 /**
  * Simplified mock worklogs for October 2025 to test the bug

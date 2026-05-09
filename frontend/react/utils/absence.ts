@@ -1,8 +1,8 @@
+import type { AbsenceKind } from '../../../types/absence';
 import type {
 	AbsenceDay,
 	UserAbsenceDays,
 } from '../../services/absenceService';
-import type { AbsenceKind } from '../../../types/absence';
 import { isDateInMonth, parseIsoDateLocal } from './date';
 
 function isWeekday(dateStr: string): boolean {

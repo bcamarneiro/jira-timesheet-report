@@ -1,7 +1,7 @@
 import type React from 'react';
 import type { AbsenceKind } from '../../../../types/absence';
-import { formatHours } from '../../utils/format';
 import { getAbsenceKindLabel } from '../../utils/absence';
+import { formatHours } from '../../utils/format';
 import * as styles from './DaySummary.module.css';
 
 type Props = {

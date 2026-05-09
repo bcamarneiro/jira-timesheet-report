@@ -27,9 +27,7 @@ async function openMonthlyReports(page: Page) {
 }
 
 async function setMonth(page: Page, label: RegExp) {
-	const monthLabel = page.locator(
-		'[class*="MonthNavigator"] [class*="label"]',
-	);
+	const monthLabel = page.locator('[class*="MonthNavigator"] [class*="label"]');
 	for (let i = 0; i < 24; i++) {
 		const text = await monthLabel.textContent();
 		if (text && label.test(text)) return;
@@ -78,7 +76,9 @@ test.describe('Backdated worklog UX', () => {
 		await expect(sarah).toBeVisible();
 		const ghostHeaders = sarah.getByText(/Reconciled later \(\d+\)/i);
 		await expect(ghostHeaders.first()).toBeVisible();
-		const ghostTexts = await sarah.getByText(/logged 2025-10/).allTextContents();
+		const ghostTexts = await sarah
+			.getByText(/logged 2025-10/)
+			.allTextContents();
 		expect(ghostTexts.length).toBeGreaterThanOrEqual(1);
 	});
 
@@ -87,9 +87,7 @@ test.describe('Backdated worklog UX', () => {
 	}) => {
 		await setMonth(page, /October\s+2025/);
 		const sarah = userCard(page, 'Sarah Johnson');
-		const monthTotal = sarah
-			.locator('[class*="monthTotalValue"]')
-			.first();
+		const monthTotal = sarah.locator('[class*="monthTotalValue"]').first();
 		const octText = (await monthTotal.textContent()) ?? '';
 		const octHoursMatch = octText.match(/([0-9]+(?:\.[0-9]+)?)h/);
 		expect(octHoursMatch).not.toBeNull();
@@ -182,7 +180,9 @@ test.describe('Backdated worklog UX', () => {
 			'[class*="MonthNavigator"] [class*="label"]',
 		);
 		await expect(monthLabel).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Next month' })).toBeEnabled();
+		await expect(
+			page.getByRole('button', { name: 'Next month' }),
+		).toBeEnabled();
 	});
 
 	test('keyboard activates month navigation', async ({ page }) => {
@@ -213,7 +213,9 @@ test.describe('Backdated worklog UX', () => {
 		const firstGhost = ghostRows.first();
 		// The cell that contains this ghost is the closest ancestor with a
 		// "dayCell" class (CSS module).
-		const dayCell = firstGhost.locator('xpath=ancestor::*[contains(@class,"dayCell")][1]');
+		const dayCell = firstGhost.locator(
+			'xpath=ancestor::*[contains(@class,"dayCell")][1]',
+		);
 		const cellText = (await dayCell.textContent()) ?? '';
 		// Ghosts must NOT contribute hours to the day. The cell can still show
 		// missing-hours warnings, but no positive hour total greater than 0.
@@ -232,9 +234,7 @@ test.describe('Backdated worklog UX', () => {
 		await nav.getByRole('link', { name: 'Settings' }).click();
 		await expect(page).toHaveURL(/settings/);
 		await page.goBack();
-		await expect(
-			page.getByRole('button', { name: /^Monthly$/ }),
-		).toBeVisible();
+		await expect(page.getByRole('button', { name: /^Monthly$/ })).toBeVisible();
 	});
 });
 

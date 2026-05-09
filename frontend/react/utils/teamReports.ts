@@ -1,6 +1,6 @@
+import type { UserAbsenceDays } from '../../services/absenceService';
 import type { WorklogItem } from '../../services/monthWorklogService';
 import type { TeamMemberSummary } from '../../services/teamService';
-import type { UserAbsenceDays } from '../../services/absenceService';
 import { countAbsenceWorkdaysInRange } from './absence';
 import { addDaysToIsoDate, toLocalDateString } from './date';
 
