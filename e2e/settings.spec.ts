@@ -60,9 +60,12 @@ test.describe('Settings Page', () => {
 		}
 
 		const parsed = JSON.parse(content);
-		expect(parsed.version).toBe(2);
+		// Full-backup format bumped to v3 when userData (favorites/templates/
+		// commentPresets/dayNotes/reportPresets) was added to the payload.
+		expect(parsed.version).toBe(3);
 		expect(parsed.config.jiraHost).toBe('mock.atlassian.net');
 		expect(Array.isArray(parsed.calendarMappings)).toBe(true);
+		expect(parsed.userData).toBeDefined();
 	});
 
 	test('imports settings backup into the form', async ({ page }) => {
