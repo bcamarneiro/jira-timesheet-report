@@ -30,12 +30,149 @@ describe('settingsBackup', () => {
 			{ pattern: 'Standup', issueKey: 'PROJ-1' },
 		]);
 
-		expect(backup.version).toBe(2);
+		expect(backup.version).toBe(3);
 		expect(backup.kind).toBe('full-backup');
 		expect(backup.config).toEqual(defaultConfig);
 		expect(backup.calendarMappings).toEqual([
 			{ pattern: 'Standup', issueKey: 'PROJ-1' },
 		]);
+		expect(backup.userData).toBeUndefined();
+	});
+
+	it('round-trips userData fields when provided', () => {
+		const userData = {
+			favorites: [
+				{
+					issueKey: 'PROJ-1',
+					issueSummary: 'Daily standup',
+					defaultTimeSpent: '1h',
+					defaultSeconds: 3600,
+				},
+			],
+			templates: [
+				{
+					id: 'tpl-1',
+					issueKey: 'PROJ-2',
+					issueSummary: 'Standup',
+					timeSpent: '15m',
+					seconds: 900,
+					comment: 'Daily',
+					daysOfWeek: [1, 2, 3, 4, 5],
+					enabled: true,
+				},
+			],
+			commentPresets: ['Reviewed PRs', 'Pair programming'],
+			dayNotes: { '2025-10-15': 'Sick day' },
+			reportPresets: [
+				{
+					id: 'preset-1',
+					label: 'My team',
+					viewMode: 'weekly' as const,
+					searchQuery: '',
+					onlyAttentionNeeded: false,
+					managerMode: true,
+					trendWeeks: 6,
+					sortField: 'name' as const,
+					sortDirection: 'asc' as const,
+					selectedUser: '',
+				},
+			],
+		};
+		const backup = createSettingsBackup(
+			defaultConfig,
+			[{ pattern: 'Standup', issueKey: 'PROJ-1' }],
+			userData,
+		);
+
+		expect(backup.userData).toEqual(userData);
+
+		const parsed = parseSettingsBackup(JSON.stringify(backup), defaultConfig);
+		expect(parsed.userData).toBeDefined();
+		expect(parsed.userData?.favorites).toEqual(userData.favorites);
+		expect(parsed.userData?.templates).toEqual(userData.templates);
+		expect(parsed.userData?.commentPresets).toEqual(userData.commentPresets);
+		expect(parsed.userData?.dayNotes).toEqual(userData.dayNotes);
+		expect(parsed.userData?.reportPresets).toEqual(userData.reportPresets);
+	});
+
+	it('parses v2 backups (no userData) without throwing', () => {
+		const v2Backup = JSON.stringify({
+			version: 2,
+			kind: 'full-backup',
+			exportedAt: new Date().toISOString(),
+			config: defaultConfig,
+			calendarMappings: [],
+		});
+		const parsed = parseSettingsBackup(v2Backup, defaultConfig);
+		expect(parsed.userData).toBeUndefined();
+		expect(parsed.kind).toBe('full-backup');
+	});
+
+	it('silently drops malformed userData entries', () => {
+		const raw = JSON.stringify({
+			version: 3,
+			kind: 'full-backup',
+			exportedAt: new Date().toISOString(),
+			config: defaultConfig,
+			calendarMappings: [],
+			userData: {
+				favorites: [
+					null,
+					{ defaultTimeSpent: '1h' },
+					{
+						issueKey: 'PROJ-1',
+						defaultTimeSpent: '1h',
+						defaultSeconds: 3600,
+					},
+				],
+				templates: [
+					'not-an-object',
+					{ id: '', issueKey: 'PROJ-2' },
+					{
+						id: 'tpl-1',
+						issueKey: 'PROJ-2',
+						timeSpent: '15m',
+						seconds: 900,
+						comment: '',
+						daysOfWeek: [1, 2, 99, -1],
+						enabled: true,
+					},
+				],
+				commentPresets: ['  ', 42, 'Useful'],
+				dayNotes: {
+					'2025-10-15': 'Sick',
+					'': 'ignored',
+					'2025-10-16': 99,
+				},
+				reportPresets: [
+					{},
+					{
+						id: 'p1',
+						label: 'P1',
+						viewMode: 'weird',
+						searchQuery: '',
+						onlyAttentionNeeded: false,
+						managerMode: false,
+						trendWeeks: 'bad',
+						sortField: 'bad',
+						sortDirection: 'bad',
+						selectedUser: '',
+					},
+				],
+			},
+		});
+		const parsed = parseSettingsBackup(raw, defaultConfig);
+		expect(parsed.userData?.favorites).toHaveLength(1);
+		expect(parsed.userData?.favorites[0].issueKey).toBe('PROJ-1');
+		expect(parsed.userData?.templates).toHaveLength(1);
+		expect(parsed.userData?.templates[0].daysOfWeek).toEqual([1, 2]);
+		expect(parsed.userData?.commentPresets).toEqual(['Useful']);
+		expect(parsed.userData?.dayNotes).toEqual({ '2025-10-15': 'Sick' });
+		expect(parsed.userData?.reportPresets).toHaveLength(1);
+		expect(parsed.userData?.reportPresets[0].viewMode).toBe('weekly');
+		expect(parsed.userData?.reportPresets[0].sortField).toBe('name');
+		expect(parsed.userData?.reportPresets[0].sortDirection).toBe('asc');
+		expect(parsed.userData?.reportPresets[0].trendWeeks).toBe(4);
 	});
 
 	it('parses and normalizes imported backups', () => {

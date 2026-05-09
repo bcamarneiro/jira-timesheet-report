@@ -4,13 +4,13 @@ import type { CalendarFeed } from '../../../stores/useConfigStore';
 import { useConfigStore } from '../../../stores/useConfigStore';
 import { useSettingsFormStore } from '../../../stores/useSettingsFormStore';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
+import { SETTINGS_SECTION_IDS } from '../../constants/settingsSections';
+import { downloadAsFile } from '../../utils/downloadFile';
 import {
 	createSettingsBackup,
 	createSettingsSharePack,
 	parseSettingsBackup,
 } from '../../utils/settingsBackup';
-import { SETTINGS_SECTION_IDS } from '../../constants/settingsSections';
-import { downloadAsFile } from '../../utils/downloadFile';
 import { Button } from '../ui/Button';
 import { toast } from '../ui/Toast';
 import * as styles from './SettingsForm.module.css';
@@ -105,7 +105,14 @@ export const SettingsForm: React.FC = () => {
 	};
 
 	const handleExportSettings = () => {
-		const backup = createSettingsBackup(savedConfig, calendarMappings);
+		const userDataState = useUserDataStore.getState();
+		const backup = createSettingsBackup(savedConfig, calendarMappings, {
+			favorites: userDataState.favorites,
+			templates: userDataState.templates,
+			commentPresets: userDataState.commentPresets,
+			dayNotes: userDataState.dayNotes,
+			reportPresets: userDataState.reportPresets,
+		});
 		downloadAsFile(
 			`${JSON.stringify(backup, null, 2)}\n`,
 			'jira-timesheet-settings.json',
@@ -139,6 +146,15 @@ export const SettingsForm: React.FC = () => {
 			const imported = parseSettingsBackup(content, savedConfig);
 			replaceFormData(imported.config);
 			replaceCalendarMappings(imported.calendarMappings);
+			if (imported.userData) {
+				useUserDataStore.setState({
+					favorites: imported.userData.favorites,
+					templates: imported.userData.templates,
+					commentPresets: imported.userData.commentPresets,
+					dayNotes: imported.userData.dayNotes,
+					reportPresets: imported.userData.reportPresets,
+				});
+			}
 			toast.success(
 				imported.kind === 'share-pack'
 					? 'Share pack imported into the form'
