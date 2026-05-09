@@ -1,17 +1,12 @@
 import { create } from 'zustand';
 import {
 	addDaysToIsoDate,
+	getMondayOfWeek,
 	parseIsoDateLocal,
 	toLocalDateString,
 } from '../react/utils/date';
 
-function getMonday(date: Date): string {
-	const d = new Date(date);
-	const day = d.getDay();
-	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-	d.setDate(diff);
-	return toLocalDateString(d);
-}
+const getMonday = getMondayOfWeek;
 
 function getSunday(monday: string): string {
 	return addDaysToIsoDate(monday, 6);

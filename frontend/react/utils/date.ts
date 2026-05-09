@@ -125,6 +125,19 @@ export function withLocalOffset(localDateTime: string): string {
 	return `${base}${sign}${hh}${mm}`;
 }
 
+/**
+ * Compute the Monday of the week that contains `date`, in local TZ.
+ * Single source of truth shared by useDashboardStore and useTeamStore so
+ * any future change (e.g. Sunday-first week) only needs one edit.
+ */
+export function getMondayOfWeek(date: Date): string {
+	const d = new Date(date);
+	const day = d.getDay();
+	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+	d.setDate(diff);
+	return toLocalDateString(d);
+}
+
 export function formatDateTimeLocalValue(date: Date): string {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, '0');

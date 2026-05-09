@@ -3,6 +3,7 @@ import type { DaySummary, WorklogSuggestion } from '../../types/Suggestion';
 import type { WorklogFetchProgress } from '../../types/worklogLoading';
 import {
 	addDaysToIsoDate,
+	getMondayOfWeek,
 	parseIsoDateLocal,
 	toLocalDateString,
 } from '../react/utils/date';
@@ -22,13 +23,7 @@ function formatTimeSpent(seconds: number): string {
 	return `${Math.round(seconds / 60)}m`;
 }
 
-function getMonday(date: Date): string {
-	const d = new Date(date);
-	const day = d.getDay();
-	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-	d.setDate(diff);
-	return toLocalDateString(d);
-}
+const getMonday = getMondayOfWeek;
 
 function getSunday(monday: string): string {
 	return addDaysToIsoDate(monday, 6);
