@@ -65,6 +65,30 @@ export function toLocalDateString(dateInput: string | Date): string {
 	return `${year}-${month}-${day}`;
 }
 
+/**
+ * Canonical "what day did this happen for the author?" extractor.
+ *
+ * For ISO strings with explicit TZ offset (e.g. "2025-10-05T23:30:00.000-0300"),
+ * we slice the wall-clock prefix so the day matches what the author saw at
+ * their desk — independent of viewer TZ. For inputs without TZ info we
+ * fall back to local-TZ conversion via {@link toLocalDateString}.
+ *
+ * Returns an empty string for `undefined` or unparseable input.
+ */
+export function wallClockDay(input: string | Date | undefined): string {
+	if (input === undefined || input === null) return '';
+	if (typeof input === 'string') {
+		if (input.length === 0) return '';
+		const slice = input.slice(0, 10);
+		if (/^\d{4}-\d{2}-\d{2}$/.test(slice)) return slice;
+		const parsed = new Date(input);
+		if (Number.isNaN(parsed.getTime())) return '';
+		return toLocalDateString(parsed);
+	}
+	if (Number.isNaN(input.getTime())) return '';
+	return toLocalDateString(input);
+}
+
 export function parseIsoDateLocal(dateStr: string): Date {
 	const [year, month, day] = dateStr.split('-').map(Number);
 	return new Date(year, month - 1, day);

@@ -9,6 +9,7 @@ import {
 	monthLabel,
 	parseIsoDateLocal,
 	toLocalDateString,
+	wallClockDay,
 } from '../date';
 
 describe('getMonthStartWeekday', () => {
@@ -158,6 +159,36 @@ describe('addDaysToIsoDate', () => {
 
 	it('should roll into the previous month correctly', () => {
 		expect(addDaysToIsoDate('2025-03-01', -1)).toBe('2025-02-28');
+	});
+});
+
+describe('wallClockDay', () => {
+	it('preserves wall-clock day for ISO strings with explicit TZ offset', () => {
+		// Author's wall clock: 2025-10-05 23:30 in -0300 (e.g. São Paulo).
+		// In UTC this is 2025-10-06T02:30; in viewer-local it would shift again.
+		// We slice the prefix so the day matches what the author saw.
+		expect(wallClockDay('2025-10-05T23:30:00.000-0300')).toBe('2025-10-05');
+	});
+
+	it('returns YYYY-MM-DD inputs unchanged', () => {
+		expect(wallClockDay('2025-10-05')).toBe('2025-10-05');
+	});
+
+	it('falls back to local-TZ conversion for Date inputs', () => {
+		const date = new Date(2025, 9, 15);
+		expect(wallClockDay(date)).toBe('2025-10-15');
+	});
+
+	it('returns empty string for undefined input', () => {
+		expect(wallClockDay(undefined)).toBe('');
+	});
+
+	it('returns empty string for empty string input', () => {
+		expect(wallClockDay('')).toBe('');
+	});
+
+	it('returns empty string for unparseable input', () => {
+		expect(wallClockDay('not-a-date')).toBe('');
 	});
 });
 
