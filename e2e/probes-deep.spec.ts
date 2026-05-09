@@ -77,12 +77,27 @@ test.describe('Reports URL state probe', () => {
 			.waitFor({ state: 'visible', timeout: 15000 });
 
 		const focus = page.getByLabel('Monthly focus');
-		const selected = await focus.evaluate(
-			(el) => (el as HTMLSelectElement).value,
-		);
-		// Either the focus is on Sarah, or the URL state is silently dropped —
-		// document whichever is true today.
-		expect(typeof selected).toBe('string');
+		const selectedText = await focus.evaluate((el) => {
+			const select = el as HTMLSelectElement;
+			const option = select.options[select.selectedIndex];
+			return option?.text ?? '';
+		});
+		expect(selectedText).toContain('Sarah Johnson');
+
+		await page.reload();
+		await page.waitForLoadState('networkidle');
+		await page
+			.locator('[class*="weekdayLabel"]')
+			.first()
+			.waitFor({ state: 'visible', timeout: 15000 });
+
+		const focusAfterReload = page.getByLabel('Monthly focus');
+		const selectedTextAfterReload = await focusAfterReload.evaluate((el) => {
+			const select = el as HTMLSelectElement;
+			const option = select.options[select.selectedIndex];
+			return option?.text ?? '';
+		});
+		expect(selectedTextAfterReload).toContain('Sarah Johnson');
 	});
 });
 
