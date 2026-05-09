@@ -1,4 +1,5 @@
 import { logger } from '../react/utils/logger';
+import { classifyWorklog } from '../react/utils/worklogClassifier';
 
 export interface WorklogEntry {
 	date: string;
@@ -95,8 +96,8 @@ export async function fetchWeekWorklogs(
 
 		for (const wl of worklogs) {
 			if (wl.author?.emailAddress?.toLowerCase() !== email) continue;
-			const day = wl.started.slice(0, 10);
-			if (day >= weekStart && day <= weekEnd) {
+			const day = classifyWorklog(wl).loggedOn;
+			if (day && day >= weekStart && day <= weekEnd) {
 				entries.push({
 					date: day,
 					issueKey: issue.key,
