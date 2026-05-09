@@ -106,4 +106,26 @@ describe('deriveMonthlyReportState', () => {
 		expect(state.visibleEntries).toHaveLength(1);
 		expect(state.visibleEntries[0]?.[0]).toBe('Alex Thompson');
 	});
+
+	it('matches allowedUsers regardless of email casing on either side', () => {
+		// Pin the contract: a worklog whose author.emailAddress is mixed-case
+		// must still match an allowedUsers config in lowercase.
+		const state = deriveMonthlyReportState(
+			[
+				createWorklog(
+					'Bruno Camarneiro',
+					'Bruno@Example.com',
+					'2025-10-15T09:00:00.000-0300',
+					'1',
+					'PROJ-100',
+					'First issue',
+				),
+			],
+			'',
+			'bruno@example.com',
+		);
+
+		expect(state.users).toEqual(['Bruno Camarneiro']);
+		expect(state.grouped['Bruno Camarneiro']?.['2025-10-15']).toHaveLength(1);
+	});
 });

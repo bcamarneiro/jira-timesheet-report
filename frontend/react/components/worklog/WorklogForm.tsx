@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useId, useState } from 'react';
-import { formatDateTimeLocalValue } from '../../utils/date';
+import { formatDateTimeLocalValue, withLocalOffset } from '../../utils/date';
 import { isValidTimeSpentFormat } from '../../utils/timeSpent';
 import { Button } from '../ui/Button';
 import { CommentPresets } from './CommentPresets';
@@ -71,7 +71,7 @@ export const WorklogForm: React.FC<Props> = ({
 				issueKey: issueKey.trim().toUpperCase(),
 				timeSpent: timeSpent.trim(),
 				comment: comment.trim(),
-				started,
+				started: withLocalOffset(started),
 			});
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to save worklog');

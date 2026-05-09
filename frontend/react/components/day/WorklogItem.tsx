@@ -39,6 +39,13 @@ export const WorklogItem: React.FC<Props> = ({
 	]
 		.filter(Boolean)
 		.join('\n');
+	// Dedup: a single icon conveys both retroactive status and any extra
+	// info (issue title / comment). When backdated, use ⚠️ and roll the
+	// detail into its tooltip; otherwise show 🛈 only when there is detail.
+	const showIcon = isRetroactive || !!issueTitle || !!comment;
+	const iconGlyph = isRetroactive ? '⚠️' : '🛈';
+	const iconClass = isRetroactive ? styles.retroactiveIcon : styles.tooltipIcon;
+	const iconTitle = tooltip || retroactiveLabel;
 
 	return (
 		<div className={styles.container}>
@@ -54,14 +61,9 @@ export const WorklogItem: React.FC<Props> = ({
 				>
 					{keyOrId}
 				</a>
-				{isRetroactive && (
-					<span title={retroactiveLabel} className={styles.retroactiveIcon}>
-						⚠️
-					</span>
-				)}
-				{(issueTitle || comment) && (
-					<span title={tooltip} className={styles.tooltipIcon}>
-						🛈
+				{showIcon && (
+					<span title={iconTitle} className={iconClass}>
+						{iconGlyph}
 					</span>
 				)}
 			</div>

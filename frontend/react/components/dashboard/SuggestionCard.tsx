@@ -4,6 +4,7 @@ import { useConfigStore } from '../../../stores/useConfigStore';
 import { useDashboardStore } from '../../../stores/useDashboardStore';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
 import { useWorklogOperations } from '../../hooks/useWorklogOperations';
+import { withLocalOffset } from '../../utils/date';
 import { Modal } from '../ui/Modal';
 import { toast } from '../ui/Toast';
 import { WorklogForm } from '../worklog/WorklogForm';
@@ -90,7 +91,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 				issueKey: suggestion.issueKey,
 				timeSpent: suggestion.suggestedTimeSpent,
 				comment: '',
-				started: `${suggestion.date}T09:00`,
+				started: withLocalOffset(`${suggestion.date}T09:00`),
 			});
 			markLogged(suggestion.id);
 			const worklogId = worklog.id;

@@ -10,6 +10,7 @@ import {
 	parseIsoDateLocal,
 	toLocalDateString,
 	wallClockDay,
+	withLocalOffset,
 } from '../date';
 
 describe('getMonthStartWeekday', () => {
@@ -197,5 +198,32 @@ describe('formatDateTimeLocalValue', () => {
 		expect(formatDateTimeLocalValue(new Date(2025, 9, 15, 9, 30))).toBe(
 			'2025-10-15T09:30',
 		);
+	});
+});
+
+describe('withLocalOffset', () => {
+	it('appends a TZ offset matching the runner local TZ', () => {
+		const result = withLocalOffset('2025-10-05T09:00');
+		// Format: YYYY-MM-DDTHH:MM:00.000±HHMM
+		expect(result).toMatch(/^2025-10-05T09:00:00\.000[+-]\d{4}$/);
+		// Offset must be consistent with the runner's TZ.
+		const expectedMinutes = -new Date('2025-10-05T09:00').getTimezoneOffset();
+		const sign = expectedMinutes >= 0 ? '+' : '-';
+		const abs = Math.abs(expectedMinutes);
+		const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+		const mm = String(abs % 60).padStart(2, '0');
+		expect(result.endsWith(`${sign}${hh}${mm}`)).toBe(true);
+	});
+
+	it('is idempotent for input that already carries an offset', () => {
+		const already = '2025-10-05T09:00:00.000+0200';
+		expect(withLocalOffset(already)).toBe(already);
+		const negative = '2025-10-05T09:00:00.000-0500';
+		expect(withLocalOffset(negative)).toBe(negative);
+	});
+
+	it('preserves the local minute and date components', () => {
+		const result = withLocalOffset('2025-12-31T23:45');
+		expect(result.startsWith('2025-12-31T23:45:00.000')).toBe(true);
 	});
 });
