@@ -3,6 +3,7 @@ import type {
 	RescueTimeDaySummary,
 	WorklogSuggestion,
 } from '../../types/Suggestion';
+import { addDaysToIsoDate, parseIsoDateLocal } from '../react/utils/date';
 import type {
 	FavoriteIssue,
 	RecurringTemplate,
@@ -36,11 +37,8 @@ export interface MergeSuggestionsInput {
  */
 function getWeekDates(weekStart: string): string[] {
 	const dates: string[] = [];
-	const start = new Date(weekStart);
 	for (let i = 0; i < 7; i++) {
-		const d = new Date(start);
-		d.setDate(start.getDate() + i);
-		dates.push(d.toISOString().slice(0, 10));
+		dates.push(addDaysToIsoDate(weekStart, i));
 	}
 	return dates;
 }
@@ -298,7 +296,7 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 
 	// Inject favorite suggestions for each weekday
 	for (const date of dates) {
-		const d = new Date(date);
+		const d = parseIsoDateLocal(date);
 		const dayOfWeek = d.getDay();
 		const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 		if (isWeekend) continue;
@@ -346,7 +344,7 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 
 	// Build day summaries
 	return dates.map((date) => {
-		const d = new Date(date);
+		const d = parseIsoDateLocal(date);
 		const dayOfWeek = d.getDay();
 		const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 		const loggedSeconds = loggedByDay.get(date) || 0;

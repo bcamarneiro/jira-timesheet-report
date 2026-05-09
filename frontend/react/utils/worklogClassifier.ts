@@ -1,4 +1,5 @@
 import type { JiraWorklog } from '../../../types/jira';
+import { wallClockDay } from './date';
 
 export type BackdateSource = 'none' | 'comment' | 'jira-native';
 
@@ -41,12 +42,7 @@ function extractCommentText(
 }
 
 function toIsoDay(input: string | undefined): string {
-	if (!input) return '';
-	const slice = input.slice(0, 10);
-	if (/^\d{4}-\d{2}-\d{2}$/.test(slice)) return slice;
-	const parsed = new Date(input);
-	if (Number.isNaN(parsed.getTime())) return '';
-	return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+	return wallClockDay(input);
 }
 
 function parseCommentMarker(

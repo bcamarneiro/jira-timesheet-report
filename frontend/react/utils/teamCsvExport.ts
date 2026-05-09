@@ -1,4 +1,5 @@
 import type { TeamMemberSummary } from '../../services/teamService';
+import { parseIsoDateLocal } from './date';
 
 const SEP = ';';
 
@@ -14,7 +15,7 @@ function csvEscape(value: string): string {
 }
 
 function formatDayLabel(dateStr: string): string {
-	const d = new Date(dateStr);
+	const d = parseIsoDateLocal(dateStr);
 	const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 	return `${days[d.getDay()]} ${d.getDate()}`;
 }

@@ -135,6 +135,60 @@ describe('distributeSuggestionsToFillGap', () => {
 	});
 });
 
+describe('mergeSuggestions: week date generation', () => {
+	it('produces 7 consecutive YYYY-MM-DD strings starting at weekStart, regardless of viewer TZ', () => {
+		// Regression: the previous implementation used
+		// `new Date(weekStart).toISOString().slice(0, 10)`, which interprets
+		// the YYYY-MM-DD string as UTC midnight and then re-serialises in UTC.
+		// In viewers west of UTC this could shift the first day backward by
+		// one (e.g. "2025-10-06" -> "2025-10-05"). With the local-TZ helper
+		// the result is stable.
+		const result = mergeSuggestions({
+			weekStart: '2025-10-06',
+			jiraSuggestions: [],
+			gitlabSuggestions: [],
+			calendarSuggestions: [],
+			rescueTimeData: new Map(),
+			existingWorklogs: [],
+		});
+
+		expect(result.map((d) => d.date)).toEqual([
+			'2025-10-06',
+			'2025-10-07',
+			'2025-10-08',
+			'2025-10-09',
+			'2025-10-10',
+			'2025-10-11',
+			'2025-10-12',
+		]);
+	});
+
+	it('handles a DST spring-forward boundary without dropping or duplicating a day', () => {
+		// 2026-03-08 is the US DST spring-forward Sunday. A naive
+		// addDays-via-Date.setDate around this boundary can yield a duplicate
+		// or skipped day in some TZs; addDaysToIsoDate parses local and
+		// re-formats so each step is exactly one calendar day.
+		const result = mergeSuggestions({
+			weekStart: '2026-03-02',
+			jiraSuggestions: [],
+			gitlabSuggestions: [],
+			calendarSuggestions: [],
+			rescueTimeData: new Map(),
+			existingWorklogs: [],
+		});
+
+		expect(result.map((d) => d.date)).toEqual([
+			'2026-03-02',
+			'2026-03-03',
+			'2026-03-04',
+			'2026-03-05',
+			'2026-03-06',
+			'2026-03-07',
+			'2026-03-08',
+		]);
+	});
+});
+
 describe('mergeSuggestions', () => {
 	it('sets zero target on attributed time-off weekdays', () => {
 		const result = mergeSuggestions({
