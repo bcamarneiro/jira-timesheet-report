@@ -459,7 +459,9 @@ export const TimesheetPage: React.FC = () => {
 	};
 
 	const handleExportTeamCsv = () => {
-		const csv = buildTeamCsv(sortedMembers, weekdays);
+		const csv = buildTeamCsv(sortedMembers, weekdays, {
+			jiraHost: config.jiraHost,
+		});
 		const filename = `team-report-${weekStart}.csv`;
 		downloadAsFile(csv, filename, 'text/csv;charset=utf-8');
 		toast.success('Weekly report exported');

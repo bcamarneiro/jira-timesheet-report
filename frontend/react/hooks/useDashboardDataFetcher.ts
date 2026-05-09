@@ -26,6 +26,8 @@ interface WorklogEntry {
 	issueKey?: string;
 	issueSummary?: string;
 	timeSpentSeconds: number;
+	created?: string;
+	comment?: string;
 }
 
 /** Derive WorklogEntry[] from the shared month query, filtered to a week range */
@@ -47,6 +49,8 @@ function deriveWeekWorklogs(
 				issueKey: wl.issue.key,
 				issueSummary: wl.issue.fields.summary as string,
 				timeSpentSeconds: wl.timeSpentSeconds ?? 0,
+				created: wl.created,
+				comment: typeof wl.comment === 'string' ? wl.comment : undefined,
 			});
 		}
 	}

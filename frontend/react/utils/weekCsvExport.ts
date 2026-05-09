@@ -1,5 +1,6 @@
 import type { WeekWorklogEntry } from '../../stores/useDashboardStore';
 import { parseIsoDateLocal } from './date';
+import { classifyWorklog } from './worklogClassifier';
 
 const SEP = ';';
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -24,10 +25,36 @@ function formatDuration(seconds: number): string {
 	return `${h}h ${m}m`;
 }
 
+/**
+ * Provenance metadata appended as a `# generated=…` footer line, mirroring
+ * `buildCsvForUser`/`buildSummaryCsv` conventions for finance-grade exports.
+ */
+export interface WeeklyCsvProvenance {
+	jiraHost?: string;
+	sourceVersion?: string;
+	generatedAt?: string;
+}
+
+function classifyEntry(entry: WeekWorklogEntry): {
+	isBackdated: boolean;
+	daysLate: number;
+} {
+	// `entry.date` is already the classifier-bucketed `loggedOn` for the
+	// dashboard. We synthesise a shape compatible with the classifier so the
+	// returned isBackdated/daysLate match what the rest of the app reports.
+	const c = classifyWorklog({
+		started: `${entry.date}T00:00:00`,
+		created: entry.created,
+		comment: entry.comment,
+	});
+	return { isBackdated: c.isBackdated, daysLate: c.daysLate };
+}
+
 export function generateWeeklyCsv(
 	weekStart: string,
 	weekEnd: string,
 	worklogs: WeekWorklogEntry[],
+	provenance?: WeeklyCsvProvenance,
 ): string {
 	const headers = [
 		'Date',
@@ -36,6 +63,8 @@ export function generateWeeklyCsv(
 		'Issue Summary',
 		'Time Spent (hours)',
 		'Time Spent (formatted)',
+		'IsBackdated',
+		'DaysLate',
 	].join(SEP);
 	const metadata = [`Week Range`, `${weekStart} to ${weekEnd}`].join(SEP);
 
@@ -51,6 +80,7 @@ export function generateWeeklyCsv(
 		const dayLabel = DAY_LABELS[d.getDay()];
 		const hours = entry.timeSpentSeconds / 3600;
 		const formatted = formatDuration(entry.timeSpentSeconds);
+		const { isBackdated, daysLate } = classifyEntry(entry);
 
 		return [
 			entry.date,
@@ -59,6 +89,8 @@ export function generateWeeklyCsv(
 			csvEscape(entry.issueSummary ?? ''),
 			hours.toFixed(2),
 			formatted,
+			isBackdated ? 'true' : 'false',
+			String(daysLate),
 		].join(SEP);
 	});
 
@@ -73,7 +105,21 @@ export function generateWeeklyCsv(
 		'',
 		(totalSeconds / 3600).toFixed(2),
 		formatDuration(totalSeconds),
+		'',
+		'',
 	].join(SEP);
 
-	return [metadata, headers, ...rows, totalRow].join('\n');
+	const generatedAt = provenance?.generatedAt ?? new Date().toISOString();
+	const jiraHost = provenance?.jiraHost ?? '';
+	const version = provenance?.sourceVersion ?? '';
+	const footerParts = [
+		`# generated=${generatedAt}`,
+		`jira=${jiraHost}`,
+		`policy=logged`,
+		`period=${weekStart}..${weekEnd}`,
+	];
+	if (version) footerParts.push(`version=${version}`);
+	const provenanceFooter = footerParts.join(' ');
+
+	return [metadata, headers, ...rows, totalRow, provenanceFooter].join('\n');
 }

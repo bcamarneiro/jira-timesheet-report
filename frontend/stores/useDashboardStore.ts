@@ -47,6 +47,10 @@ export interface WeekWorklogEntry {
 	issueKey: string;
 	issueSummary?: string;
 	timeSpentSeconds: number;
+	/** ISO timestamp the worklog was created in Jira (used for backdate detection). */
+	created?: string;
+	/** Worklog comment, used by classifiers to detect retroactive logging. */
+	comment?: string;
 }
 
 interface DashboardState {

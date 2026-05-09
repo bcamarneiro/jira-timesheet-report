@@ -99,7 +99,9 @@ export const DashboardPage: React.FC = () => {
 	};
 
 	const handleExportCsv = () => {
-		const csv = generateWeeklyCsv(weekStart, weekEnd, weekWorklogs);
+		const csv = generateWeeklyCsv(weekStart, weekEnd, weekWorklogs, {
+			jiraHost: useConfigStore.getState().config.jiraHost,
+		});
 		const filename = `timesheet-${weekStart}-${weekEnd}.csv`;
 		downloadAsFile(csv, filename, 'text/csv;charset=utf-8');
 		toast.success('CSV file downloaded');
