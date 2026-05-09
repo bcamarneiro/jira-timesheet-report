@@ -16,7 +16,7 @@ export function useMonthTotalCalculation(
 				continue;
 			}
 			const dayTotalSeconds = dayWorklogs.reduce(
-				(sum, wl) => sum + wl.timeSpentSeconds,
+				(sum, wl) => sum + (wl.timeSpentSeconds ?? 0),
 				0,
 			);
 			userTotalSeconds += dayTotalSeconds;

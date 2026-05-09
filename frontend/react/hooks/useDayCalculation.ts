@@ -9,7 +9,7 @@ export function useDayCalculation(
 ) {
 	const calculations = useMemo(() => {
 		const dayTotalSeconds = worklogs.reduce(
-			(sum, wl) => sum + wl.timeSpentSeconds,
+			(sum, wl) => sum + (wl.timeSpentSeconds ?? 0),
 			0,
 		);
 		const baselineSeconds = isWeekend || isAbsent ? 0 : BASELINE_HOURS * 3600;
