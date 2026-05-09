@@ -3,11 +3,11 @@ import type {
 	RescueTimeDaySummary,
 	WorklogSuggestion,
 } from '../../types/Suggestion';
-import type { AbsenceDay } from './absenceService';
 import type {
 	FavoriteIssue,
 	RecurringTemplate,
 } from '../stores/useUserDataStore';
+import type { AbsenceDay } from './absenceService';
 
 const BASELINE_SECONDS = 8 * 3600;
 
@@ -72,6 +72,19 @@ const ROUNDING_INTERVALS: Record<string, number> = {
 	'15m': 15,
 	'30m': 30,
 };
+
+/**
+ * Step size in seconds used for incrementing/decrementing suggestion durations.
+ *
+ * - `'off'` returns 60 (one-minute granularity, no enforced 15-min snap)
+ * - `'15m'` returns 900
+ * - `'30m'` returns 1800
+ */
+export function roundingStepSeconds(rounding: 'off' | '15m' | '30m'): number {
+	if (rounding === '30m') return 1800;
+	if (rounding === '15m') return 900;
+	return 60;
+}
 
 function applyRounding(
 	suggestions: WorklogSuggestion[],

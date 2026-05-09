@@ -1,5 +1,5 @@
-import type { TeamMemberSummary } from '../../services/teamService';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
+import type { TeamMemberSummary } from '../../services/teamService';
 import {
 	getWorkingDaysInMonth,
 	isDateInMonth,
@@ -7,6 +7,7 @@ import {
 } from './date';
 import { formatHours } from './format';
 import type { ManagerTrendModel } from './teamReports';
+import { classifyWorklog } from './worklogClassifier';
 
 type SnapshotValidationState = {
 	status: string;
@@ -82,16 +83,20 @@ function summarizeMonthlyEntries(
 		.map(([user, days]) => {
 			let totalSeconds = 0;
 			let entryCount = 0;
-			let activeDays = 0;
+			const activeDaySet = new Set<string>();
 
-			for (const [dateKey, worklogs] of Object.entries(days)) {
-				if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
-				if (worklogs.length > 0) {
-					activeDays += 1;
-				}
+			// Bucket each worklog by its classified `loggedOn` (the same
+			// logged-policy rule used by TimesheetGrid, OverviewTable, and CSV
+			// exports). Without this, snapshots disagreed with the calendar
+			// grid for Pattern B (jira-native) backdated entries.
+			for (const worklogs of Object.values(days)) {
 				for (const worklog of worklogs) {
+					const c = classifyWorklog(worklog);
+					if (!c.loggedOn) continue;
+					if (!isDateInMonth(c.loggedOn, year, monthZeroIndexed)) continue;
 					totalSeconds += worklog.timeSpentSeconds ?? 0;
 					entryCount += 1;
+					activeDaySet.add(c.loggedOn);
 				}
 			}
 
@@ -99,7 +104,7 @@ function summarizeMonthlyEntries(
 				user,
 				totalSeconds,
 				entryCount,
-				activeDays,
+				activeDays: activeDaySet.size,
 			};
 		})
 		.sort((a, b) => {
@@ -117,15 +122,29 @@ function buildDailyBreakdown(
 ): DailyBreakdownRow[] {
 	if (!entry) return [];
 
-	return Object.entries(entry[1])
-		.filter(([dateKey]) => isDateInMonth(dateKey, year, monthZeroIndexed))
-		.map(([date, worklogs]) => ({
+	// Regroup worklogs by their classified `loggedOn` so the breakdown
+	// matches what users see in the calendar grid for backdated entries.
+	const buckets = new Map<string, { entries: number; totalSeconds: number }>();
+	for (const worklogs of Object.values(entry[1])) {
+		for (const worklog of worklogs) {
+			const c = classifyWorklog(worklog);
+			if (!c.loggedOn) continue;
+			if (!isDateInMonth(c.loggedOn, year, monthZeroIndexed)) continue;
+			const bucket = buckets.get(c.loggedOn) ?? {
+				entries: 0,
+				totalSeconds: 0,
+			};
+			bucket.entries += 1;
+			bucket.totalSeconds += worklog.timeSpentSeconds ?? 0;
+			buckets.set(c.loggedOn, bucket);
+		}
+	}
+
+	return [...buckets.entries()]
+		.map(([date, value]) => ({
 			date,
-			entries: worklogs.length,
-			totalSeconds: worklogs.reduce(
-				(sum, worklog) => sum + (worklog.timeSpentSeconds ?? 0),
-				0,
-			),
+			entries: value.entries,
+			totalSeconds: value.totalSeconds,
 		}))
 		.sort((a, b) => a.date.localeCompare(b.date));
 }
