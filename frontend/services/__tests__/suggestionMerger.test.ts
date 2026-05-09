@@ -3,6 +3,7 @@ import type { WorklogSuggestion } from '../../../types/Suggestion';
 import {
 	distributeSuggestionsToFillGap,
 	mergeSuggestions,
+	roundingStepSeconds,
 } from '../suggestionMerger';
 
 function makeSuggestion(
@@ -159,5 +160,19 @@ describe('mergeSuggestions', () => {
 		expect(day?.targetSeconds).toBe(0);
 		expect(day?.gapSeconds).toBe(0);
 		expect(day?.absenceKind).toBe('vacation');
+	});
+});
+
+describe('roundingStepSeconds', () => {
+	it('returns 60 (one-minute) when rounding is off', () => {
+		expect(roundingStepSeconds('off')).toBe(60);
+	});
+
+	it('returns 900 (15 minutes) when rounding is 15m', () => {
+		expect(roundingStepSeconds('15m')).toBe(900);
+	});
+
+	it('returns 1800 (30 minutes) when rounding is 30m', () => {
+		expect(roundingStepSeconds('30m')).toBe(1800);
 	});
 });

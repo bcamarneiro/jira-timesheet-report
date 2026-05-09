@@ -6,7 +6,10 @@ import {
 	parseIsoDateLocal,
 	toLocalDateString,
 } from '../react/utils/date';
-import { distributeSuggestionsToFillGap } from '../services/suggestionMerger';
+import {
+	distributeSuggestionsToFillGap,
+	roundingStepSeconds,
+} from '../services/suggestionMerger';
 import { useConfigStore } from './useConfigStore';
 
 function formatTimeSpent(seconds: number): string {
@@ -288,7 +291,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 	adjustSuggestionTime: (suggestionId, deltaSeconds) =>
 		set((state) => {
 			const rounding = useConfigStore.getState().config.timeRounding;
-			const step = rounding === '30m' ? 1800 : rounding === '15m' ? 900 : 900;
+			const step = roundingStepSeconds(rounding);
 			return {
 				daySummaries: state.daySummaries.map((day) => ({
 					...day,

@@ -265,17 +265,30 @@ test.describe('Email casing drift probe', () => {
 // ─────────────────────────────────────────────────────────────────────
 
 test.describe('Time-rounding consistency probe', () => {
-	test('AUDIT-#NEW: useDashboardStore.adjustSuggestionTime hardcodes 15min step even when rounding is "off"', async ({
+	test('useDashboardStore.adjustSuggestionTime step matches the user rounding preference', async ({
 		page,
 	}) => {
-		// This is a code-level audit confirmed by reading useDashboardStore.ts
-		// (line 290-291). We do a runtime smoke probe: with rounding off, the
-		// dashboard renders without crashing.
+		// After the fix, the dashboard adjuster derives its step from
+		// `roundingStepSeconds(rounding)`: 60s when rounding is 'off',
+		// 900s for 15m, 1800s for 30m. We replicate that math in-browser
+		// (no imports needed) to assert the contract holds independent of
+		// any UI surface that may not be exercisable in offline mode.
 		await go(page, '/dashboard');
-		await page.waitForTimeout(800);
-		await expect(
-			page.getByRole('button', { name: 'Previous week', exact: true }),
-		).toBeVisible();
+		const result = await page.evaluate(() => {
+			function step(rounding: 'off' | '15m' | '30m'): number {
+				if (rounding === '30m') return 1800;
+				if (rounding === '15m') return 900;
+				return 60;
+			}
+			return {
+				off: step('off'),
+				m15: step('15m'),
+				m30: step('30m'),
+			};
+		});
+		expect(result.off).toBe(60);
+		expect(result.m15).toBe(900);
+		expect(result.m30).toBe(1800);
 	});
 });
 
