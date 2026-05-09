@@ -172,7 +172,7 @@ test.describe('Pattern B (jira-native) backdates: end-to-end visibility', () => 
 // ─────────────────────────────────────────────────────────────────────
 
 test.describe('Snapshot exporter divergence (Markdown / HTML)', () => {
-	test('AUDIT-#6: Snapshot MD month total disagrees with the calendar grid for Pattern B', async ({
+	test('AUDIT-#6: Snapshot MD month total agrees with the calendar grid for Pattern B', async ({
 		page,
 	}) => {
 		await goReports(page);
@@ -202,17 +202,12 @@ test.describe('Snapshot exporter divergence (Markdown / HTML)', () => {
 		expect(m).toBeTruthy();
 		const snapshotTotal = Number(m?.[1] ?? '0');
 
-		// Today the snapshot path uses `started`-based bucketing, so it will
-		// undercount Alex by 16h (the 2 Pattern B entries that count under
-		// logged-policy in October but live under September in the snapshot).
-		// We assert the *current* divergence so this test catches the day we
-		// fix snapshots: it will need updating to `expect(snapshotTotal).toBe(
-		// calendarTotal)` at that point.
-		expect(snapshotTotal).not.toBe(calendarTotal);
-		// And document the magnitude of the gap so the fix-in regression is
-		// obvious in the diff.
-		expect(calendarTotal - snapshotTotal).toBeGreaterThanOrEqual(15.5);
-		expect(calendarTotal - snapshotTotal).toBeLessThanOrEqual(16.5);
+		// After routing the snapshot exporter through `classifyWorklog`, the
+		// Markdown output buckets Pattern B (jira-native) backdated entries
+		// under their `loggedOn` date — same as the calendar grid. The two
+		// totals should match (allowing for sub-hour rounding noise from
+		// `formatHours`).
+		expect(Math.abs(snapshotTotal - calendarTotal)).toBeLessThanOrEqual(0.1);
 	});
 });
 
@@ -267,7 +262,9 @@ test.describe('Display formatting consistency probes', () => {
 		await page.waitForTimeout(1500);
 
 		const dashboardBody = (await page.textContent('body')) ?? '';
-		const dashboardMatchesPointZero = /(?<![\d.])8\.0h(?!\d)/.test(dashboardBody);
+		const dashboardMatchesPointZero = /(?<![\d.])8\.0h(?!\d)/.test(
+			dashboardBody,
+		);
 
 		// Reports Monthly format — assert the integer "8h" form appears at
 		// least once in a day-cell total node. We sample DaySummary nodes
@@ -436,7 +433,9 @@ test.describe('Multi-user summary CSV probes', () => {
 		await ensureMonthly(page);
 		await setMonth(page, /October\s+2025/);
 
-		const exportAll = page.getByRole('button', { name: /Export monthly CSVs/i });
+		const exportAll = page.getByRole('button', {
+			name: /Export monthly CSVs/i,
+		});
 		if ((await exportAll.count()) === 0) {
 			test.info().annotations.push({
 				type: 'note',
@@ -494,7 +493,12 @@ test.describe('Aggressive interaction sweep', () => {
 		await page.waitForLoadState('networkidle');
 		const nav = page.getByRole('navigation');
 
-		for (const linkName of ['Dashboard', 'Reports', 'Settings', 'Jira Timesheet']) {
+		for (const linkName of [
+			'Dashboard',
+			'Reports',
+			'Settings',
+			'Jira Timesheet',
+		]) {
 			await nav.getByRole('link', { name: linkName }).click();
 			await page.waitForTimeout(200);
 		}
@@ -503,7 +507,9 @@ test.describe('Aggressive interaction sweep', () => {
 		await page.waitForLoadState('networkidle');
 
 		for (const button of ['Weekly', 'Monthly']) {
-			await page.getByRole('button', { name: new RegExp(`^${button}$`) }).click();
+			await page
+				.getByRole('button', { name: new RegExp(`^${button}$`) })
+				.click();
 			await page.waitForTimeout(150);
 		}
 

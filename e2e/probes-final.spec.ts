@@ -56,7 +56,7 @@ async function setMonth(page: Page, label: RegExp) {
 // ─────────────────────────────────────────────────────────────────────
 
 test.describe('Snapshot HTML probes', () => {
-	test('AUDIT-#68: Snapshot HTML undercounts Alex by 16h vs the calendar grid', async ({
+	test('AUDIT-#68: Snapshot HTML matches the calendar grid for Pattern B', async ({
 		page,
 	}) => {
 		await go(page, '/reports');
@@ -78,7 +78,8 @@ test.describe('Snapshot HTML probes', () => {
 		const download = await downloadPromise;
 		const stream = await download.createReadStream();
 		const chunks: Buffer[] = [];
-		for await (const c of stream as unknown as AsyncIterable<Buffer>) chunks.push(c);
+		for await (const c of stream as unknown as AsyncIterable<Buffer>)
+			chunks.push(c);
 		const html = Buffer.concat(chunks).toString('utf8');
 
 		// HTML rows are indented and span multiple lines:
@@ -96,8 +97,8 @@ test.describe('Snapshot HTML probes', () => {
 			}
 		}
 		expect(alexBlock).toBeTruthy();
-		const cellMatches = [...alexBlock.matchAll(/<td>([^<]+)<\/td>/g)].map(
-			(m) => m[1].trim(),
+		const cellMatches = [...alexBlock.matchAll(/<td>([^<]+)<\/td>/g)].map((m) =>
+			m[1].trim(),
 		);
 		// First cell is the user, second is total hours.
 		const totalCell = cellMatches[1] ?? '';
@@ -105,8 +106,10 @@ test.describe('Snapshot HTML probes', () => {
 		expect(m).toBeTruthy();
 		const snapshotHours = Number(m?.[1] ?? '0');
 
-		expect(snapshotHours).toBeLessThan(calHours);
-		expect(calHours - snapshotHours).toBeGreaterThanOrEqual(15.5);
+		// After routing the snapshot exporter through `classifyWorklog`, the
+		// HTML output buckets Pattern B (jira-native) backdated entries under
+		// their `loggedOn` date — same as the calendar grid.
+		expect(Math.abs(snapshotHours - calHours)).toBeLessThanOrEqual(0.1);
 	});
 });
 
@@ -288,14 +291,17 @@ test.describe('Manager mode trend view', () => {
 		await page.getByRole('button', { name: /^Weekly$/ }).click();
 		await page.waitForTimeout(400);
 
-		const managerToggle = page.getByRole('button', {
-			name: /Manager mode/i,
-		}).first();
+		const managerToggle = page
+			.getByRole('button', {
+				name: /Manager mode/i,
+			})
+			.first();
 		const present = await managerToggle.isVisible().catch(() => false);
 		if (!present) {
 			test.info().annotations.push({
 				type: 'note',
-				description: 'Manager mode toggle not present — UI may be label-different',
+				description:
+					'Manager mode toggle not present — UI may be label-different',
 			});
 			return;
 		}
@@ -335,9 +341,7 @@ test.describe('WorklogForm open/close', () => {
 		await expect(page.getByRole('dialog')).toBeVisible();
 		// Form should default `started` to T09:00 — text-less probe just confirms
 		// the input is present.
-		const startedInput = page
-			.getByLabel(/start.*time|when/i)
-			.first();
+		const startedInput = page.getByLabel(/start.*time|when/i).first();
 		const visible = await startedInput.isVisible().catch(() => false);
 		expect(typeof visible).toBe('boolean');
 		// Close dialog.
@@ -388,7 +392,10 @@ test.describe('Browser back/forward', () => {
 		await ensureMonthly(page);
 		await setMonth(page, /October\s+2025/);
 
-		await page.getByRole('navigation').getByRole('link', { name: 'Settings' }).click();
+		await page
+			.getByRole('navigation')
+			.getByRole('link', { name: 'Settings' })
+			.click();
 		await expect(page).toHaveURL(/settings/);
 		await page.goBack();
 		await page.waitForLoadState('networkidle');
@@ -450,7 +457,11 @@ test.describe('MSW JQL fidelity', () => {
 				issues?: { key: string }[];
 				total: number;
 			};
-			return { ok: r1.ok, total: j1.total, issueKeys: j1.issues?.map((i) => i.key) ?? [] };
+			return {
+				ok: r1.ok,
+				total: j1.total,
+				issueKeys: j1.issues?.map((i) => i.key) ?? [],
+			};
 		});
 		// Mock returns mockIssues regardless of date — confirming the audit
 		// finding. In production Jira this would be 0.
