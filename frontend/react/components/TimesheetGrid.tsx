@@ -99,7 +99,8 @@ export const TimesheetGrid: React.FC<Props> = ({
 						<div className={styles.monthTotalTop}>
 							<span className={styles.monthTotalLabel}>Month Total</span>
 							<span className={styles.monthTotalValue}>
-								{totalHours.toFixed(1)}h / {targetHours}h ({Math.round(pct)}%)
+								{totalHours.toFixed(1)}h / {Math.round(targetHours)}h (
+								{Math.round(pct)}%)
 							</span>
 						</div>
 						<ProgressBar value={pct} height={6} />

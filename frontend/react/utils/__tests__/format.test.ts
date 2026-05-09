@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { formatActivityTime } from '../../components/dashboard/DayCard';
 import { formatHours } from '../format';
 
 describe('formatHours', () => {
@@ -33,5 +34,21 @@ describe('formatHours', () => {
 		expect(formatHours(900)).toBe('0.3h');
 		// 45 minutes
 		expect(formatHours(2700)).toBe('0.8h');
+	});
+});
+
+describe('DayCard.formatActivityTime', () => {
+	it('renders integer hours without decimals (consistent with formatHours)', () => {
+		expect(formatActivityTime(28800)).toBe('8h');
+		expect(formatActivityTime(3600)).toBe('1h');
+	});
+
+	it('renders fractional hours with one decimal', () => {
+		expect(formatActivityTime(5400)).toBe('1.5h');
+	});
+
+	it('renders sub-hour activity in minutes', () => {
+		expect(formatActivityTime(1800)).toBe('30m');
+		expect(formatActivityTime(0)).toBe('0m');
 	});
 });

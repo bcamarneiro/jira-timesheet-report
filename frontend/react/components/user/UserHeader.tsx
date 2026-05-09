@@ -39,7 +39,8 @@ export const UserHeader: React.FC<Props> = ({
 			{targetHours !== undefined && pct !== undefined && (
 				<div className={styles.progress}>
 					<span className={styles.progressLabel}>
-						{totalHours.toFixed(1)}h / {targetHours}h ({Math.round(pct)}%)
+						{totalHours.toFixed(1)}h / {Math.round(targetHours)}h (
+						{Math.round(pct)}%)
 					</span>
 					<div className={styles.progressBar}>
 						<ProgressBar value={pct} height={4} />
