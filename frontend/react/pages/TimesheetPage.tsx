@@ -1,18 +1,20 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { EnrichedJiraWorklog } from '../../../types/jira';
+import { fetchMonthWorklogs } from '../../services/monthWorklogService';
 import type { TeamMemberSummary } from '../../services/teamService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTeamStore } from '../../stores/useTeamStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import {
-	useUserDataStore,
 	type ReportPreset,
+	useUserDataStore,
 } from '../../stores/useUserDataStore';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
-import { ManagerInsightsPanel } from '../components/reports/ManagerInsightsPanel';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { OverviewTable } from '../components/OverviewTable';
+import { ManagerInsightsPanel } from '../components/reports/ManagerInsightsPanel';
 import { ReportsControlPanel } from '../components/reports/ReportsControlPanel';
 import { TimesheetGrid } from '../components/TimesheetGrid';
 import { TeamStatsCards } from '../components/team/TeamStatsCards';
@@ -23,9 +25,10 @@ import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { toast } from '../components/ui/Toast';
 import { WorklogLoadingStatus } from '../components/ui/WorklogLoadingStatus';
-import { useReportsURLState } from '../hooks/useReportsURLState';
 import { useDownload } from '../hooks/useDownload';
+import { monthWorklogsQueryKey } from '../hooks/useMonthWorklogs';
 import { useReportsTrendData } from '../hooks/useReportsTrendData';
+import { useReportsURLState } from '../hooks/useReportsURLState';
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
 import { describeFreshness } from '../utils/dataFreshness';
@@ -39,10 +42,7 @@ import {
 	buildReportsSnapshotMarkdown,
 } from '../utils/reportSnapshots';
 import { buildTeamCsv } from '../utils/teamCsvExport';
-import { monthWorklogsQueryKey } from '../hooks/useMonthWorklogs';
-import { fetchMonthWorklogs } from '../../services/monthWorklogService';
 import * as styles from './TimesheetPage.module.css';
-import type { EnrichedJiraWorklog } from '../../../types/jira';
 
 // --- Weekly compliance table helpers ---
 
@@ -345,6 +345,7 @@ export const TimesheetPage: React.FC = () => {
 	const weekdays = getWeekdays(weekStart);
 	const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 	const allMonthlyEntries = useMemo(() => Object.entries(grouped), [grouped]);
+	const normalizedSelectedUser = selectedUser.trim().toLowerCase();
 	const filteredTeamMembers = useMemo(
 		() =>
 			teamMembers.filter((member) => {
@@ -354,15 +355,34 @@ export const TimesheetPage: React.FC = () => {
 					includesSearch(member.email, normalizedSearchQuery);
 				if (!matchesQuery) return false;
 				if (onlyAttentionNeeded && member.gapSeconds === 0) return false;
+				if (
+					normalizedSelectedUser.length > 0 &&
+					member.displayName.trim().toLowerCase() !== normalizedSelectedUser
+				) {
+					return false;
+				}
 				return true;
 			}),
-		[teamMembers, normalizedSearchQuery, onlyAttentionNeeded],
+		[
+			teamMembers,
+			normalizedSearchQuery,
+			onlyAttentionNeeded,
+			normalizedSelectedUser,
+		],
 	);
-	const isValidUser = selectedUser !== '' && users.includes(selectedUser);
+	const weeklyUsers = useMemo(
+		() => teamMembers.map((member) => member.displayName),
+		[teamMembers],
+	);
+	const focusUserList = viewMode === 'weekly' ? weeklyUsers : users;
+	const isValidUser =
+		selectedUser !== '' && focusUserList.includes(selectedUser);
 	const filteredUsers = useMemo(() => {
-		if (normalizedSearchQuery.length === 0) return users;
-		return users.filter((user) => includesSearch(user, normalizedSearchQuery));
-	}, [users, normalizedSearchQuery]);
+		if (normalizedSearchQuery.length === 0) return focusUserList;
+		return focusUserList.filter((user) =>
+			includesSearch(user, normalizedSearchQuery),
+		);
+	}, [focusUserList, normalizedSearchQuery]);
 	const selectableUsers = useMemo(() => {
 		if (isValidUser && !filteredUsers.includes(selectedUser)) {
 			return [selectedUser, ...filteredUsers];
@@ -793,13 +813,20 @@ export const TimesheetPage: React.FC = () => {
 						/>
 					</>
 				) : (
-					<WeekNavigator
-						weekStart={weekStart}
-						weekEnd={weekEnd}
-						onPrev={goToPrevWeek}
-						onNext={goToNextWeek}
-						onToday={goToCurrentWeek}
-					/>
+					<>
+						<UserSelector
+							users={selectableUsers}
+							value={isValidUser ? selectedUser : ''}
+							onChange={handleUserChange}
+						/>
+						<WeekNavigator
+							weekStart={weekStart}
+							weekEnd={weekEnd}
+							onPrev={goToPrevWeek}
+							onNext={goToNextWeek}
+							onToday={goToCurrentWeek}
+						/>
+					</>
 				)}
 
 				<div className={styles.toolbarRight}>
