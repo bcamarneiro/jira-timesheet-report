@@ -454,11 +454,11 @@ test.describe('Home + offline indicator', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// MSW handler ignores JQL — provable client-side (AUDIT-#62, #63)
+// MSW handler honours worklogDate JQL — production parity (AUDIT-#62, #63)
 // ─────────────────────────────────────────────────────────────────────
 
 test.describe('MSW JQL fidelity', () => {
-	test('AUDIT-#62: MSW returns mock issues regardless of worklogDate clause', async ({
+	test('AUDIT-#62: MSW filters by worklogDate when the JQL specifies a range', async ({
 		page,
 	}) => {
 		await go(page, '/');
@@ -476,8 +476,24 @@ test.describe('MSW JQL fidelity', () => {
 				issueKeys: j1.issues?.map((i) => i.key) ?? [],
 			};
 		});
-		// Mock returns mockIssues regardless of date — confirming the audit
-		// finding. In production Jira this would be 0.
+		// Mock now mirrors production behaviour: a 1999 window returns 0 issues
+		// because no mock worklog has `started` in 1999.
+		expect(result.ok).toBe(true);
+		expect(result.total).toBe(0);
+		expect(result.issueKeys).toEqual([]);
+	});
+
+	test('AUDIT-#62: MSW returns issues when the JQL window matches the mocks', async ({
+		page,
+	}) => {
+		await go(page, '/');
+		const result = await page.evaluate(async () => {
+			const u =
+				'https://mock.atlassian.net/rest/api/2/search?jql=worklogDate+%3E%3D+%222025-10-01%22+AND+worklogDate+%3C%3D+%222025-10-31%22&maxResults=100&startAt=0&fields=key,worklog';
+			const r = await fetch(u);
+			const j = (await r.json()) as { total: number };
+			return { ok: r.ok, total: j.total };
+		});
 		expect(result.ok).toBe(true);
 		expect(result.total).toBeGreaterThanOrEqual(1);
 	});
