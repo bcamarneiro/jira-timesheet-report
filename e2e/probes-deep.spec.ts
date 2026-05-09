@@ -11,7 +11,7 @@ async function go(page: Page, path: string) {
 }
 
 test.describe('Settings backup integrity probe', () => {
-	test('AUDIT-#NEW: settings backup does NOT include favorites/templates/dayNotes', async ({
+	test('AUDIT-#NEW: settings backup includes favorites/templates/dayNotes', async ({
 		page,
 	}) => {
 		await go(page, '/settings');
@@ -31,13 +31,20 @@ test.describe('Settings backup integrity probe', () => {
 		expect(json).toHaveProperty('config');
 		expect(json).toHaveProperty('calendarMappings');
 
-		// What is NOT — these are user-data store fields that should be in
-		// the backup but aren't.
-		expect(json.favorites).toBeUndefined();
-		expect(json.templates).toBeUndefined();
-		expect(json.dayNotes).toBeUndefined();
-		expect(json.reportPresets).toBeUndefined();
-		expect(json.commentPresets).toBeUndefined();
+		// User-data store fields are now included under userData.
+		expect(json).toHaveProperty('userData');
+		expect(json.userData).toHaveProperty('favorites');
+		expect(json.userData).toHaveProperty('templates');
+		expect(json.userData).toHaveProperty('commentPresets');
+		expect(json.userData).toHaveProperty('dayNotes');
+		expect(json.userData).toHaveProperty('reportPresets');
+		expect(Array.isArray(json.userData.favorites)).toBe(true);
+		expect(Array.isArray(json.userData.templates)).toBe(true);
+		expect(Array.isArray(json.userData.commentPresets)).toBe(true);
+		expect(Array.isArray(json.userData.reportPresets)).toBe(true);
+		expect(
+			json.userData.dayNotes && typeof json.userData.dayNotes === 'object',
+		).toBe(true);
 	});
 });
 
@@ -47,9 +54,7 @@ test.describe('Reports URL state probe', () => {
 	}) => {
 		await go(page, '/reports?view=monthly&year=2025&month=10');
 		await page.waitForTimeout(500);
-		await expect(
-			page.getByRole('button', { name: /^Monthly$/ }),
-		).toBeVisible();
+		await expect(page.getByRole('button', { name: /^Monthly$/ })).toBeVisible();
 		const monthLabel = page
 			.locator('[class*="MonthNavigator"] [class*="label"]')
 			.first();
@@ -72,12 +77,27 @@ test.describe('Reports URL state probe', () => {
 			.waitFor({ state: 'visible', timeout: 15000 });
 
 		const focus = page.getByLabel('Monthly focus');
-		const selected = await focus.evaluate(
-			(el) => (el as HTMLSelectElement).value,
-		);
-		// Either the focus is on Sarah, or the URL state is silently dropped —
-		// document whichever is true today.
-		expect(typeof selected).toBe('string');
+		const selectedText = await focus.evaluate((el) => {
+			const select = el as HTMLSelectElement;
+			const option = select.options[select.selectedIndex];
+			return option?.text ?? '';
+		});
+		expect(selectedText).toContain('Sarah Johnson');
+
+		await page.reload();
+		await page.waitForLoadState('networkidle');
+		await page
+			.locator('[class*="weekdayLabel"]')
+			.first()
+			.waitFor({ state: 'visible', timeout: 15000 });
+
+		const focusAfterReload = page.getByLabel('Monthly focus');
+		const selectedTextAfterReload = await focusAfterReload.evaluate((el) => {
+			const select = el as HTMLSelectElement;
+			const option = select.options[select.selectedIndex];
+			return option?.text ?? '';
+		});
+		expect(selectedTextAfterReload).toContain('Sarah Johnson');
 	});
 });
 
@@ -93,9 +113,7 @@ test.describe('Sort + filter interaction probes', () => {
 			.waitFor({ state: 'visible', timeout: 15000 });
 
 		// Click "Hours" header to sort.
-		const hoursHeader = page
-			.getByRole('button', { name: /^Hours/i })
-			.first();
+		const hoursHeader = page.getByRole('button', { name: /^Hours/i }).first();
 		const headerVisible = await hoursHeader.isVisible().catch(() => false);
 		if (!headerVisible) {
 			test.info().annotations.push({
@@ -236,7 +254,8 @@ test.describe('Edge data probes', () => {
 		page.on('download', async (d) => {
 			const s = await d.createReadStream();
 			const chunks: Buffer[] = [];
-			for await (const c of s as unknown as AsyncIterable<Buffer>) chunks.push(c);
+			for await (const c of s as unknown as AsyncIterable<Buffer>)
+				chunks.push(c);
 			downloads.push({
 				filename: d.suggestedFilename(),
 				text: Buffer.concat(chunks).toString('utf8'),
@@ -280,9 +299,7 @@ test.describe('Hover/keyboard probes', () => {
 			.locator('[class*="card"]')
 			.filter({ hasText: 'Sarah Johnson' })
 			.first();
-		const tooltipIcon = sarahCard
-			.locator('[class*="retroactiveIcon"]')
-			.first();
+		const tooltipIcon = sarahCard.locator('[class*="retroactiveIcon"]').first();
 		await expect(tooltipIcon).toBeVisible();
 		const title = await tooltipIcon.getAttribute('title');
 		expect(title ?? '').toMatch(/intended|logged/i);

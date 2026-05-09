@@ -1,18 +1,20 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { EnrichedJiraWorklog } from '../../../types/jira';
+import { fetchMonthWorklogs } from '../../services/monthWorklogService';
 import type { TeamMemberSummary } from '../../services/teamService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTeamStore } from '../../stores/useTeamStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import {
-	useUserDataStore,
 	type ReportPreset,
+	useUserDataStore,
 } from '../../stores/useUserDataStore';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
-import { ManagerInsightsPanel } from '../components/reports/ManagerInsightsPanel';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { OverviewTable } from '../components/OverviewTable';
+import { ManagerInsightsPanel } from '../components/reports/ManagerInsightsPanel';
 import { ReportsControlPanel } from '../components/reports/ReportsControlPanel';
 import { TimesheetGrid } from '../components/TimesheetGrid';
 import { TeamStatsCards } from '../components/team/TeamStatsCards';
@@ -23,9 +25,13 @@ import { ProgressBar } from '../components/ui/ProgressBar';
 import { toast } from '../components/ui/Toast';
 import { WorklogLoadingStatus } from '../components/ui/WorklogLoadingStatus';
 import { useAbsenceDaysByUser } from '../hooks/useAbsenceDays';
-import { useReportsURLState } from '../hooks/useReportsURLState';
 import { useDownload } from '../hooks/useDownload';
+import { monthWorklogsQueryKey } from '../hooks/useMonthWorklogs';
 import { useReportsTrendData } from '../hooks/useReportsTrendData';
+import {
+	getInitialSelectedUserFromURL,
+	useReportsURLState,
+} from '../hooks/useReportsURLState';
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
 import { getUserAbsenceDayMap } from '../utils/absence';
@@ -40,10 +46,7 @@ import {
 	buildReportsSnapshotMarkdown,
 } from '../utils/reportSnapshots';
 import { buildTeamCsv } from '../utils/teamCsvExport';
-import { monthWorklogsQueryKey } from '../hooks/useMonthWorklogs';
-import { fetchMonthWorklogs } from '../../services/monthWorklogService';
 import * as styles from './TimesheetPage.module.css';
-import type { EnrichedJiraWorklog } from '../../../types/jira';
 
 // --- Weekly compliance table helpers ---
 
@@ -257,6 +260,17 @@ function SortIndicator({
 
 export const TimesheetPage: React.FC = () => {
 	const queryClient = useQueryClient();
+	// Seed selectedUser from ?user= synchronously on first mount so that
+	// deep-links like /reports?user=Sarah%20Johnson are reflected in the
+	// focus dropdown as soon as the user list lands, without being wiped by
+	// the URL-state hook's mount effect running later.
+	useState(() => {
+		const initial = getInitialSelectedUserFromURL();
+		if (initial) {
+			useTimesheetStore.getState().setSelectedUser(initial);
+		}
+		return null;
+	});
 	const [viewMode, setViewMode] = useState<ViewMode>('weekly');
 	const [sortField, setSortField] = useState<SortField>('name');
 	const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
