@@ -19,9 +19,20 @@ function formatDayLabel(dateStr: string): string {
 	return `${days[d.getDay()]} ${d.getDate()}`;
 }
 
+/**
+ * Provenance metadata appended as a `# generated=…` footer line, mirroring
+ * the finance-grade per-user CSV exporters.
+ */
+export interface TeamCsvProvenance {
+	jiraHost?: string;
+	sourceVersion?: string;
+	generatedAt?: string;
+}
+
 export function buildTeamCsv(
 	members: TeamMemberSummary[],
 	weekdays: string[],
+	provenance?: TeamCsvProvenance,
 ): string {
 	const dayHeaders = weekdays.map(formatDayLabel);
 
@@ -30,6 +41,7 @@ export function buildTeamCsv(
 		'Email',
 		...dayHeaders,
 		'Total (h)',
+		'Backdated (h)',
 		'Gap (h)',
 	].join(SEP);
 
@@ -39,11 +51,16 @@ export function buildTeamCsv(
 			return hours > 0 ? hours.toFixed(1) : '0';
 		});
 
+		// TODO(audit-#1): teamService still buckets by `started`; backdated count
+		// is 0 here until that's fixed. Surface 0 to keep the column shape stable.
+		const backdatedHours = '0.0';
+
 		return [
 			csvEscape(m.displayName),
 			m.email,
 			...dailyCells,
 			(m.totalSeconds / 3600).toFixed(1),
+			backdatedHours,
 			(m.gapSeconds / 3600).toFixed(1),
 		].join(SEP);
 	});
@@ -68,10 +85,25 @@ export function buildTeamCsv(
 				'',
 				...avgCells,
 				avgTotal.toFixed(1),
+				'0.0',
 				avgGap.toFixed(1),
 			].join(SEP),
 		);
 	}
 
-	return [headers, ...rows].join('\n');
+	const generatedAt = provenance?.generatedAt ?? new Date().toISOString();
+	const jiraHost = provenance?.jiraHost ?? '';
+	const version = provenance?.sourceVersion ?? '';
+	const periodStart = weekdays[0] ?? '';
+	const periodEnd = weekdays[weekdays.length - 1] ?? '';
+	const footerParts = [
+		`# generated=${generatedAt}`,
+		`jira=${jiraHost}`,
+		`policy=logged`,
+		`period=${periodStart}..${periodEnd}`,
+	];
+	if (version) footerParts.push(`version=${version}`);
+	const provenanceFooter = footerParts.join(' ');
+
+	return [headers, ...rows, provenanceFooter].join('\n');
 }
