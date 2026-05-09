@@ -2,6 +2,34 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { getPersistStorage } from './persistStorage';
 
+/**
+ * Bumped when the persisted shape changes in a way that requires
+ * migration. v1 is the first explicit version (prior persisted blobs
+ * had no version field; the migrate function treats them as v0 and
+ * runs the same defensive normalisation).
+ */
+export const USER_DATA_STORAGE_VERSION = 1;
+
+function safeArray<T>(value: unknown, fallback: T[]): T[] {
+	return Array.isArray(value) ? (value as T[]) : fallback;
+}
+
+function safeStringRecord(
+	value: unknown,
+	fallback: Record<string, string>,
+): Record<string, string> {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) {
+		return fallback;
+	}
+	const out: Record<string, string> = {};
+	for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+		if (typeof k === 'string' && typeof v === 'string') {
+			out[k] = v;
+		}
+	}
+	return out;
+}
+
 export interface FavoriteIssue {
 	issueKey: string;
 	issueSummary?: string;
@@ -63,61 +91,91 @@ interface UserDataState {
 	removeReportPreset: (id: string) => void;
 }
 
-function normalizeIssueKey(issueKey: string): string {
-	return issueKey.trim().toUpperCase();
+function normalizeIssueKey(issueKey: unknown): string {
+	return typeof issueKey === 'string' ? issueKey.trim().toUpperCase() : '';
 }
 
-function normalizePattern(pattern: string): string {
-	return pattern.trim();
+function normalizePattern(pattern: unknown): string {
+	return typeof pattern === 'string' ? pattern.trim() : '';
+}
+
+function asString(value: unknown): string {
+	return typeof value === 'string' ? value : '';
 }
 
 function normalizeFavorite(issue: FavoriteIssue): FavoriteIssue {
+	const raw = issue as Partial<FavoriteIssue>;
+	const seconds =
+		typeof raw.defaultSeconds === 'number' &&
+		Number.isFinite(raw.defaultSeconds)
+			? raw.defaultSeconds
+			: 0;
+	const summary =
+		typeof raw.issueSummary === 'string' ? raw.issueSummary.trim() : '';
 	return {
-		...issue,
-		issueKey: normalizeIssueKey(issue.issueKey),
-		defaultTimeSpent: issue.defaultTimeSpent.trim(),
-		issueSummary: issue.issueSummary?.trim() || undefined,
+		issueKey: normalizeIssueKey(raw.issueKey),
+		defaultTimeSpent: asString(raw.defaultTimeSpent).trim(),
+		defaultSeconds: seconds,
+		issueSummary: summary || undefined,
 	};
 }
 
 function normalizeTemplate(template: RecurringTemplate): RecurringTemplate {
+	const raw = template as Partial<RecurringTemplate>;
+	const days = Array.isArray(raw.daysOfWeek)
+		? raw.daysOfWeek.filter(
+				(d): d is number => typeof d === 'number' && d >= 0 && d <= 6,
+			)
+		: [];
 	return {
-		...template,
-		issueKey: normalizeIssueKey(template.issueKey),
-		issueSummary: template.issueSummary?.trim() || undefined,
-		timeSpent: template.timeSpent.trim(),
-		comment: template.comment.trim(),
-		daysOfWeek: [...new Set(template.daysOfWeek)].sort((a, b) => a - b),
+		id: asString(raw.id),
+		issueKey: normalizeIssueKey(raw.issueKey),
+		issueSummary:
+			typeof raw.issueSummary === 'string'
+				? raw.issueSummary.trim() || undefined
+				: undefined,
+		timeSpent: asString(raw.timeSpent).trim(),
+		seconds:
+			typeof raw.seconds === 'number' && Number.isFinite(raw.seconds)
+				? raw.seconds
+				: 0,
+		comment: asString(raw.comment).trim(),
+		daysOfWeek: [...new Set(days)].sort((a, b) => a - b),
+		enabled: raw.enabled !== false,
 	};
 }
 
 function normalizeCalendarMapping(mapping: CalendarMapping): CalendarMapping {
+	const raw = mapping as Partial<CalendarMapping>;
+	const summary =
+		typeof raw.issueSummary === 'string' ? raw.issueSummary.trim() : '';
 	return {
-		...mapping,
-		pattern: normalizePattern(mapping.pattern),
-		issueKey: normalizeIssueKey(mapping.issueKey),
-		issueSummary: mapping.issueSummary?.trim() || undefined,
+		pattern: normalizePattern(raw.pattern),
+		issueKey: normalizeIssueKey(raw.issueKey),
+		issueSummary: summary || undefined,
 	};
 }
 
 function normalizeReportPreset(preset: ReportPreset): ReportPreset {
+	const raw = preset as Partial<ReportPreset>;
+	const trendWeeks =
+		typeof raw.trendWeeks === 'number' && [4, 6, 8, 12].includes(raw.trendWeeks)
+			? raw.trendWeeks
+			: 6;
 	return {
-		...preset,
-		id: preset.id.trim(),
-		label: preset.label.trim(),
-		viewMode: preset.viewMode === 'monthly' ? 'monthly' : 'weekly',
-		searchQuery: preset.searchQuery.trim(),
-		onlyAttentionNeeded: preset.onlyAttentionNeeded,
-		managerMode: preset.managerMode,
-		trendWeeks: [4, 6, 8, 12].includes(preset.trendWeeks)
-			? preset.trendWeeks
-			: 6,
+		id: asString(raw.id).trim(),
+		label: asString(raw.label).trim(),
+		viewMode: raw.viewMode === 'monthly' ? 'monthly' : 'weekly',
+		searchQuery: asString(raw.searchQuery).trim(),
+		onlyAttentionNeeded: raw.onlyAttentionNeeded === true,
+		managerMode: raw.managerMode === true,
+		trendWeeks,
 		sortField:
-			preset.sortField === 'total' || preset.sortField === 'gap'
-				? preset.sortField
+			raw.sortField === 'total' || raw.sortField === 'gap'
+				? raw.sortField
 				: 'name',
-		sortDirection: preset.sortDirection === 'desc' ? 'desc' : 'asc',
-		selectedUser: preset.selectedUser.trim(),
+		sortDirection: raw.sortDirection === 'desc' ? 'desc' : 'asc',
+		selectedUser: asString(raw.selectedUser).trim(),
 	};
 }
 
@@ -319,41 +377,59 @@ export const useUserDataStore = create<UserDataState>()(
 		{
 			name: 'jira-timesheet-userdata',
 			storage: createJSONStorage(getPersistStorage),
+			version: USER_DATA_STORAGE_VERSION,
+			migrate: (persistedState, _version) => {
+				// All migrations collapse to the merge function's defensive
+				// path today: drop malformed entries silently and re-shape
+				// arrays/records via safe* guards. Branching is explicit so
+				// future schema changes can intercept here without changing
+				// the caller contract.
+				return persistedState;
+			},
 			merge: (persisted, current) => {
 				const persistedState = persisted as Partial<UserDataState> | undefined;
+				const currentState = current as UserDataState;
 				return {
-					...current,
+					...currentState,
 					favorites: dedupeByCaseInsensitive(
-						(persistedState?.favorites ?? (current as UserDataState).favorites)
+						safeArray<FavoriteIssue>(
+							persistedState?.favorites,
+							currentState.favorites,
+						)
 							.map(normalizeFavorite)
 							.filter((favorite) => !!favorite.issueKey),
 						(favorite) => favorite.issueKey,
 					),
-					templates: (
-						persistedState?.templates ?? (current as UserDataState).templates
+					templates: safeArray<RecurringTemplate>(
+						persistedState?.templates,
+						currentState.templates,
 					)
 						.map(normalizeTemplate)
 						.filter((template) => !!template.issueKey),
 					commentPresets: dedupeByCaseInsensitive(
-						persistedState?.commentPresets ??
-							(current as UserDataState).commentPresets,
+						safeArray<string>(
+							persistedState?.commentPresets,
+							currentState.commentPresets,
+						).filter((p): p is string => typeof p === 'string'),
 						(preset) => preset,
 					),
-					dayNotes:
-						persistedState?.dayNotes ?? (current as UserDataState).dayNotes,
+					dayNotes: safeStringRecord(
+						persistedState?.dayNotes,
+						currentState.dayNotes,
+					),
 					calendarMappings: dedupeByCaseInsensitive(
-						(
-							persistedState?.calendarMappings ??
-							(current as UserDataState).calendarMappings
+						safeArray<CalendarMapping>(
+							persistedState?.calendarMappings,
+							currentState.calendarMappings,
 						)
 							.map(normalizeCalendarMapping)
 							.filter((mapping) => !!mapping.pattern && !!mapping.issueKey),
 						(mapping) => mapping.pattern,
 					),
 					reportPresets: dedupeByCaseInsensitive(
-						(
-							persistedState?.reportPresets ??
-							(current as UserDataState).reportPresets
+						safeArray<ReportPreset>(
+							persistedState?.reportPresets,
+							currentState.reportPresets,
 						)
 							.map(normalizeReportPreset)
 							.filter((preset) => !!preset.id && !!preset.label),

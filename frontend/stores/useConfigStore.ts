@@ -224,6 +224,25 @@ export function normalizeConfig(
 	};
 }
 
+/**
+ * Notable schema changes:
+ *   v1 → initial shape (no calendarFeeds, no absenceAssignments)
+ *   v2 → added gitlabHost, calendarFeeds[]
+ *   v3 → added absenceAssignments[], complianceReminderEnabled
+ *   v4 → added timeRounding tri-state, theme widening
+ * Each "v0_to_vN" helper is a defensive normaliser that accepts whatever
+ * legacy shape was on disk and produces a valid current Config. Today,
+ * all branches collapse to `normalizeConfig` because every persisted
+ * field is either nullable or has a sane fallback in normalizeConfig.
+ * Keep the explicit branching so future schema changes can be added
+ * without re-introducing the no-op pattern.
+ */
+function migrateLegacy_v0_to_v4(
+	legacyConfig: Partial<Config> | undefined,
+): Config {
+	return normalizeConfig(legacyConfig);
+}
+
 export function migratePersistedConfigState(
 	persisted: unknown,
 	version: number,
@@ -232,14 +251,12 @@ export function migratePersistedConfigState(
 	const legacyConfig = persistedState?.config;
 
 	if (version < CONFIG_STORAGE_VERSION) {
-		return {
-			config: normalizeConfig(legacyConfig),
-		};
+		return { config: migrateLegacy_v0_to_v4(legacyConfig) };
 	}
 
-	return {
-		config: normalizeConfig(legacyConfig),
-	};
+	// Same-version path: still normalise to absorb hand-edited blobs and
+	// runtime-typed garbage (see useUserDataStore for the broader guards).
+	return { config: normalizeConfig(legacyConfig) };
 }
 
 export const useConfigStore = create<ConfigState>()(

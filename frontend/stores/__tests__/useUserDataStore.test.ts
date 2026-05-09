@@ -215,3 +215,59 @@ describe('useUserDataStore', () => {
 		expect(useUserDataStore.getState().reportPresets).toEqual([]);
 	});
 });
+
+describe('useUserDataStore — defensive merge', () => {
+	it('drops malformed favorite entries silently', async () => {
+		const { useUserDataStore: store } = await import('../useUserDataStore');
+		const merge = (store.persist.getOptions().merge ?? ((a) => a as never)) as (
+			a: unknown,
+			b: unknown,
+		) => unknown;
+		const persisted = {
+			favorites: [
+				{ issueKey: 123 },
+				{ issueKey: 'PROJ-1', defaultTimeSpent: '1h', defaultSeconds: 3600 },
+				{ issueKey: '', defaultTimeSpent: '', defaultSeconds: 0 },
+			],
+			templates: 'not-an-array',
+			commentPresets: ['Hello', 42, ''],
+			dayNotes: 'not-an-object',
+			calendarMappings: [{ pattern: 'a', issueKey: '' }, { pattern: '' }],
+			reportPresets: 'broken',
+		};
+		const merged = merge(persisted, store.getState()) as ReturnType<
+			typeof store.getState
+		>;
+		expect(merged.favorites.map((f) => f.issueKey)).toEqual(['PROJ-1']);
+		expect(merged.templates).toEqual([]);
+		expect(merged.commentPresets).toEqual(['Hello']);
+		expect(merged.dayNotes).toEqual({});
+		expect(merged.calendarMappings).toEqual([]);
+		expect(merged.reportPresets).toEqual([]);
+	});
+
+	it('preserves valid entries through the merge', async () => {
+		const { useUserDataStore: store } = await import('../useUserDataStore');
+		const merge = (store.persist.getOptions().merge ?? ((a) => a as never)) as (
+			a: unknown,
+			b: unknown,
+		) => unknown;
+		const persisted = {
+			favorites: [
+				{
+					issueKey: 'PROJ-99',
+					issueSummary: 'Keep me',
+					defaultTimeSpent: '2h',
+					defaultSeconds: 7200,
+				},
+			],
+			dayNotes: { '2026-05-01': 'note' },
+		};
+		const merged = merge(persisted, store.getState()) as ReturnType<
+			typeof store.getState
+		>;
+		expect(merged.favorites).toHaveLength(1);
+		expect(merged.favorites[0].issueKey).toBe('PROJ-99');
+		expect(merged.dayNotes).toEqual({ '2026-05-01': 'note' });
+	});
+});
