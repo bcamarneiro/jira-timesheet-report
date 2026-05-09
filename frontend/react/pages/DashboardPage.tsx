@@ -10,8 +10,8 @@ import { MonthHeatmap } from '../components/dashboard/MonthHeatmap';
 import { OfflineIndicator } from '../components/dashboard/OfflineIndicator';
 import { SourceStatusBar } from '../components/dashboard/SourceStatusBar';
 import { TemplatesManager } from '../components/dashboard/TemplatesManager';
-import { WeekNavigator } from '../components/dashboard/WeekNavigator';
 import { WeeklyCloseAssistant } from '../components/dashboard/WeeklyCloseAssistant';
+import { WeekNavigator } from '../components/dashboard/WeekNavigator';
 import { WeekOverview } from '../components/dashboard/WeekOverview';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
@@ -103,7 +103,9 @@ export const DashboardPage: React.FC = () => {
 	};
 
 	const handleExportCsv = () => {
-		const csv = generateWeeklyCsv(weekStart, weekEnd, weekWorklogs);
+		const csv = generateWeeklyCsv(weekStart, weekEnd, weekWorklogs, {
+			jiraHost: useConfigStore.getState().config.jiraHost,
+		});
 		const filename = `timesheet-${weekStart}-${weekEnd}.csv`;
 		downloadAsFile(csv, filename, 'text/csv;charset=utf-8');
 		toast.success('CSV file downloaded');
