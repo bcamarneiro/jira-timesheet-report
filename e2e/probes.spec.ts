@@ -212,25 +212,34 @@ test.describe('Snapshot exporter divergence (Markdown / HTML)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// AUDIT-#7 — in-app "Run consistency check" still uses started-policy
+// AUDIT-#7 — in-app "Run consistency check" now uses logged-policy via the
+// classifier, so a week containing only Pattern B entries should complete
+// deterministically without throwing.
 // ─────────────────────────────────────────────────────────────────────
 
 test.describe('In-app consistency check', () => {
-	test('AUDIT-#7: "Run consistency check" reports OK for a week containing only Pattern B → false-positive', async ({
+	test('AUDIT-#7: Run consistency check completes deterministically when the week contains a Pattern B entry', async ({
 		page,
 	}) => {
+		const consoleErrors: string[] = [];
+		page.on('pageerror', (err) => consoleErrors.push(String(err)));
+		page.on('console', (msg) => {
+			if (msg.type() === 'error') consoleErrors.push(msg.text());
+		});
+
 		await goReports(page);
 		await ensureWeekly(page);
 
-		// We need to navigate to the week of 2025-09-22 so that Alex's Pattern B
-		// entries (started=Sep 26 / Sep 29) appear. The Reports week navigator
-		// is identical in shape to the dashboard one.
+		// Navigate to the week of 2025-10-06 so that Alex's Pattern B entries
+		// (started Sep 26 / Sep 29; logged Oct 6 / Oct 9) appear under the
+		// logged-policy. The Reports week navigator is identical in shape to
+		// the dashboard one.
 		const prev = page.getByRole('button', { name: 'Previous week' }).first();
 		const weekLabel = page.locator('[class*="WeekNavigator"]').first();
 
 		for (let i = 0; i < 80; i++) {
 			const text = (await weekLabel.textContent()) ?? '';
-			if (/Sep\s*22/.test(text) || /September\s*22/.test(text)) break;
+			if (/Oct\s*6/.test(text) || /October\s*6/.test(text)) break;
 			await prev.click();
 			await page.waitForTimeout(60);
 		}
@@ -242,9 +251,10 @@ test.describe('In-app consistency check', () => {
 		await button.click();
 		await page.waitForTimeout(600);
 
-		// We can't reliably read the toast text here; what we can do is assert
-		// the button itself didn't error and the page is intact.
+		// The routine should complete without breaking the page or the button.
 		await expect(button).toBeVisible();
+		await expect(button).toBeEnabled();
+		expect(consoleErrors).toEqual([]);
 	});
 });
 

@@ -1,6 +1,6 @@
 import type { WorklogItem } from '../../services/monthWorklogService';
 import type { TeamMemberSummary } from '../../services/teamService';
-import { toLocalDateString } from './date';
+import { classifyWorklog } from './worklogClassifier';
 
 export interface ReportsConsistencyMismatch {
 	email: string;
@@ -51,7 +51,8 @@ export function validateReportsConsistency(
 		if (!email) continue;
 		if (allowedSet && !allowedSet.has(email)) continue;
 
-		const day = toLocalDateString(worklog.started ?? '');
+		const day = classifyWorklog(worklog).loggedOn;
+		if (!day) continue;
 		if (day < weekStart || day > weekEnd) continue;
 
 		const existing = monthlyMap.get(email);

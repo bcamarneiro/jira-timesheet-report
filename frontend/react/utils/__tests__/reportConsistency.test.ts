@@ -23,6 +23,7 @@ function createWorklog(
 	displayName: string,
 	started: string,
 	timeSpentSeconds: number,
+	extras: { comment?: string; created?: string } = {},
 ): WorklogItem {
 	return {
 		author: {
@@ -38,6 +39,8 @@ function createWorklog(
 				summary: 'Consistency test',
 			},
 		},
+		...(extras.comment !== undefined ? { comment: extras.comment } : {}),
+		...(extras.created !== undefined ? { created: extras.created } : {}),
 	};
 }
 
@@ -109,5 +112,77 @@ describe('validateReportsConsistency', () => {
 				monthlySeconds: 1800,
 			},
 		]);
+	});
+
+	it('Pattern A (comment backdate): bucket by loggedOn for the week containing started', () => {
+		const worklog = createWorklog(
+			'alice@example.com',
+			'Alice',
+			'2025-10-05T09:00:00.000+0000',
+			3600,
+			{ comment: 'Original Worklog Date was: 2025/09/25' },
+		);
+
+		const loggedWeek = validateReportsConsistency(
+			[createMember('alice@example.com', 'Alice', 3600)],
+			[worklog],
+			'2025-10-05',
+			'2025-10-11',
+			'alice@example.com',
+		);
+		expect(loggedWeek).toEqual({
+			matches: true,
+			checkedUsers: 1,
+			mismatches: [],
+		});
+
+		const intendedWeek = validateReportsConsistency(
+			[createMember('alice@example.com', 'Alice', 0)],
+			[worklog],
+			'2025-09-22',
+			'2025-09-28',
+			'alice@example.com',
+		);
+		expect(intendedWeek).toEqual({
+			matches: true,
+			checkedUsers: 1,
+			mismatches: [],
+		});
+	});
+
+	it('Pattern B (jira-native backdate): bucket by created when started is in a prior month', () => {
+		const worklog = createWorklog(
+			'alice@example.com',
+			'Alice',
+			'2025-09-28T10:00:00.000Z',
+			3600,
+			{ created: '2025-10-02T10:00:00.000Z' },
+		);
+
+		const createdWeek = validateReportsConsistency(
+			[createMember('alice@example.com', 'Alice', 3600)],
+			[worklog],
+			'2025-09-29',
+			'2025-10-05',
+			'alice@example.com',
+		);
+		expect(createdWeek).toEqual({
+			matches: true,
+			checkedUsers: 1,
+			mismatches: [],
+		});
+
+		const startedWeek = validateReportsConsistency(
+			[createMember('alice@example.com', 'Alice', 0)],
+			[worklog],
+			'2025-09-22',
+			'2025-09-28',
+			'alice@example.com',
+		);
+		expect(startedWeek).toEqual({
+			matches: true,
+			checkedUsers: 1,
+			mismatches: [],
+		});
 	});
 });
