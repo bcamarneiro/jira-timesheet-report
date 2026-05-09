@@ -8,6 +8,7 @@ import {
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { addDaysToIsoDate } from '../utils/date';
+import { classifyWorklog } from '../utils/worklogClassifier';
 import { monthWorklogsQueryKey } from './useMonthWorklogs';
 
 /**
@@ -38,8 +39,8 @@ function getPreviousWeekEnd(prevWeekStart: string): string {
 	return addDaysToIsoDate(prevWeekStart, 6);
 }
 
-/** Derive week worklogs from month data */
-function deriveWeekWorklogs(
+/** Derive week worklogs from month data, bucketed by classifier-derived logged-policy day. */
+export function deriveWeekWorklogs(
 	worklogs: WorklogItem[],
 	email: string,
 	weekStart: string,
@@ -55,8 +56,12 @@ function deriveWeekWorklogs(
 
 	for (const wl of worklogs) {
 		if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
-		const day = (wl.started ?? '').slice(0, 10);
-		if (day >= weekStart && day <= weekEnd) {
+		// Bucket by classifier-derived logged-policy day so backdated entries
+		// (Pattern A comment-marker, Pattern B jira-native) land in the week
+		// they were actually logged in — matching what the dashboard grid
+		// shows under the previous week.
+		const day = classifyWorklog(wl).loggedOn;
+		if (day && day >= weekStart && day <= weekEnd) {
 			entries.push({
 				date: day,
 				issueKey: wl.issue.key,
