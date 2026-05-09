@@ -46,6 +46,7 @@ import {
 	buildReportsSnapshotMarkdown,
 } from '../utils/reportSnapshots';
 import { buildTeamCsv } from '../utils/teamCsvExport';
+import { uid } from '../utils/uid';
 import * as styles from './TimesheetPage.module.css';
 
 // --- Weekly compliance table helpers ---
@@ -539,7 +540,9 @@ export const TimesheetPage: React.FC = () => {
 		if (!trimmedLabel) return;
 
 		saveReportPreset({
-			id: `${slugifyLabel(trimmedLabel) || 'preset'}-${Date.now().toString(36)}`,
+			// UUID-based suffix avoids same-millisecond collisions when a user
+			// pastes a preset name and saves twice quickly.
+			id: `${slugifyLabel(trimmedLabel) || 'preset'}-${uid()}`,
 			label: trimmedLabel,
 			viewMode,
 			searchQuery,

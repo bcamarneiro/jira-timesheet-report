@@ -5,6 +5,7 @@ import {
 	isValidTimeSpentFormat,
 	parseTimeSpentToSeconds,
 } from '../../utils/timeSpent';
+import { uid } from '../../utils/uid';
 import { Button } from '../ui/Button';
 import { IssueAutocomplete } from '../ui/IssueAutocomplete';
 import { Modal } from '../ui/Modal';
@@ -103,7 +104,11 @@ export const TemplatesManager: React.FC<Props> = ({ isOpen, onClose }) => {
 		}
 
 		addTemplate({
-			id: `${key}-${[...daysOfWeek].sort().join('-')}-${time}-${comment.trim() || 'no-comment'}`,
+			// UUID-based id so editing the template (e.g. changing comment or
+			// daysOfWeek) doesn't break removeTemplate(id)/toggleTemplate(id)
+			// lookups; the addTemplate dedup already guards against duplicate
+			// content via field comparison.
+			id: uid('template'),
 			issueKey: key,
 			issueSummary: summary.trim() || undefined,
 			timeSpent: time,
