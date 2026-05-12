@@ -158,6 +158,20 @@ describe('groupWorklogsByUserAndDate', () => {
 		expect(Object.keys(result)).toEqual(['Alex']);
 	});
 
+	it('buckets jira-native backdates by loggedOn (created), not started', () => {
+		const wl: JiraWorklog = {
+			...createMockWorklog(
+				'Alex Thompson',
+				'2025-09-28T10:00:00.000-0300',
+				'1',
+			),
+			created: '2025-10-02T11:00:00.000-0300',
+		};
+		const result = groupWorklogsByUserAndDate([wl]);
+		expect(result['Alex Thompson']['2025-10-02']).toHaveLength(1);
+		expect(result['Alex Thompson']['2025-09-28']).toBeUndefined();
+	});
+
 	it('skips worklogs without a started date', () => {
 		const valid = createMockWorklog(
 			'Alex',
