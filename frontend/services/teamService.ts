@@ -1,6 +1,7 @@
 import { addDaysToIsoDate } from '../react/utils/date';
 import { classifyWorklog } from '../react/utils/worklogClassifier';
 import type { Config } from '../stores/useConfigStore';
+import { fromHttpResponse } from './serviceErrors';
 
 export interface TeamMemberSummary {
 	email: string;
@@ -113,7 +114,7 @@ export async function fetchTeamWorklogs(
 			{ headers, signal },
 		);
 
-		if (!res.ok) throw new Error(`Jira API error: ${res.status}`);
+		if (!res.ok) throw fromHttpResponse('Jira team worklog', res.status);
 
 		const data = (await res.json()) as {
 			issues: SearchIssue[];

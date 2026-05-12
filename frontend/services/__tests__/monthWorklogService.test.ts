@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Config } from '../../stores/useConfigStore';
 import { fetchMonthWorklogs } from '../monthWorklogService';
+import { ServiceError } from '../serviceErrors';
 
 const baseConfig: Config = {
 	jiraHost: 'example.atlassian.net',
@@ -114,6 +115,32 @@ describe('fetchMonthWorklogs', () => {
 		expect(fetchMock.mock.calls[1]?.[0]).toContain('/issue/PROJ-1/worklog');
 		expect(result).toHaveLength(1);
 		expect(result[0]?.id).toBe('w2');
+	});
+
+	it('throws a ServiceError when the search response is not ok', async () => {
+		vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+			ok: false,
+			status: 401,
+			json: async () => ({}),
+		} as Response);
+
+		await expect(fetchMonthWorklogs(baseConfig, 2025, 9)).rejects.toMatchObject(
+			{
+				name: 'ServiceError',
+				kind: 'unauthorized',
+				status: 401,
+				source: 'Jira search',
+			},
+		);
+
+		vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+			ok: false,
+			status: 500,
+			json: async () => ({}),
+		} as Response);
+		await expect(
+			fetchMonthWorklogs(baseConfig, 2025, 9),
+		).rejects.toBeInstanceOf(ServiceError);
 	});
 
 	it('emits progress updates for search and truncated worklog fetches', async () => {

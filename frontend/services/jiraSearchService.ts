@@ -1,4 +1,5 @@
 import type { Config } from '../stores/useConfigStore';
+import { fromHttpResponse } from './serviceErrors';
 
 export interface JiraSearchResult {
 	key: string;
@@ -46,7 +47,7 @@ export async function searchJiraIssues(
 		},
 	);
 
-	if (!res.ok) throw new Error(`Jira search error: ${res.status}`);
+	if (!res.ok) throw fromHttpResponse('Jira search', res.status);
 
 	const data = (await res.json()) as {
 		issues: {
