@@ -100,15 +100,6 @@ module.exports = {
 		},
 		port: Number(process.env.FRONTEND_PORT) || (isOfflineMode ? 5174 : 5173),
 		historyApiFallback: true,
-		proxy: isOfflineMode
-			? undefined
-			: [
-					{
-						context: ['/api'],
-						target: process.env.API_URL || 'http://localhost:3000',
-						changeOrigin: true,
-					},
-				],
 		hot: true,
 		liveReload: true,
 		client: {
