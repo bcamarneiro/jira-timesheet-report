@@ -2,7 +2,8 @@ import type { UserAbsenceDays } from '../../services/absenceService';
 import type { WorklogItem } from '../../services/monthWorklogService';
 import type { TeamMemberSummary } from '../../services/teamService';
 import { countAbsenceWorkdaysInRange } from './absence';
-import { addDaysToIsoDate, toLocalDateString } from './date';
+import { addDaysToIsoDate } from './date';
+import { classifyWorklog } from './worklogClassifier';
 
 const SECONDS_PER_DAY = 28800; // 8h
 
@@ -61,7 +62,8 @@ export function buildTeamSummaries(
 		if (!email) continue;
 		if (allowedSet && !allowedSet.has(email)) continue;
 
-		const day = toLocalDateString(worklog.started ?? '');
+		const day = classifyWorklog(worklog).loggedOn;
+		if (!day) continue;
 		if (day < weekStart || day > weekEnd) continue;
 
 		let member = memberMap.get(email);

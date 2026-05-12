@@ -7,6 +7,7 @@ function createWorklog(
 	displayName: string,
 	started: string,
 	timeSpentSeconds: number,
+	created?: string,
 ): WorklogItem {
 	return {
 		author: {
@@ -15,6 +16,7 @@ function createWorklog(
 		},
 		started,
 		timeSpentSeconds,
+		...(created ? { created } : {}),
 		issue: {
 			id: '10000',
 			key: 'APP-1',
@@ -65,7 +67,11 @@ describe('buildTeamSummaries', () => {
 				new Map([
 					[
 						'2026-03-05',
-						{ date: '2026-03-05', reasons: ['[Team PTO] Vacation - Bob'], kind: 'vacation' as const },
+						{
+							date: '2026-03-05',
+							reasons: ['[Team PTO] Vacation - Bob'],
+							kind: 'vacation' as const,
+						},
 					],
 				]),
 			],
@@ -156,7 +162,11 @@ describe('buildManagerTrendModel', () => {
 				new Map([
 					[
 						'2026-03-11',
-						{ date: '2026-03-11', reasons: ['[Team PTO] Vacation - Bob'], kind: 'vacation' as const },
+						{
+							date: '2026-03-11',
+							reasons: ['[Team PTO] Vacation - Bob'],
+							kind: 'vacation' as const,
+						},
 					],
 				]),
 			],
@@ -179,5 +189,33 @@ describe('buildManagerTrendModel', () => {
 
 		expect(model.weeks[0]?.totalGapSeconds).toBe(0);
 		expect(model.weeks[0]?.complianceRate).toBe(100);
+	});
+
+	it('buckets Pattern B jira-native backdates by loggedOn (created) week, not started', () => {
+		const model = buildManagerTrendModel(
+			[
+				createWorklog(
+					'alice@example.com',
+					'Alice',
+					'2025-09-28T10:00:00.000Z',
+					4 * 3600,
+					'2025-10-06T10:00:00.000Z',
+				),
+			],
+			'2025-10-06',
+			3,
+			'alice@example.com',
+		);
+
+		expect(model.weeks.map((week) => week.weekStart)).toEqual([
+			'2025-09-22',
+			'2025-09-29',
+			'2025-10-06',
+		]);
+		// Worklog should be bucketed into the week containing the created date (2025-10-06).
+		expect(model.weeks[2]?.totalSeconds).toBe(4 * 3600);
+		// And NOT in the week containing the started date (2025-09-28).
+		expect(model.weeks[1]?.totalSeconds).toBe(0);
+		expect(model.weeks[0]?.totalSeconds).toBe(0);
 	});
 });
