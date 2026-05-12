@@ -8,21 +8,15 @@ import {
 	toLocalDateString,
 } from '../react/utils/date';
 import {
-	distributeSuggestionsToFillGap,
-	roundingStepSeconds,
-} from '../services/suggestionMerger';
+	applyAdjustSuggestionTime,
+	applyDismissSuggestion,
+	applyFillDayGap,
+	applyMarkMultipleLogged,
+	applyMarkSuggestionLogged,
+	applyUnmarkMultipleLogged,
+	applyUnmarkSuggestionLogged,
+} from '../services/dashboardActions';
 import { useConfigStore } from './useConfigStore';
-
-function formatTimeSpent(seconds: number): string {
-	const hours = seconds / 3600;
-	if (hours >= 1) {
-		const h = Math.floor(hours);
-		const remaining = seconds % 3600;
-		return remaining > 0 ? `${h}h ${Math.round(remaining / 60)}m` : `${h}h`;
-	}
-	return `${Math.round(seconds / 60)}m`;
-}
-
 
 function getSunday(monday: string): string {
 	return addDaysToIsoDate(monday, 6);
@@ -185,107 +179,35 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
 	markSuggestionLogged: (suggestionId) =>
 		set((state) => ({
-			daySummaries: state.daySummaries.map((day) => {
-				const s = day.suggestions.find((s) => s.id === suggestionId);
-				const added = s && !s.logged ? s.suggestedSeconds : 0;
-				return {
-					...day,
-					loggedSeconds: day.loggedSeconds + added,
-					gapSeconds: Math.max(0, day.gapSeconds - added),
-					suggestions: day.suggestions.map((s) =>
-						s.id === suggestionId ? { ...s, logged: true } : s,
-					),
-				};
-			}),
+			daySummaries: applyMarkSuggestionLogged(state.daySummaries, suggestionId),
 		})),
 
 	unmarkSuggestionLogged: (suggestionId) =>
 		set((state) => ({
-			daySummaries: state.daySummaries.map((day) => {
-				const s = day.suggestions.find((s) => s.id === suggestionId);
-				const removed = s?.logged ? s.suggestedSeconds : 0;
-				return {
-					...day,
-					loggedSeconds: Math.max(0, day.loggedSeconds - removed),
-					gapSeconds: day.gapSeconds + removed,
-					suggestions: day.suggestions.map((s) =>
-						s.id === suggestionId ? { ...s, logged: false } : s,
-					),
-				};
-			}),
+			daySummaries: applyUnmarkSuggestionLogged(
+				state.daySummaries,
+				suggestionId,
+			),
 		})),
 
 	markMultipleSuggestionsLogged: (ids) =>
-		set((state) => {
-			const idSet = new Set(ids);
-			return {
-				daySummaries: state.daySummaries.map((day) => {
-					let added = 0;
-					for (const s of day.suggestions) {
-						if (idSet.has(s.id) && !s.logged) added += s.suggestedSeconds;
-					}
-					return {
-						...day,
-						loggedSeconds: day.loggedSeconds + added,
-						gapSeconds: Math.max(0, day.gapSeconds - added),
-						suggestions: day.suggestions.map((s) =>
-							idSet.has(s.id) ? { ...s, logged: true } : s,
-						),
-					};
-				}),
-			};
-		}),
+		set((state) => ({
+			daySummaries: applyMarkMultipleLogged(state.daySummaries, ids),
+		})),
 
 	unmarkMultipleSuggestionsLogged: (ids) =>
-		set((state) => {
-			const idSet = new Set(ids);
-			return {
-				daySummaries: state.daySummaries.map((day) => {
-					let removed = 0;
-					for (const s of day.suggestions) {
-						if (idSet.has(s.id) && s.logged) removed += s.suggestedSeconds;
-					}
-					return {
-						...day,
-						loggedSeconds: Math.max(0, day.loggedSeconds - removed),
-						gapSeconds: day.gapSeconds + removed,
-						suggestions: day.suggestions.map((s) =>
-							idSet.has(s.id) ? { ...s, logged: false } : s,
-						),
-					};
-				}),
-			};
-		}),
+		set((state) => ({
+			daySummaries: applyUnmarkMultipleLogged(state.daySummaries, ids),
+		})),
 
 	dismissSuggestion: (suggestionId) =>
-		set((state) => {
-			const timeRounding = useConfigStore.getState().config.timeRounding;
-			return {
-				daySummaries: state.daySummaries.map((day) => {
-					const hasSuggestion = day.suggestions.some(
-						(s) => s.id === suggestionId,
-					);
-					if (!hasSuggestion) return day;
-
-					const remaining = day.suggestions.filter(
-						(s) => s.id !== suggestionId,
-					);
-					const active = remaining.filter((s) => !s.logged);
-					const logged = remaining.filter((s) => s.logged);
-
-					if (active.length === 0 || day.gapSeconds <= 0) {
-						return { ...day, suggestions: remaining };
-					}
-
-					const redistributed = distributeSuggestionsToFillGap(
-						active,
-						day.gapSeconds,
-						timeRounding,
-					);
-					return { ...day, suggestions: [...redistributed, ...logged] };
-				}),
-			};
-		}),
+		set((state) => ({
+			daySummaries: applyDismissSuggestion(
+				state.daySummaries,
+				suggestionId,
+				useConfigStore.getState().config.timeRounding,
+			),
+		})),
 
 	mergePreviousWeekSuggestions: (suggestions) =>
 		set((state) => ({
@@ -312,46 +234,23 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 		})),
 
 	adjustSuggestionTime: (suggestionId, deltaSeconds) =>
-		set((state) => {
-			const rounding = useConfigStore.getState().config.timeRounding;
-			const step = roundingStepSeconds(rounding);
-			return {
-				daySummaries: state.daySummaries.map((day) => ({
-					...day,
-					suggestions: day.suggestions.map((s) => {
-						if (s.id !== suggestionId) return s;
-						const raw = s.suggestedSeconds + deltaSeconds;
-						// Snap to the nearest interval
-						const snapped = Math.round(raw / step) * step;
-						const newSeconds = Math.max(step, snapped);
-						return {
-							...s,
-							suggestedSeconds: newSeconds,
-							suggestedTimeSpent: formatTimeSpent(newSeconds),
-						};
-					}),
-				})),
-			};
-		}),
+		set((state) => ({
+			daySummaries: applyAdjustSuggestionTime(
+				state.daySummaries,
+				suggestionId,
+				deltaSeconds,
+				useConfigStore.getState().config.timeRounding,
+			),
+		})),
 
 	fillDayGap: (date) =>
-		set((state) => {
-			const timeRounding = useConfigStore.getState().config.timeRounding;
-			return {
-				daySummaries: state.daySummaries.map((day) => {
-					if (day.date !== date) return day;
-					const active = day.suggestions.filter((s) => !s.logged);
-					if (active.length === 0 || day.gapSeconds <= 0) return day;
-					const scaled = distributeSuggestionsToFillGap(
-						active,
-						day.gapSeconds,
-						timeRounding,
-					);
-					const logged = day.suggestions.filter((s) => s.logged);
-					return { ...day, suggestions: [...scaled, ...logged] };
-				}),
-			};
-		}),
+		set((state) => ({
+			daySummaries: applyFillDayGap(
+				state.daySummaries,
+				date,
+				useConfigStore.getState().config.timeRounding,
+			),
+		})),
 
 	setLoading: (source, value) =>
 		set((state) =>
