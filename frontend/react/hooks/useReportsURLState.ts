@@ -41,6 +41,88 @@ function clampTrendWeeks(value: number): number {
 	return rounded;
 }
 
+export interface ParsedReportsURLParams {
+	viewMode: ReportsViewMode;
+	searchQuery: string;
+	onlyAttentionNeeded: boolean;
+	managerMode: boolean;
+	trendWeeks: number;
+	sortField: ReportsSortField | null;
+	sortDirection: ReportsSortDirection | null;
+	selectedUser: string;
+	/** Present only when both year and month are within sane bounds. */
+	yearMonth: { year: number; monthZeroIndexed: number } | null;
+	weekStart: string | null;
+}
+
+/**
+ * Pure parser for Reports URL query params. Exposed for tests; the hook
+ * uses it on every popstate / mount. All clamping/validation lives here
+ * so a single set of edge cases (year=99999, trendWeeks=999, etc.) is
+ * pinned in one place.
+ */
+export function parseReportsURLParams(search: string): ParsedReportsURLParams {
+	const params = new URLSearchParams(search);
+
+	const viewParam = params.get('view');
+	const viewMode: ReportsViewMode =
+		viewParam === 'monthly' ? 'monthly' : 'weekly';
+
+	const rawQuery = params.get('q') ?? params.get('search');
+	const searchQuery = rawQuery?.trim() || '';
+
+	const onlyAttentionNeeded = params.get('attention') === '1';
+	const managerMode = params.get('manager') === '1';
+
+	const trendWeeksRaw = params.get('trendWeeks');
+	const trendWeeks =
+		trendWeeksRaw === null
+			? TREND_WEEKS_DEFAULT
+			: clampTrendWeeks(Number.parseInt(trendWeeksRaw, 10));
+
+	const sortFieldParam = params.get('sort');
+	const sortField: ReportsSortField | null =
+		sortFieldParam === 'name' ||
+		sortFieldParam === 'total' ||
+		sortFieldParam === 'gap'
+			? sortFieldParam
+			: null;
+
+	const sortDirParam = params.get('dir');
+	const sortDirection: ReportsSortDirection | null =
+		sortDirParam === 'asc' || sortDirParam === 'desc' ? sortDirParam : null;
+
+	const selectedUser = params.get('user')?.trim() || '';
+
+	const yearParam = Number.parseInt(params.get('year') || '', 10);
+	const monthParam = Number.parseInt(params.get('month') || '', 10);
+	const yearMonth =
+		Number.isFinite(yearParam) &&
+		yearParam >= YEAR_MIN &&
+		yearParam <= YEAR_MAX &&
+		Number.isFinite(monthParam) &&
+		monthParam >= 1 &&
+		monthParam <= 12
+			? { year: yearParam, monthZeroIndexed: monthParam - 1 }
+			: null;
+
+	const weekStartRaw = params.get('weekStart');
+	const weekStart = isValidWeekStart(weekStartRaw) ? weekStartRaw : null;
+
+	return {
+		viewMode,
+		searchQuery,
+		onlyAttentionNeeded,
+		managerMode,
+		trendWeeks,
+		sortField,
+		sortDirection,
+		selectedUser,
+		yearMonth,
+		weekStart,
+	};
+}
+
 /**
  * Read the user= query param from the current location synchronously.
  * Exported so callers can seed initial state before the read effect runs.
@@ -76,59 +158,19 @@ export function useReportsURLState({
 	const setWeek = useTeamStore((state) => state.setWeek);
 
 	const syncFromLocation = useCallback(() => {
-		const params = new URLSearchParams(window.location.search);
-
-		const nextView = params.get('view');
-		setViewMode(nextView === 'monthly' ? 'monthly' : 'weekly');
-
-		const rawQuery = params.get('q') ?? params.get('search');
-		setSearchQuery(rawQuery?.trim() || '');
-
-		setOnlyAttentionNeeded(params.get('attention') === '1');
-		setManagerMode(params.get('manager') === '1');
-
-		const trendWeeksRaw = params.get('trendWeeks');
-		if (trendWeeksRaw === null) {
-			setTrendWeeks(TREND_WEEKS_DEFAULT);
-		} else {
-			const parsed = Number.parseInt(trendWeeksRaw, 10);
-			setTrendWeeks(clampTrendWeeks(parsed));
+		const parsed = parseReportsURLParams(window.location.search);
+		setViewMode(parsed.viewMode);
+		setSearchQuery(parsed.searchQuery);
+		setOnlyAttentionNeeded(parsed.onlyAttentionNeeded);
+		setManagerMode(parsed.managerMode);
+		setTrendWeeks(parsed.trendWeeks);
+		if (parsed.sortField) setSortField(parsed.sortField);
+		if (parsed.sortDirection) setSortDirection(parsed.sortDirection);
+		setSelectedUser(parsed.selectedUser);
+		if (parsed.yearMonth) {
+			setCurrentMonth(parsed.yearMonth.year, parsed.yearMonth.monthZeroIndexed);
 		}
-
-		const nextSortField = params.get('sort');
-		if (
-			nextSortField === 'name' ||
-			nextSortField === 'total' ||
-			nextSortField === 'gap'
-		) {
-			setSortField(nextSortField);
-		}
-
-		const nextSortDirection = params.get('dir');
-		if (nextSortDirection === 'asc' || nextSortDirection === 'desc') {
-			setSortDirection(nextSortDirection);
-		}
-
-		const user = params.get('user')?.trim() || '';
-		setSelectedUser(user);
-
-		const yearParam = Number.parseInt(params.get('year') || '', 10);
-		const monthParam = Number.parseInt(params.get('month') || '', 10);
-		if (
-			Number.isFinite(yearParam) &&
-			yearParam >= YEAR_MIN &&
-			yearParam <= YEAR_MAX &&
-			Number.isFinite(monthParam) &&
-			monthParam >= 1 &&
-			monthParam <= 12
-		) {
-			setCurrentMonth(yearParam, monthParam - 1);
-		}
-
-		const nextWeekStart = params.get('weekStart');
-		if (isValidWeekStart(nextWeekStart)) {
-			setWeek(nextWeekStart);
-		}
+		if (parsed.weekStart) setWeek(parsed.weekStart);
 	}, [
 		setCurrentMonth,
 		setManagerMode,
