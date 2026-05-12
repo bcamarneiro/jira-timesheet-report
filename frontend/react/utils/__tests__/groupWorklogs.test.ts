@@ -138,6 +138,40 @@ describe('groupWorklogsByUserAndDate', () => {
 		const grouped = result['Alex Thompson']['2025-10-15'][0];
 		expect(grouped.id).toBe('123');
 		expect(grouped.timeSpentSeconds).toBe(28800);
-		expect(grouped.author.displayName).toBe('Alex Thompson');
+		expect(grouped.author?.displayName).toBe('Alex Thompson');
+	});
+
+	it('skips worklogs without an author', () => {
+		const valid = createMockWorklog(
+			'Alex',
+			'2025-10-15T09:00:00.000-0300',
+			'1',
+		);
+		const malformed = {
+			...createMockWorklog('Ghost', '2025-10-15T09:00:00.000-0300', '2'),
+			author: undefined,
+		};
+		const result = groupWorklogsByUserAndDate([
+			valid,
+			malformed as unknown as JiraWorklog,
+		]);
+		expect(Object.keys(result)).toEqual(['Alex']);
+	});
+
+	it('skips worklogs without a started date', () => {
+		const valid = createMockWorklog(
+			'Alex',
+			'2025-10-15T09:00:00.000-0300',
+			'1',
+		);
+		const malformed = {
+			...createMockWorklog('Bob', '2025-10-15T09:00:00.000-0300', '2'),
+			started: undefined,
+		};
+		const result = groupWorklogsByUserAndDate([
+			valid,
+			malformed as unknown as JiraWorklog,
+		]);
+		expect(Object.keys(result)).toEqual(['Alex']);
 	});
 });

@@ -217,13 +217,13 @@ for (const pair of alexPatternBPairs) {
 
 logger.debug('[MOCK DATA] Generated mock worklogs:');
 logger.debug(
-	`  - Alex: ${MockWorklogsSimple.filter((w) => w.author.displayName === 'Alex Thompson').length} worklogs (expected: 23 × 8h = 184h)`,
+	`  - Alex: ${MockWorklogsSimple.filter((w) => w.author?.displayName === 'Alex Thompson').length} worklogs (expected: 23 × 8h = 184h)`,
 );
 logger.debug(
-	`  - Sarah: ${MockWorklogsSimple.filter((w) => w.author.displayName === 'Sarah Johnson').length} worklogs (20 regular + 2 retroactive)`,
+	`  - Sarah: ${MockWorklogsSimple.filter((w) => w.author?.displayName === 'Sarah Johnson').length} worklogs (20 regular + 2 retroactive)`,
 );
 logger.debug(
-	`  - Mike: ${MockWorklogsSimple.filter((w) => w.author.displayName === 'Mike Chen').length} worklogs (19 regular + 3 retroactive)`,
+	`  - Mike: ${MockWorklogsSimple.filter((w) => w.author?.displayName === 'Mike Chen').length} worklogs (19 regular + 3 retroactive)`,
 );
 
 export default MockWorklogsSimple;

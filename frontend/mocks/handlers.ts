@@ -103,6 +103,7 @@ const allWorklogs = [...MockWorklogs, ...devWorklogs];
 const worklogsByIssue: Record<string, JiraWorklog[]> = {};
 for (const wl of allWorklogs) {
 	const key = wl.issueKey || wl.issueId;
+	if (!key) continue;
 	if (!worklogsByIssue[key]) {
 		worklogsByIssue[key] = [];
 	}
@@ -279,7 +280,11 @@ export const handlers = [
 			if (expand.includes('changelog')) {
 				const worklogs = worklogsByIssue[issueKey as string] || [];
 				// Create one changelog entry per day that has worklogs
-				const dates = new Set(worklogs.map((wl) => wl.started.slice(0, 10)));
+				const dates = new Set(
+					worklogs
+						.map((wl) => wl.started?.slice(0, 10))
+						.filter((d): d is string => !!d),
+				);
 				result.changelog = {
 					startAt: 0,
 					maxResults: 100,
@@ -288,7 +293,7 @@ export const handlers = [
 						id: `hist-${issueKey}-${date}`,
 						created: `${date}T10:00:00.000-0300`,
 						author:
-							worklogs.find((wl) => wl.started.slice(0, 10) === date)?.author ||
+							worklogs.find((wl) => wl.started?.slice(0, 10) === date)?.author ||
 							devUser,
 						items: [
 							{
@@ -332,6 +337,7 @@ export const handlers = [
 					: Number.POSITIVE_INFINITY;
 
 				worklogs = worklogs.filter((wl) => {
+					if (!wl.started) return false;
 					const startedDate = new Date(wl.started);
 					const worklogMillis = startedDate.getTime();
 					return worklogMillis >= afterMillis && worklogMillis <= beforeMillis;

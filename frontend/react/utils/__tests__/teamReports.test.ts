@@ -65,7 +65,7 @@ describe('buildTeamSummaries', () => {
 				new Map([
 					[
 						'2026-03-05',
-						{ date: '2026-03-05', reasons: ['[Team PTO] Vacation - Bob'] },
+						{ date: '2026-03-05', reasons: ['[Team PTO] Vacation - Bob'], kind: 'vacation' as const },
 					],
 				]),
 			],
@@ -156,7 +156,7 @@ describe('buildManagerTrendModel', () => {
 				new Map([
 					[
 						'2026-03-11',
-						{ date: '2026-03-11', reasons: ['[Team PTO] Vacation - Bob'] },
+						{ date: '2026-03-11', reasons: ['[Team PTO] Vacation - Bob'], kind: 'vacation' as const },
 					],
 				]),
 			],
