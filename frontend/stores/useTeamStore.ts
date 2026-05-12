@@ -6,7 +6,6 @@ import {
 	toLocalDateString,
 } from '../react/utils/date';
 
-
 function getSunday(monday: string): string {
 	return addDaysToIsoDate(monday, 6);
 }

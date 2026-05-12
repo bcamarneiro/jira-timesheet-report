@@ -24,14 +24,10 @@ export const PermissionsSection: React.FC<Props> = ({
 	handleChange,
 }) => {
 	return (
-		<fieldset
-			id={SETTINGS_SECTION_IDS.permissions}
-			className={styles.section}
-		>
+		<fieldset id={SETTINGS_SECTION_IDS.permissions} className={styles.section}>
 			<legend className={styles.sectionTitle}>Worklog Permissions</legend>
 			<small className={styles.permissionsHint}>
-				Auto-detected when you test the connection. Override manually if
-				needed.
+				Auto-detected when you test the connection. Override manually if needed.
 			</small>
 			<label className={styles.checkboxLabel}>
 				<input

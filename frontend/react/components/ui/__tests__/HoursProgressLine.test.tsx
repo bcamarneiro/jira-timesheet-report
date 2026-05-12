@@ -7,7 +7,10 @@ import { HoursProgressLine } from '../HoursProgressLine';
 describe('HoursProgressLine', () => {
 	it('renders total / target / percent when targetSeconds is provided', () => {
 		const { container } = render(
-			<HoursProgressLine totalSeconds={184 * 3600} targetSeconds={184 * 3600} />,
+			<HoursProgressLine
+				totalSeconds={184 * 3600}
+				targetSeconds={184 * 3600}
+			/>,
 		);
 		expect(container.textContent).toBe('184.0h / 184h (100%)');
 	});

@@ -22,10 +22,7 @@ export const PreferencesSection: React.FC<Props> = ({
 	timeRoundingId,
 }) => {
 	return (
-		<fieldset
-			id={SETTINGS_SECTION_IDS.preferences}
-			className={styles.section}
-		>
+		<fieldset id={SETTINGS_SECTION_IDS.preferences} className={styles.section}>
 			<legend className={styles.sectionTitle}>Preferences</legend>
 			<div className={styles.formGroup}>
 				<label htmlFor={themeId}>Theme</label>

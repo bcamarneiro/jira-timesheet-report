@@ -1,9 +1,5 @@
 import type { WeekWorklogEntry } from '../../stores/useDashboardStore';
-import {
-	buildProvenanceFooter,
-	CSV_SEP as SEP,
-	csvEscape,
-} from './csvHelpers';
+import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
 import { parseIsoDateLocal } from './date';
 import { classifyWorklog } from './worklogClassifier';
 

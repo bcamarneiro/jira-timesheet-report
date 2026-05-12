@@ -56,9 +56,9 @@ export const ScopeSection: React.FC<Props> = ({
 					placeholder="john@example.com, jane@example.com"
 				/>
 				<small>
-					Add the teammates you want to keep in scope for Reports and for
-					shared time-off assignments. Press <code>Enter</code>,{' '}
-					<code>Tab</code>, or paste a list to create chips.
+					Add the teammates you want to keep in scope for Reports and for shared
+					time-off assignments. Press <code>Enter</code>, <code>Tab</code>, or
+					paste a list to create chips.
 				</small>
 			</div>
 		</fieldset>

@@ -1,9 +1,5 @@
 import type { EnrichedJiraWorklog } from '../../../types/jira';
-import {
-	buildProvenanceFooter,
-	CSV_SEP as SEP,
-	csvEscape,
-} from './csvHelpers';
+import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
 import { sanitizeFilename } from './downloadFile';
 import {
 	type ClassifiedWorklog,
@@ -39,7 +35,6 @@ const TIMESHEET_HEADERS = [
 	'BackdateSource',
 	'BookedHours',
 ];
-
 
 function isInPeriod(
 	isoDay: string,

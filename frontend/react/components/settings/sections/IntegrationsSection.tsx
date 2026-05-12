@@ -129,10 +129,7 @@ export const IntegrationsSection: React.FC<Props> = ({
 	handleChange,
 }) => {
 	return (
-		<fieldset
-			id={SETTINGS_SECTION_IDS.integrations}
-			className={styles.section}
-		>
+		<fieldset id={SETTINGS_SECTION_IDS.integrations} className={styles.section}>
 			<legend className={styles.sectionTitle}>
 				Services <span className={styles.optional}>optional</span>
 			</legend>
@@ -504,9 +501,8 @@ export const IntegrationsSection: React.FC<Props> = ({
 					</div>
 					{hasSharedAbsenceFeedsWithoutAssignments ? (
 						<p className={styles.serviceHint}>
-							At least one shared time-off calendar still needs assignment
-							rules below so shared events reduce the right person’s target
-							hours.
+							At least one shared time-off calendar still needs assignment rules
+							below so shared events reduce the right person’s target hours.
 						</p>
 					) : null}
 				</div>

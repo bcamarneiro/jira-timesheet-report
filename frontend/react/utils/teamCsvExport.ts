@@ -1,9 +1,5 @@
 import type { TeamMemberSummary } from '../../services/teamService';
-import {
-	buildProvenanceFooter,
-	CSV_SEP as SEP,
-	csvEscape,
-} from './csvHelpers';
+import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
 import { parseIsoDateLocal } from './date';
 
 function formatDayLabel(dateStr: string): string {
