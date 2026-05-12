@@ -1,5 +1,6 @@
 import { logger } from '../react/utils/logger';
 import { classifyWorklog } from '../react/utils/worklogClassifier';
+import { fromHttpResponse } from './serviceErrors';
 
 export interface WorklogEntry {
 	date: string;
@@ -63,7 +64,7 @@ export async function fetchWeekWorklogs(
 		{ headers, signal },
 	);
 
-	if (!res.ok) throw new Error(`Jira API error: ${res.status}`);
+	if (!res.ok) throw fromHttpResponse('Jira issue worklog', res.status);
 
 	const data = (await res.json()) as { issues: JiraSearchIssue[] };
 

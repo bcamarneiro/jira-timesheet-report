@@ -2,6 +2,7 @@ import type { EnrichedJiraWorklog, JiraUser } from '../../types/jira';
 import type { WorklogFetchProgress } from '../../types/worklogLoading';
 import { logger } from '../react/utils/logger';
 import type { Config } from '../stores/useConfigStore';
+import { fromHttpResponse } from './serviceErrors';
 
 export type WorklogAuthor = JiraUser;
 export type WorklogItem = EnrichedJiraWorklog;
@@ -113,7 +114,7 @@ export async function fetchMonthWorklogs(
 	while (true) {
 		const searchUrl = `${base}/rest/api/2/search?jql=${encodeURIComponent(jql)}&maxResults=${maxResults}&startAt=${startAt}&fields=${fields}`;
 		const res = await fetch(searchUrl, { headers, signal });
-		if (!res.ok) throw new Error(`Jira search error: ${res.status}`);
+		if (!res.ok) throw fromHttpResponse('Jira search', res.status);
 		const data = (await res.json()) as {
 			issues: SearchIssue[];
 			total: number;

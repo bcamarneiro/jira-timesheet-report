@@ -1,5 +1,6 @@
 import type { WorklogSuggestion } from '../../types/Suggestion';
 import type { Config } from '../stores/useConfigStore';
+import { fromHttpResponse } from './serviceErrors';
 
 const JIRA_KEY_RE = /([A-Z][A-Z0-9]+-\d+)/;
 
@@ -37,7 +38,7 @@ async function jiraFetch(
 		},
 		signal,
 	});
-	if (!res.ok) throw new Error(`Jira API error: ${res.status}`);
+	if (!res.ok) throw fromHttpResponse('Jira activity', res.status);
 	return res.json();
 }
 
