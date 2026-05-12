@@ -64,6 +64,45 @@ e2e/               Playwright specs
 - Use **Reports** for the combined weekly team and monthly reporting area
 - Prefer naming that reflects the current product language; avoid introducing new `team`/`timesheet` route names unless a feature is truly scoped that way
 
+## Domain Invariants
+
+These are load-bearing rules. Breaking them silently corrupts reports. Read before editing anything that touches worklog bucketing, error handling, or CSV output.
+
+### Worklog classifier is the single source of truth for "what day does this count on"
+
+`frontend/react/utils/worklogClassifier.ts` returns `{loggedOn, intendedFor, daysLate, isBackdated, source}`. All surfaces (Dashboard, Reports weekly/monthly, team summaries, CSV, snapshots) bucket by `classifyWorklog(wl).loggedOn` — never by `wl.started`.
+
+Two backdate patterns the classifier handles:
+- **Pattern A (comment-marker):** `started` is the actual log-day; the comment carries `Original Worklog Date was: YYYY/MM/DD`. `loggedOn = started`, `intendedFor = marker`.
+- **Pattern B (jira-native):** `started` is the intended past date, `created` is the actual log-day. `loggedOn = created`, `intendedFor = started`.
+
+Do not introduce a new `started`-based bucketing path. If a service-layer filter has to use `started` for the Jira query (JQL `worklogDate`), widen the fetch window by ±1 week and re-bucket client-side via classifier — see `frontend/services/teamService.ts` for the canonical pattern.
+
+### Ghost reconciliation UX
+
+Backdated entries render as **non-counting ghost placeholders** on their `intendedFor` day, with the real (counted) entry on `loggedOn`. Hours only sum once — on `loggedOn`. Ghosts are visual reconciliation, not data.
+
+### ServiceError, not raw Error
+
+All service-layer throws go through `frontend/services/serviceErrors.ts`:
+- `fromHttpResponse(source, status)` for plain HTTP status mapping
+- `fromRichMessage(source, status, message)` when the source has a pre-built user-facing message (GitLab, Calendar)
+- `new ServiceError({kind, status, source, message})` for typed cases like `kind: 'invalid-token'`
+
+Never `throw new Error(...)` from a service module.
+
+### Finance-grade CSV is byte-stable
+
+Monthly/team/week CSVs must preserve byte-for-byte output across refactors. The exports include `IsBackdated` / `BackdateSource` columns and a provenance footer (`# Generated from <host> on <iso>`). When extracting helpers, parameterise rather than diverging — see `csvHelpers` for the existing shape.
+
+### Stores have a migration scaffold
+
+`useConfigStore`, `useUserDataStore`, `useUIStore` use Zustand persist with a versioned `migrate` and a defensive `merge`. Bumping `*_STORAGE_VERSION` requires a `v(N) → v(N+1)` step in `migratePersistedConfigState` (or the equivalent for the other stores). The scaffold tests in `__tests__/useConfigStore.test.ts` rehearse this.
+
+### Audit follow-up tickets
+
+Remaining audit-driven tech-debt lives in the Linear project **"Jira Timesheet Report — audit follow-up"** (`https://linear.app/adamastor/project/jira-timesheet-report-audit-follow-up-d976deb130a5`). Check there before starting a refactor that "feels obvious" — it's likely already scoped.
+
 ## Conventions
 
 - **CSS**: use tokens from `tokens.css`; avoid hardcoded colors and spacing
