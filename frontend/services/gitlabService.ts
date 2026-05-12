@@ -1,4 +1,5 @@
 import type { WorklogSuggestion } from '../../types/Suggestion';
+import { fromRichMessage } from './serviceErrors';
 
 const JIRA_KEY_RE = /([A-Z][A-Z0-9]+-\d+)/g;
 
@@ -209,14 +210,22 @@ export async function fetchGitlabSuggestions(
 				signal,
 			});
 			if (!res.ok) {
-				throw new Error(await describeGitlabErrorResponse(res, cleanHost));
+				throw fromRichMessage(
+					'GitLab',
+					res.status,
+					await describeGitlabErrorResponse(res, cleanHost),
+				);
 			}
 			const events = (await res.json()) as GitLabEvent[];
 			allEvents.push(...events);
 			if (events.length < 20) break;
 		}
 	} catch (error) {
-		throw new Error(describeGitlabConnectionError(error, cleanHost));
+		throw fromRichMessage(
+			'GitLab',
+			undefined,
+			describeGitlabConnectionError(error, cleanHost),
+		);
 	}
 
 	// Group activities by (date, issueKey, activityType)

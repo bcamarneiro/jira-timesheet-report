@@ -65,6 +65,15 @@ export function fromHttpResponse(
 	});
 }
 
+export function fromRichMessage(
+	source: string,
+	status: number | undefined,
+	message: string,
+): ServiceError {
+	const kind = status ? classifyHttpStatus(status) : 'unknown';
+	return new ServiceError({ kind, status, source, message });
+}
+
 export function fromNetworkError(source: string, error: unknown): ServiceError {
 	const inner = error instanceof Error ? error.message : String(error);
 	return new ServiceError({
