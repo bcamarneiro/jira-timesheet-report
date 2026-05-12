@@ -68,6 +68,50 @@ describe('fetchMonthWorklogs', () => {
 		expect(result[0]?.issue.key).toBe('PROJ-1');
 	});
 
+	it('includes Pattern B (jira-native) backdated embedded worklogs in the target month', async () => {
+		// started in September, created in October — classifier should bucket
+		// this on the created date (Pattern B). The service-level filter must
+		// therefore include it when scanning October.
+		const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+			ok: true,
+			json: async () => ({
+				total: 1,
+				issues: [
+					{
+						id: '10000',
+						key: 'PROJ-1',
+						fields: {
+							summary: 'Issue summary',
+							worklog: {
+								startAt: 0,
+								maxResults: 20,
+								total: 1,
+								worklogs: [
+									{
+										id: 'wB',
+										started: '2025-09-28T09:00:00.000+0000',
+										created: '2025-10-02T09:00:00.000+0000',
+										timeSpentSeconds: 3600,
+										author: {
+											displayName: 'Alex',
+											emailAddress: 'alex@example.com',
+										},
+									},
+								],
+							},
+						},
+					},
+				],
+			}),
+		} as Response);
+
+		const result = await fetchMonthWorklogs(baseConfig, 2025, 9);
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(result).toHaveLength(1);
+		expect(result[0]?.id).toBe('wB');
+	});
+
 	it('fetches full issue worklogs when embedded worklogs are truncated', async () => {
 		const fetchMock = vi
 			.spyOn(global, 'fetch')

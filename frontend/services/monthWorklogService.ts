@@ -1,6 +1,7 @@
 import type { EnrichedJiraWorklog, JiraUser } from '../../types/jira';
 import type { WorklogFetchProgress } from '../../types/worklogLoading';
 import { logger } from '../react/utils/logger';
+import { classifyWorklog } from '../react/utils/worklogClassifier';
 import type { Config } from '../stores/useConfigStore';
 import { fromHttpResponse } from './serviceErrors';
 
@@ -164,8 +165,8 @@ export async function fetchMonthWorklogs(
 		if (embedded.total <= embedded.maxResults) {
 			// Embedded worklogs are COMPLETE — use them directly, filter by date in JS
 			for (const wl of embedded.worklogs) {
-				const day = (wl.started ?? '').slice(0, 10);
-				if (day >= startStr && day <= endStr) {
+				const day = classifyWorklog(wl).loggedOn;
+				if (day && day >= startStr && day <= endStr) {
 					allWorklogs.push({ ...wl, issue });
 				}
 			}
