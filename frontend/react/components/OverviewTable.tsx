@@ -4,6 +4,7 @@ import type { EnrichedJiraWorklog } from '../../../types/jira';
 import type { UserAbsenceDays } from '../../services/absenceService';
 import { countAbsenceWorkdaysInMonth } from '../utils/absence';
 import { getWorkingDaysInMonth, isDateInMonth } from '../utils/date';
+import { computeCompliancePct } from '../utils/format';
 import { getInitials } from '../utils/text';
 import { classifyWorklog } from '../utils/worklogClassifier';
 import * as styles from './OverviewTable.module.css';
@@ -80,7 +81,9 @@ export const OverviewTable: React.FC<Props> = ({
 				worklogCount,
 				daysWorked: totalHours / 8,
 				targetHours,
-				pct: targetHours > 0 ? (totalHours / targetHours) * 100 : 0,
+				// Use the same compliance-pct formula as TimesheetGrid so the two
+				// surfaces don't drift by 1% near integer boundaries (audit #19).
+				pct: computeCompliancePct(totalSeconds, targetHours * 3600),
 			};
 		});
 

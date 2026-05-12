@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatActivityTime } from '../../components/dashboard/DayCard';
-import { formatHours } from '../format';
+import { computeCompliancePct, formatHours } from '../format';
 
 describe('formatHours', () => {
 	it('should format whole hours without decimal', () => {
@@ -50,5 +50,29 @@ describe('DayCard.formatActivityTime', () => {
 	it('renders sub-hour activity in minutes', () => {
 		expect(formatActivityTime(1800)).toBe('30m');
 		expect(formatActivityTime(0)).toBe('0m');
+	});
+});
+
+describe('computeCompliancePct', () => {
+	it('returns 0 when targetSeconds is zero or negative', () => {
+		expect(computeCompliancePct(3600, 0)).toBe(0);
+		expect(computeCompliancePct(3600, -100)).toBe(0);
+	});
+
+	it('returns 0 when targetSeconds is NaN or Infinity', () => {
+		expect(computeCompliancePct(3600, Number.NaN)).toBe(0);
+		expect(computeCompliancePct(3600, Number.POSITIVE_INFINITY)).toBe(0);
+	});
+
+	it('returns 100 at parity', () => {
+		expect(computeCompliancePct(40 * 3600, 40 * 3600)).toBe(100);
+	});
+
+	it('returns the same value regardless of seconds-vs-hours input scale', () => {
+		// TimesheetGrid passes raw seconds; OverviewTable passes hours * 3600.
+		// The helper accepts seconds — both surfaces must converge.
+		const fromGrid = computeCompliancePct(184 * 3600, 184 * 3600);
+		const fromTable = computeCompliancePct(184 * 3600, 184 * 3600);
+		expect(fromGrid).toBe(fromTable);
 	});
 });

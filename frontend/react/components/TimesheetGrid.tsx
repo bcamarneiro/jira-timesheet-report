@@ -7,6 +7,7 @@ import { useCalendar } from '../hooks/useCalendar';
 import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
 import { countAbsenceWorkdaysInMonth } from '../utils/absence';
 import { getWorkingDaysInMonth, isoDateFromYMD } from '../utils/date';
+import { computeCompliancePct } from '../utils/format';
 import { projectDays } from '../utils/projectDays';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
@@ -61,7 +62,7 @@ export const TimesheetGrid: React.FC<Props> = ({
 		) *
 		8 *
 		3600;
-	const pct = targetSeconds > 0 ? (totalSeconds / targetSeconds) * 100 : 0;
+	const pct = computeCompliancePct(totalSeconds, targetSeconds);
 
 	const now = new Date();
 	const todayIso =
