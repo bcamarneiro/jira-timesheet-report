@@ -13,14 +13,11 @@ import {
 } from '../../stores/useUserDataStore';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
 import { MonthNavigator } from '../components/MonthNavigator';
-import { OverviewTable } from '../components/OverviewTable';
 import { ManagerInsightsPanel } from '../components/reports/ManagerInsightsPanel';
 import { ReportsControlPanel } from '../components/reports/ReportsControlPanel';
-import { TimesheetGrid } from '../components/TimesheetGrid';
+import { ReportsMonthlyView } from '../components/reports/ReportsMonthlyView';
 import { TeamStatsCards } from '../components/team/TeamStatsCards';
-import { TimesheetStatsCards } from '../components/timesheet/TimesheetStatsCards';
 import { UserSelector } from '../components/UserSelector';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { toast } from '../components/ui/Toast';
 import { WorklogLoadingStatus } from '../components/ui/WorklogLoadingStatus';
@@ -34,7 +31,6 @@ import {
 } from '../hooks/useReportsURLState';
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
-import { getUserAbsenceDayMap } from '../utils/absence';
 import { describeFreshness } from '../utils/dataFreshness';
 import { addDaysToIsoDate, monthLabel, parseIsoDateLocal } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
@@ -1093,133 +1089,26 @@ export const TimesheetPage: React.FC = () => {
 
 			{/* ---- MONTHLY VIEW ---- */}
 			{viewMode === 'monthly' && (
-				<>
-					{monthlySummary && !hasNoData && (
-						<div className={styles.reportSummary}>
-							<strong>Monthly Snapshot</strong>
-							<span>
-								{formatHours(monthlySummary.totalSeconds)} logged in{' '}
-								{monthLabel(currentYear, currentMonth)}
-							</span>
-							<span>
-								{isValidUser
-									? `Filtered to ${selectedUser}`
-									: `${monthlySummary.userCount} user${monthlySummary.userCount === 1 ? '' : 's'} in view`}
-							</span>
-						</div>
-					)}
-					{isLoading && !data && (
-						<div className={styles.loading}>
-							<WorklogLoadingStatus
-								title="Loading worklogs"
-								progress={monthlyWorklogProgress}
-							/>
-						</div>
-					)}
-
-					{isLoading && data && (
-						<div className={styles.refetching}>
-							<WorklogLoadingStatus
-								title="Updating worklogs"
-								progress={monthlyWorklogProgress}
-								compact
-							/>
-						</div>
-					)}
-
-					{hasNoData && (
-						<div className={styles.emptyState}>
-							<div className={styles.emptyIcon}>&#128203;</div>
-							<div className={styles.emptyTitle}>No worklogs found</div>
-							<div className={styles.emptyDescription}>
-								No worklogs were recorded for{' '}
-								{monthLabel(currentYear, currentMonth)}. Try a different month
-								or adjust your filters.
-							</div>
-						</div>
-					)}
-
-					{hasNoFilteredMonthlyResults && (
-						<div className={styles.emptyState}>
-							<div className={styles.emptyIcon}>&#128269;</div>
-							<div className={styles.emptyTitle}>
-								No monthly users match this filter
-							</div>
-							<div className={styles.emptyDescription}>
-								Try clearing the people filter or pick a different user to bring
-								results back into view.
-							</div>
-						</div>
-					)}
-
-					{data &&
-						!hasNoData &&
-						!hasNoFilteredMonthlyResults &&
-						(isValidUser ? (
-							<ErrorBoundary fallbackMessage="Failed to render this user's timesheet.">
-								{selectedEntry ? (
-									<TimesheetGrid
-										key={selectedUser}
-										user={selectedUser}
-										days={selectedEntry}
-										issueSummaries={issueSummaries}
-										onDownloadUser={handleDownloadUser}
-										absenceDays={getUserAbsenceDayMap(
-											monthlyAbsenceDaysByUser,
-											userEmails[selectedUser],
-										)}
-									/>
-								) : (
-									<TimesheetGrid
-										key={selectedUser}
-										user={selectedUser}
-										days={{}}
-										issueSummaries={issueSummaries}
-										onDownloadUser={handleDownloadUser}
-										absenceDays={getUserAbsenceDayMap(
-											monthlyAbsenceDaysByUser,
-											userEmails[selectedUser],
-										)}
-									/>
-								)}
-							</ErrorBoundary>
-						) : (
-							<>
-								<TimesheetStatsCards
-									entries={filteredVisibleEntries}
-									year={currentYear}
-									monthZeroIndexed={currentMonth}
-								/>
-								{filteredVisibleEntries.length > 1 && (
-									<OverviewTable
-										entries={filteredVisibleEntries}
-										year={currentYear}
-										monthZeroIndexed={currentMonth}
-										userEmails={userEmails}
-										absenceDaysByUser={monthlyAbsenceDaysByUser}
-										onUserClick={handleUserChange}
-									/>
-								)}
-								{filteredVisibleEntries.map(([user, days]) => (
-									<ErrorBoundary
-										key={user}
-										fallbackMessage={`Failed to render timesheet for ${user}.`}
-									>
-										<TimesheetGrid
-											user={user}
-											days={days}
-											issueSummaries={issueSummaries}
-											onDownloadUser={handleDownloadUser}
-											absenceDays={getUserAbsenceDayMap(
-												monthlyAbsenceDaysByUser,
-												userEmails[user],
-											)}
-										/>
-									</ErrorBoundary>
-								))}
-							</>
-						))}
-				</>
+				<ReportsMonthlyView
+					filteredVisibleEntries={filteredVisibleEntries}
+					selectedUser={selectedUser}
+					isValidUser={isValidUser}
+					selectedEntry={selectedEntry}
+					userEmails={userEmails}
+					issueSummaries={issueSummaries}
+					monthlyAbsenceDaysByUser={monthlyAbsenceDaysByUser}
+					currentYear={currentYear}
+					currentMonth={currentMonth}
+					isLoading={isLoading}
+					hasData={!!data}
+					hasNoData={hasNoData}
+					hasNoFilteredMonthlyResults={hasNoFilteredMonthlyResults}
+					monthlyWorklogProgress={monthlyWorklogProgress}
+					monthlySummary={monthlySummary}
+					errorMessage={undefined}
+					onUserChange={handleUserChange}
+					onDownloadUser={handleDownloadUser}
+				/>
 			)}
 		</div>
 	);
