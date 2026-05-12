@@ -113,3 +113,66 @@ describe('useConfigStore helpers', () => {
 		expect(CONFIG_STORAGE_VERSION).toBeGreaterThan(0);
 	});
 });
+
+describe('migration scaffold — future schema bump rehearsal', () => {
+	/**
+	 * These tests don't migrate a real schema change — there isn't one
+	 * pending. They rehearse the scaffold so we know it survives a future
+	 * `CONFIG_STORAGE_VERSION` bump without rewriting the store. If you ever
+	 * add a new persisted field (e.g. backdateCommentPatterns), update or
+	 * mirror these tests with the v(N) → v(N+1) migration path.
+	 */
+	it('tolerates a "future" version higher than the current one', () => {
+		const futureVersion = CONFIG_STORAGE_VERSION + 1;
+		const migrated = migratePersistedConfigState(
+			{
+				config: {
+					jiraHost: 'future.example.com',
+					email: 'future@example.com',
+					apiToken: 'tok',
+					theme: 'dark',
+					timeRounding: '15m',
+					// Imaginary field a v(N+1) schema might introduce:
+					backdateCommentPatterns: ['Foo: %DATE%'],
+				} as never,
+			},
+			futureVersion,
+		);
+		// The current normaliser must NOT throw, must return a usable Config,
+		// and must keep canonical fields. Unknown fields are silently dropped.
+		expect(migrated.config?.jiraHost).toBe('future.example.com');
+		expect(migrated.config?.theme).toBe('dark');
+		expect(migrated.config?.timeRounding).toBe('15m');
+		// `normalizeConfig` spreads input so unknown fields ride along — this is
+		// the forward-compat property: a newer tab can write a v(N+1) field,
+		// an older tab will preserve it on subsequent saves rather than drop
+		// it. The downside (no strict schema enforcement) is documented here
+		// so a future migration explicitly knows what the contract is.
+		expect(
+			(migrated.config as unknown as { backdateCommentPatterns?: unknown })
+				.backdateCommentPatterns,
+		).toEqual(['Foo: %DATE%']);
+	});
+
+	it('legacy v(0) blob still migrates to current shape', () => {
+		const migrated = migratePersistedConfigState(
+			{
+				config: {
+					jiraHost: 'old.example.com',
+					email: 'old@example.com',
+				},
+			},
+			0,
+		);
+		expect(migrated.config?.jiraHost).toBe('old.example.com');
+		expect(migrated.config?.theme).toBe('system');
+		expect(migrated.config?.calendarFeeds).toEqual([]);
+	});
+
+	it('null/undefined persistedState returns a default-shaped config', () => {
+		expect(migratePersistedConfigState(undefined, 0).config?.theme).toBe(
+			'system',
+		);
+		expect(migratePersistedConfigState(null, 0).config?.theme).toBe('system');
+	});
+});
