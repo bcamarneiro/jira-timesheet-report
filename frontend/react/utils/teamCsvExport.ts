@@ -1,18 +1,10 @@
 import type { TeamMemberSummary } from '../../services/teamService';
+import {
+	buildProvenanceFooter,
+	CSV_SEP as SEP,
+	csvEscape,
+} from './csvHelpers';
 import { parseIsoDateLocal } from './date';
-
-const SEP = ';';
-
-function csvEscape(value: string): string {
-	const safe = (value ?? '')
-		.replace(/\r?\n|\r/g, ' ')
-		.replace(/\s+/g, ' ')
-		.trim();
-	if (safe.includes('"') || safe.includes(',') || safe.includes(';')) {
-		return `"${safe.replace(/"/g, '""')}"`;
-	}
-	return safe;
-}
 
 function formatDayLabel(dateStr: string): string {
 	const d = parseIsoDateLocal(dateStr);
@@ -94,19 +86,14 @@ export function buildTeamCsv(
 		);
 	}
 
-	const generatedAt = provenance?.generatedAt ?? new Date().toISOString();
-	const jiraHost = provenance?.jiraHost ?? '';
-	const version = provenance?.sourceVersion ?? '';
 	const periodStart = weekdays[0] ?? '';
 	const periodEnd = weekdays[weekdays.length - 1] ?? '';
-	const footerParts = [
-		`# generated=${generatedAt}`,
-		`jira=${jiraHost}`,
-		`policy=logged`,
-		`period=${periodStart}..${periodEnd}`,
-	];
-	if (version) footerParts.push(`version=${version}`);
-	const provenanceFooter = footerParts.join(' ');
+	const provenanceFooter = buildProvenanceFooter({
+		policy: 'logged',
+		period: `${periodStart}..${periodEnd}`,
+		provenance,
+		omitMissingVersion: true,
+	});
 
 	return [headers, ...rows, provenanceFooter].join('\n');
 }

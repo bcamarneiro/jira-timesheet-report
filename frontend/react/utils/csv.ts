@@ -1,12 +1,15 @@
 import type { EnrichedJiraWorklog } from '../../../types/jira';
+import {
+	buildProvenanceFooter,
+	CSV_SEP as SEP,
+	csvEscape,
+} from './csvHelpers';
 import { sanitizeFilename } from './downloadFile';
 import {
 	type ClassifiedWorklog,
 	type ClassifierOptions,
 	classifyWorklog,
 } from './worklogClassifier';
-
-const SEP = ';';
 
 export type AggregationPolicy = 'logged' | 'intended';
 
@@ -37,16 +40,6 @@ const TIMESHEET_HEADERS = [
 	'BookedHours',
 ];
 
-function csvEscape(value: string): string {
-	const safe = (value ?? '')
-		.replace(/\r?\n|\r/g, ' ')
-		.replace(/\s+/g, ' ')
-		.trim();
-	if (safe.includes('"') || safe.includes(',') || safe.includes(';')) {
-		return `"${safe.replace(/"/g, '""')}"`;
-	}
-	return safe;
-}
 
 function isInPeriod(
 	isoDay: string,
@@ -168,15 +161,16 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 		backdatedHours.toFixed(2),
 	].join(SEP);
 
-	const generatedAt = provenance?.generatedAt ?? new Date().toISOString();
 	const periodLabel = period
 		? `${period.year}-${String(period.month + 1).padStart(2, '0')}`
 		: 'all';
-	const provenanceLine = `# generated=${generatedAt} jira=${
-		provenance?.jiraHost ?? 'unknown'
-	} policy=${policy} period=${periodLabel} version=${
-		provenance?.sourceVersion ?? 'dev'
-	}`;
+	const provenanceLine = buildProvenanceFooter({
+		policy,
+		period: periodLabel,
+		provenance,
+		jiraHostFallback: 'unknown',
+		versionFallback: 'dev',
+	});
 
 	return [
 		headerLine,
@@ -268,13 +262,14 @@ export function buildSummaryCsv(opts: BuildSummaryCsvOptions): string {
 		grandBackdatedHours.toFixed(2),
 	].join(SEP);
 
-	const generatedAt = provenance?.generatedAt ?? new Date().toISOString();
 	const periodLabel = `${period.year}-${String(period.month + 1).padStart(2, '0')}`;
-	const provenanceLine = `# generated=${generatedAt} jira=${
-		provenance?.jiraHost ?? 'unknown'
-	} policy=${policy} period=${periodLabel} version=${
-		provenance?.sourceVersion ?? 'dev'
-	}`;
+	const provenanceLine = buildProvenanceFooter({
+		policy,
+		period: periodLabel,
+		provenance,
+		jiraHostFallback: 'unknown',
+		versionFallback: 'dev',
+	});
 
 	return [titleRow, '', headers, ...rows, totalRow, provenanceLine].join('\n');
 }

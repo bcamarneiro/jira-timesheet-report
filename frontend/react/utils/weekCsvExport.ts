@@ -1,20 +1,13 @@
 import type { WeekWorklogEntry } from '../../stores/useDashboardStore';
+import {
+	buildProvenanceFooter,
+	CSV_SEP as SEP,
+	csvEscape,
+} from './csvHelpers';
 import { parseIsoDateLocal } from './date';
 import { classifyWorklog } from './worklogClassifier';
 
-const SEP = ';';
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function csvEscape(value: string): string {
-	const safe = (value ?? '')
-		.replace(/\r?\n|\r/g, ' ')
-		.replace(/\s+/g, ' ')
-		.trim();
-	if (safe.includes('"') || safe.includes(',') || safe.includes(';')) {
-		return `"${safe.replace(/"/g, '""')}"`;
-	}
-	return safe;
-}
 
 function formatDuration(seconds: number): string {
 	const totalMinutes = Math.round(seconds / 60);
@@ -109,17 +102,12 @@ export function generateWeeklyCsv(
 		'',
 	].join(SEP);
 
-	const generatedAt = provenance?.generatedAt ?? new Date().toISOString();
-	const jiraHost = provenance?.jiraHost ?? '';
-	const version = provenance?.sourceVersion ?? '';
-	const footerParts = [
-		`# generated=${generatedAt}`,
-		`jira=${jiraHost}`,
-		`policy=logged`,
-		`period=${weekStart}..${weekEnd}`,
-	];
-	if (version) footerParts.push(`version=${version}`);
-	const provenanceFooter = footerParts.join(' ');
+	const provenanceFooter = buildProvenanceFooter({
+		policy: 'logged',
+		period: `${weekStart}..${weekEnd}`,
+		provenance,
+		omitMissingVersion: true,
+	});
 
 	return [metadata, headers, ...rows, totalRow, provenanceFooter].join('\n');
 }
