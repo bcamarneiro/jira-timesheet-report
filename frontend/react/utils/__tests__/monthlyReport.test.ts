@@ -172,6 +172,63 @@ describe('deriveMonthlyReportState', () => {
 		).toHaveLength(1);
 	});
 
+	it('buckets Pattern B (jira-native) backdates under loggedOn (created), not started (ADA-219)', () => {
+		// started in September, created in October → classifier marks this as
+		// jira-native backdate. The day-bucket must be the create-day, not the
+		// start-day.
+		const wl: EnrichedJiraWorklog = {
+			id: '1',
+			author: {
+				displayName: 'Pattern B User',
+				emailAddress: 'pb@example.com',
+				accountId: 'pb',
+				active: true,
+			},
+			started: '2025-09-28T10:00:00.000Z',
+			created: '2025-10-02T10:00:00.000Z',
+			timeSpentSeconds: 3600,
+			comment: 'No marker here',
+			issue: {
+				id: 'PROJ-200',
+				key: 'PROJ-200',
+				fields: { summary: 'Pattern B issue' },
+			},
+		};
+
+		const state = deriveMonthlyReportState([wl], '', '');
+
+		expect(state.grouped['Pattern B User']?.['2025-10-02']).toHaveLength(1);
+		expect(state.grouped['Pattern B User']?.['2025-09-28']).toBeUndefined();
+	});
+
+	it('buckets Pattern A (comment-marker) backdates under loggedOn (started), not the comment marker (ADA-219)', () => {
+		// Pattern A: comment carries the intended date, but `started` is the
+		// logged-on day. The bucket key must follow loggedOn (= started here).
+		const wl: EnrichedJiraWorklog = {
+			id: '2',
+			author: {
+				displayName: 'Pattern A User',
+				emailAddress: 'pa@example.com',
+				accountId: 'pa',
+				active: true,
+			},
+			started: '2025-10-05T09:00:00.000Z',
+			created: '2025-10-05T09:00:00.000Z',
+			timeSpentSeconds: 3600,
+			comment: 'Original Worklog Date was: 2025/09/25',
+			issue: {
+				id: 'PROJ-201',
+				key: 'PROJ-201',
+				fields: { summary: 'Pattern A issue' },
+			},
+		};
+
+		const state = deriveMonthlyReportState([wl], '', '');
+
+		expect(state.grouped['Pattern A User']?.['2025-10-05']).toHaveLength(1);
+		expect(state.grouped['Pattern A User']?.['2025-09-25']).toBeUndefined();
+	});
+
 	it('does NOT add the email suffix when displayName is unique', () => {
 		const state = deriveMonthlyReportState(
 			[

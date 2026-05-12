@@ -1,5 +1,5 @@
 import type { EnrichedJiraWorklog, GroupedWorklogs } from '../../../types/jira';
-import { toLocalDateString } from './date';
+import { classifyWorklog } from './worklogClassifier';
 
 export interface MonthlyReportState {
 	issueSummaries: Record<string, string>;
@@ -95,7 +95,8 @@ export function deriveMonthlyReportState(
 		const email = wl.author?.emailAddress?.toLowerCase();
 		if (displayName && isUserAllowed(wl)) {
 			const user = buildUserKey(displayName, email, emailsByDisplayName);
-			const date = toLocalDateString(wl.started as string);
+			const date = classifyWorklog(wl).loggedOn;
+			if (!date) continue;
 			if (!grouped[user]) grouped[user] = {};
 			if (!grouped[user][date]) grouped[user][date] = [];
 			grouped[user][date].push(wl);
