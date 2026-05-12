@@ -1,6 +1,7 @@
 import type React from 'react';
 import { getInitials } from '../../utils/text';
 import { Button } from '../ui/Button';
+import { HoursProgressLine } from '../ui/HoursProgressLine';
 import { ProgressBar } from '../ui/ProgressBar';
 import * as styles from './UserHeader.module.css';
 
@@ -21,9 +22,10 @@ export const UserHeader: React.FC<Props> = ({
 	collapsed,
 	onToggleCollapse,
 }) => {
-	const totalHours = totalSeconds / 3600;
-	const targetHours = targetSeconds ? targetSeconds / 3600 : undefined;
-	const pct = targetSeconds ? (totalSeconds / targetSeconds) * 100 : undefined;
+	const pct =
+		targetSeconds && targetSeconds > 0
+			? (totalSeconds / targetSeconds) * 100
+			: undefined;
 
 	const leftContent = (
 		<>
@@ -36,12 +38,13 @@ export const UserHeader: React.FC<Props> = ({
 				<span className={styles.avatar}>{getInitials(user)}</span>
 				{user}
 			</h2>
-			{targetHours !== undefined && pct !== undefined && (
+			{targetSeconds !== undefined && pct !== undefined && (
 				<div className={styles.progress}>
-					<span className={styles.progressLabel}>
-						{totalHours.toFixed(1)}h / {Math.round(targetHours)}h (
-						{Math.round(pct)}%)
-					</span>
+					<HoursProgressLine
+						className={styles.progressLabel}
+						totalSeconds={totalSeconds}
+						targetSeconds={targetSeconds}
+					/>
 					<div className={styles.progressBar}>
 						<ProgressBar value={pct} height={4} />
 					</div>

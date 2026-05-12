@@ -11,6 +11,7 @@ import { projectDays } from '../utils/projectDays';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
 import * as styles from './TimesheetGrid.module.css';
+import { HoursProgressLine } from './ui/HoursProgressLine';
 import { ProgressBar } from './ui/ProgressBar';
 import { UserHeader } from './user/UserHeader';
 
@@ -60,8 +61,6 @@ export const TimesheetGrid: React.FC<Props> = ({
 		) *
 		8 *
 		3600;
-	const totalHours = totalSeconds / 3600;
-	const targetHours = targetSeconds / 3600;
 	const pct = targetSeconds > 0 ? (totalSeconds / targetSeconds) * 100 : 0;
 
 	const now = new Date();
@@ -121,10 +120,11 @@ export const TimesheetGrid: React.FC<Props> = ({
 					<div className={styles.monthTotal}>
 						<div className={styles.monthTotalTop}>
 							<span className={styles.monthTotalLabel}>Month Total</span>
-							<span className={styles.monthTotalValue}>
-								{totalHours.toFixed(1)}h / {Math.round(targetHours)}h (
-								{Math.round(pct)}%)
-							</span>
+							<HoursProgressLine
+								className={styles.monthTotalValue}
+								totalSeconds={totalSeconds}
+								targetSeconds={targetSeconds}
+							/>
 						</div>
 						<ProgressBar value={pct} height={6} />
 					</div>
