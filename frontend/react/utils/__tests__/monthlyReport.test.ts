@@ -128,4 +128,66 @@ describe('deriveMonthlyReportState', () => {
 		expect(state.users).toEqual(['Bruno Camarneiro']);
 		expect(state.grouped['Bruno Camarneiro']?.['2025-10-15']).toHaveLength(1);
 	});
+
+	it('disambiguates two authors with the same displayName by suffixing email (#47)', () => {
+		const state = deriveMonthlyReportState(
+			[
+				createWorklog(
+					'John Smith',
+					'john.smith@first.com',
+					'2025-10-15T09:00:00.000Z',
+					'1',
+					'PROJ-1',
+					'A',
+				),
+				createWorklog(
+					'John Smith',
+					'john.smith@second.com',
+					'2025-10-16T09:00:00.000Z',
+					'2',
+					'PROJ-2',
+					'B',
+				),
+			],
+			'',
+			'',
+		);
+
+		// Two distinct users emerge instead of one silently overwriting the other.
+		expect(state.users).toEqual([
+			'John Smith (john.smith@first.com)',
+			'John Smith (john.smith@second.com)',
+		]);
+		expect(state.userEmails['John Smith (john.smith@first.com)']).toBe(
+			'john.smith@first.com',
+		);
+		expect(state.userEmails['John Smith (john.smith@second.com)']).toBe(
+			'john.smith@second.com',
+		);
+		expect(
+			state.grouped['John Smith (john.smith@first.com)']?.['2025-10-15'],
+		).toHaveLength(1);
+		expect(
+			state.grouped['John Smith (john.smith@second.com)']?.['2025-10-16'],
+		).toHaveLength(1);
+	});
+
+	it('does NOT add the email suffix when displayName is unique', () => {
+		const state = deriveMonthlyReportState(
+			[
+				createWorklog(
+					'Unique Person',
+					'unique@example.com',
+					'2025-10-15T09:00:00.000Z',
+					'1',
+					'PROJ-1',
+					'A',
+				),
+			],
+			'',
+			'',
+		);
+		expect(state.users).toEqual(['Unique Person']);
+		expect(state.userEmails['Unique Person']).toBe('unique@example.com');
+	});
 });
