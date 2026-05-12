@@ -1,6 +1,7 @@
 import type { AbsenceKind } from '../../types/absence';
 import { logger } from '../react/utils/logger';
 import type { AbsenceAssignment, CalendarFeed } from '../stores/useConfigStore';
+import { fromHttpResponse } from './serviceErrors';
 
 /**
  * ICS parsing utilities — lightweight re-implementation of the subset needed
@@ -362,7 +363,7 @@ export async function fetchAbsenceDaysByUser(
 				? `${corsProxy.replace(/\/$/, '')}/${feed.url}`
 				: feed.url;
 			const res = await fetch(url, { signal });
-			if (!res.ok) throw new Error(`Feed error: ${res.status}`);
+			if (!res.ok) throw fromHttpResponse('Absence feed', res.status);
 			const text = await res.text();
 			return {
 				label: feed.label,

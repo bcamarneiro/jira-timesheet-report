@@ -2,6 +2,7 @@ import type {
 	RescueTimeActivity,
 	RescueTimeDaySummary,
 } from '../../types/Suggestion';
+import { fromHttpResponse, ServiceError } from './serviceErrors';
 
 /**
  * Fetch daily activity breakdown from RescueTime for the given week.
@@ -37,8 +38,15 @@ export async function fetchRescueTimeData(
 
 	const res = await fetch(url, { signal });
 	if (!res.ok) {
-		if (res.status === 403) throw new Error('Invalid RescueTime API key');
-		throw new Error(`RescueTime API error: ${res.status}`);
+		if (res.status === 403) {
+			throw new ServiceError({
+				kind: 'invalid-token',
+				status: 403,
+				source: 'RescueTime',
+				message: 'Invalid RescueTime API key',
+			});
+		}
+		throw fromHttpResponse('RescueTime', res.status);
 	}
 
 	const data = (await res.json()) as {

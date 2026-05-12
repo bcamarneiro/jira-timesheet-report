@@ -2,6 +2,7 @@ import type { WorklogSuggestion } from '../../types/Suggestion';
 import { logger } from '../react/utils/logger';
 import type { CalendarFeed } from '../stores/useConfigStore';
 import type { CalendarMapping } from '../stores/useUserDataStore';
+import { fromHttpResponse } from './serviceErrors';
 
 const JIRA_KEY_RE = /([A-Z][A-Z0-9]+-\d+)/g;
 
@@ -406,7 +407,7 @@ async function fetchFeed(
 
 	const res = await fetch(url, { signal });
 	if (!res.ok) {
-		throw new Error(`Calendar feed error: ${res.status}`);
+		throw fromHttpResponse('Calendar feed', res.status);
 	}
 
 	const icsText = await res.text();

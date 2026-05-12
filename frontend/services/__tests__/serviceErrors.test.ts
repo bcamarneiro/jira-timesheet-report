@@ -3,6 +3,7 @@ import {
 	classifyHttpStatus,
 	fromHttpResponse,
 	fromNetworkError,
+	fromRichMessage,
 	ServiceError,
 } from '../serviceErrors';
 
@@ -36,6 +37,24 @@ describe('fromHttpResponse', () => {
 	it('appends optional context when supplied', () => {
 		const err = fromHttpResponse('Calendar feed', 503, 'host=cal.example.com');
 		expect(err.message).toContain('host=cal.example.com');
+	});
+});
+
+describe('fromRichMessage', () => {
+	it('derives kind from status and preserves the message verbatim', () => {
+		const err = fromRichMessage('GitLab', 401, 'Token expired — sign in again');
+		expect(err).toBeInstanceOf(ServiceError);
+		expect(err.kind).toBe('unauthorized');
+		expect(err.status).toBe(401);
+		expect(err.source).toBe('GitLab');
+		expect(err.message).toBe('Token expired — sign in again');
+	});
+
+	it('falls back to "unknown" kind when status is missing', () => {
+		const err = fromRichMessage('GitLab', undefined, 'TLS handshake failed');
+		expect(err.kind).toBe('unknown');
+		expect(err.status).toBeUndefined();
+		expect(err.message).toBe('TLS handshake failed');
 	});
 });
 
