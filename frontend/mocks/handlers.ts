@@ -26,7 +26,6 @@ const devUser = {
 };
 
 // ── Date helpers ────────────────────────────────────────────────────
-const getMonday = getMondayOfWeek;
 
 function getWeekdays(monday: string): string[] {
 	return Array.from({ length: 5 }, (_, index) =>
@@ -41,7 +40,7 @@ function shiftWeek(monday: string, weeks: number): string {
 }
 
 // ── Generate dev user worklogs for current & previous weeks ─────────
-const todayMonday = getMonday(new Date());
+const todayMonday = getMondayOfWeek(new Date());
 const prevMonday = shiftWeek(todayMonday, -1);
 
 // Current week: some days with work, some partial (to create gaps)
@@ -293,8 +292,8 @@ export const handlers = [
 						id: `hist-${issueKey}-${date}`,
 						created: `${date}T10:00:00.000-0300`,
 						author:
-							worklogs.find((wl) => wl.started?.slice(0, 10) === date)?.author ||
-							devUser,
+							worklogs.find((wl) => wl.started?.slice(0, 10) === date)
+								?.author || devUser,
 						items: [
 							{
 								field: 'status',

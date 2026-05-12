@@ -23,7 +23,6 @@ function formatTimeSpent(seconds: number): string {
 	return `${Math.round(seconds / 60)}m`;
 }
 
-const getMonday = getMondayOfWeek;
 
 function getSunday(monday: string): string {
 	return addDaysToIsoDate(monday, 6);
@@ -35,7 +34,7 @@ function shiftWeek(monday: string, weeks: number): string {
 	return toLocalDateString(d);
 }
 
-const todayMonday = getMonday(new Date());
+const todayMonday = getMondayOfWeek(new Date());
 
 export interface WeekWorklogEntry {
 	date: string;
@@ -174,7 +173,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 	},
 
 	goToCurrentWeek: () => {
-		const monday = getMonday(new Date());
+		const monday = getMondayOfWeek(new Date());
 		set({ weekStart: monday, weekEnd: getSunday(monday) });
 	},
 

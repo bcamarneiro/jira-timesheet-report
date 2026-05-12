@@ -6,7 +6,6 @@ import {
 	toLocalDateString,
 } from '../react/utils/date';
 
-const getMonday = getMondayOfWeek;
 
 function getSunday(monday: string): string {
 	return addDaysToIsoDate(monday, 6);
@@ -18,7 +17,7 @@ function shiftWeek(monday: string, weeks: number): string {
 	return toLocalDateString(d);
 }
 
-const todayMonday = getMonday(new Date());
+const todayMonday = getMondayOfWeek(new Date());
 
 interface TeamState {
 	weekStart: string;
@@ -47,7 +46,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 	},
 
 	goToCurrentWeek: () => {
-		const monday = getMonday(new Date());
+		const monday = getMondayOfWeek(new Date());
 		set({ weekStart: monday, weekEnd: getSunday(monday) });
 	},
 }));
