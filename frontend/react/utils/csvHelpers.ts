@@ -60,18 +60,29 @@ export interface ProvenanceFooterOptions {
  * - `weekCsvExport`/`teamCsvExport` omit `versionFallback` and instead
  *   set `omitMissingVersion: true` so the field disappears when absent.
  */
+/**
+ * Make a value safe to embed in a `key=value` pair inside the footer.
+ * Strips characters that would collide with the field separator (` `)
+ * or break tooling that re-parses the footer (`;`/`,`/`"`).
+ * Conservative — only used at footer-build time, not on real data
+ * rows.
+ */
+function escapeFooterValue(value: string): string {
+	return value.replace(/[\s;,"]/g, '-');
+}
+
 export function buildProvenanceFooter(opts: ProvenanceFooterOptions): string {
 	const generatedAt = opts.provenance?.generatedAt ?? new Date().toISOString();
 	const jiraHost = opts.provenance?.jiraHost ?? opts.jiraHostFallback ?? '';
 	const version = opts.provenance?.sourceVersion ?? opts.versionFallback ?? '';
 	const parts = [
-		`# generated=${generatedAt}`,
-		`jira=${jiraHost}`,
+		`# generated=${escapeFooterValue(generatedAt)}`,
+		`jira=${escapeFooterValue(jiraHost)}`,
 		`policy=${opts.policy}`,
-		`period=${opts.period}`,
+		`period=${escapeFooterValue(opts.period)}`,
 	];
 	if (version || !opts.omitMissingVersion) {
-		parts.push(`version=${version}`);
+		parts.push(`version=${escapeFooterValue(version)}`);
 	}
 	return parts.join(' ');
 }

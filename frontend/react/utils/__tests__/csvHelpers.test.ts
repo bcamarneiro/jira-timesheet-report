@@ -90,6 +90,24 @@ describe('buildProvenanceFooter', () => {
 		);
 	});
 
+	it('escapes whitespace/`;`/`,`/`"` in footer values (audit #46)', () => {
+		expect(
+			buildProvenanceFooter({
+				policy: 'logged',
+				period: '2025-10',
+				provenance: {
+					jiraHost: 'host with;weird,chars',
+					sourceVersion: 'v 1.0',
+					generatedAt: '2026-05-12T10:00:00.000Z',
+				},
+				jiraHostFallback: '',
+				versionFallback: '',
+			}),
+		).toBe(
+			'# generated=2026-05-12T10:00:00.000Z jira=host-with-weird-chars policy=logged period=2025-10 version=v-1.0',
+		);
+	});
+
 	it('defaults generatedAt to now() when not provided', () => {
 		const result = buildProvenanceFooter({
 			policy: 'logged',
