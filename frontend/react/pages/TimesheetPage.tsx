@@ -1,9 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import type { EnrichedJiraWorklog } from '../../../types/jira';
 import { fetchMonthWorklogs } from '../../services/monthWorklogService';
-import type { TeamMemberSummary } from '../../services/teamService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { useTeamStore } from '../../stores/useTeamStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
@@ -13,14 +10,11 @@ import {
 } from '../../stores/useUserDataStore';
 import { WeekNavigator } from '../components/dashboard/WeekNavigator';
 import { MonthNavigator } from '../components/MonthNavigator';
-import { ManagerInsightsPanel } from '../components/reports/ManagerInsightsPanel';
 import { ReportsControlPanel } from '../components/reports/ReportsControlPanel';
 import { ReportsMonthlyView } from '../components/reports/ReportsMonthlyView';
-import { TeamStatsCards } from '../components/team/TeamStatsCards';
+import { ReportsWeeklyView } from '../components/reports/ReportsWeeklyView';
 import { UserSelector } from '../components/UserSelector';
-import { ProgressBar } from '../components/ui/ProgressBar';
 import { toast } from '../components/ui/Toast';
-import { WorklogLoadingStatus } from '../components/ui/WorklogLoadingStatus';
 import { useAbsenceDaysByUser } from '../hooks/useAbsenceDays';
 import { useDownload } from '../hooks/useDownload';
 import { monthWorklogsQueryKey } from '../hooks/useMonthWorklogs';
@@ -32,9 +26,8 @@ import {
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
 import { describeFreshness } from '../utils/dataFreshness';
-import { addDaysToIsoDate, monthLabel, parseIsoDateLocal } from '../utils/date';
+import { addDaysToIsoDate, monthLabel } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
-import { formatHours } from '../utils/format';
 import { deriveMonthlyReportState } from '../utils/monthlyReport';
 import { validateReportsConsistency } from '../utils/reportConsistency';
 import {
@@ -44,70 +37,6 @@ import {
 import { buildTeamCsv } from '../utils/teamCsvExport';
 import { uid } from '../utils/uid';
 import * as styles from './TimesheetPage.module.css';
-
-// --- Weekly compliance table helpers ---
-
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-
-const hoursCellStyleMap = {
-	green: styles.hoursCellGreen,
-	yellow: styles.hoursCellYellow,
-	red: styles.hoursCellRed,
-	neutral: styles.hoursCell,
-} as const;
-
-function getHoursCellStyle(hours: number): string {
-	if (hours >= 8) return hoursCellStyleMap.green;
-	if (hours >= 4) return hoursCellStyleMap.yellow;
-	if (hours > 0) return hoursCellStyleMap.red;
-	return hoursCellStyleMap.neutral;
-}
-
-const gapCellStyleMap = {
-	positive: styles.gapPositive,
-	zero: styles.gapZero,
-} as const;
-
-function getGapCellStyle(gapSeconds: number): string {
-	return gapSeconds > 0 ? gapCellStyleMap.positive : gapCellStyleMap.zero;
-}
-
-function getWeekdays(weekStart: string): string[] {
-	return Array.from({ length: 5 }, (_, index) =>
-		addDaysToIsoDate(weekStart, index),
-	);
-}
-
-function formatDayHeader(dateStr: string, index: number): string {
-	const d = parseIsoDateLocal(dateStr);
-	return `${DAY_LABELS[index]} ${d.getDate()}`;
-}
-
-function formatHoursDecimal(hours: number): string {
-	return Number.isInteger(hours)
-		? `${hours.toFixed(0)}h`
-		: `${hours.toFixed(1)}h`;
-}
-
-function sumMonthlyHours(
-	entries: [string, Record<string, EnrichedJiraWorklog[]>][],
-	year: number,
-	monthZeroIndexed: number,
-): number {
-	const monthPrefix = `${year}-${String(monthZeroIndexed + 1).padStart(2, '0')}`;
-	let totalSeconds = 0;
-
-	for (const [, days] of entries) {
-		for (const [dateKey, worklogs] of Object.entries(days)) {
-			if (!dateKey.startsWith(monthPrefix)) continue;
-			for (const worklog of worklogs) {
-				totalSeconds += worklog.timeSpentSeconds ?? 0;
-			}
-		}
-	}
-
-	return totalSeconds;
-}
 
 type SortField = 'name' | 'total' | 'gap';
 type SortDirection = 'asc' | 'desc';
@@ -151,106 +80,24 @@ function buildIdleValidationState(
 	};
 }
 
-function TeamMemberRow({
-	member,
-	weekdays,
-	onMemberClick,
-}: {
-	member: TeamMemberSummary;
-	weekdays: string[];
-	onMemberClick: (name: string) => void;
-}) {
-	const pct = (member.totalSeconds / member.targetSeconds) * 100;
+function sumMonthlyHours(
+	entries: ReturnType<typeof deriveMonthlyReportState>['visibleEntries'],
+	year: number,
+	monthZeroIndexed: number,
+): number {
+	const monthPrefix = `${year}-${String(monthZeroIndexed + 1).padStart(2, '0')}`;
+	let totalSeconds = 0;
 
-	return (
-		<tr>
-			<td>
-				<button
-					type="button"
-					className={styles.memberNameButton}
-					onClick={() => onMemberClick(member.displayName)}
-				>
-					{member.displayName}
-				</button>
-				<div className={styles.memberEmail}>{member.email}</div>
-				<div className={styles.rowProgress}>
-					<ProgressBar value={pct} height={4} />
-				</div>
-			</td>
-			{weekdays.map((day) => {
-				const hours = member.dailyHours.get(day) || 0;
-				return (
-					<td key={day} className={getHoursCellStyle(hours)}>
-						{hours > 0 ? formatHoursDecimal(hours) : '-'}
-					</td>
-				);
-			})}
-			<td className={styles.totalCell}>{formatHours(member.totalSeconds)}</td>
-			<td className={getGapCellStyle(member.gapSeconds)}>
-				{member.gapSeconds > 0 ? formatHours(member.gapSeconds) : 'OK'}
-			</td>
-		</tr>
-	);
-}
+	for (const [, days] of entries) {
+		for (const [dateKey, worklogs] of Object.entries(days)) {
+			if (!dateKey.startsWith(monthPrefix)) continue;
+			for (const worklog of worklogs) {
+				totalSeconds += worklog.timeSpentSeconds ?? 0;
+			}
+		}
+	}
 
-function SummaryRow({
-	members,
-	weekdays,
-}: {
-	members: TeamMemberSummary[];
-	weekdays: string[];
-}) {
-	if (members.length === 0) return null;
-
-	const count = members.length;
-
-	return (
-		<tr className={styles.summaryRow}>
-			<td>
-				<span className={styles.summaryLabel}>Team Average</span>
-				<span className={styles.memberCount}> ({count} members)</span>
-			</td>
-			{weekdays.map((day) => {
-				const avg =
-					members.reduce((sum, m) => sum + (m.dailyHours.get(day) || 0), 0) /
-					count;
-				return (
-					<td key={day} className={getHoursCellStyle(avg)}>
-						{avg > 0 ? formatHoursDecimal(avg) : '-'}
-					</td>
-				);
-			})}
-			<td className={styles.totalCell}>
-				{formatHours(
-					Math.round(
-						members.reduce((sum, m) => sum + m.totalSeconds, 0) / count,
-					),
-				)}
-			</td>
-			<td className={styles.gapCell}>
-				{formatHours(
-					Math.round(members.reduce((sum, m) => sum + m.gapSeconds, 0) / count),
-				)}
-			</td>
-		</tr>
-	);
-}
-
-function SortIndicator({
-	field,
-	activeField,
-	direction,
-}: {
-	field: SortField;
-	activeField: SortField;
-	direction: SortDirection;
-}) {
-	if (field !== activeField) return null;
-	return (
-		<span className={styles.sortIndicator}>
-			{direction === 'asc' ? '\u25B2' : '\u25BC'}
-		</span>
-	);
+	return totalSeconds;
 }
 
 // --- Main component ---
@@ -362,7 +209,6 @@ export const TimesheetPage: React.FC = () => {
 		enabled: viewMode === 'weekly' && managerMode,
 	});
 
-	const weekdays = getWeekdays(weekStart);
 	const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 	const allMonthlyEntries = useMemo(() => Object.entries(grouped), [grouped]);
 	const normalizedSelectedUser = selectedUser.trim().toLowerCase();
@@ -475,6 +321,14 @@ export const TimesheetPage: React.FC = () => {
 		);
 	};
 
+	const weekdays = useMemo(
+		() =>
+			Array.from({ length: 5 }, (_, index) =>
+				addDaysToIsoDate(weekStart, index),
+			),
+		[weekStart],
+	);
+
 	const handleExportTeamCsv = () => {
 		const csv = buildTeamCsv(sortedMembers, weekdays, {
 			jiraHost: config.jiraHost,
@@ -484,7 +338,7 @@ export const TimesheetPage: React.FC = () => {
 		toast.success('Weekly report exported');
 	};
 
-	// Keyboard shortcuts for month navigation (only in monthly view)
+	// Keyboard shortcuts for month/week navigation
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent) => {
 			const tag = (e.target as HTMLElement)?.tagName;
@@ -711,7 +565,7 @@ export const TimesheetPage: React.FC = () => {
 		}
 	};
 
-	const hasNoData = !isLoading && data && allMonthlyEntries.length === 0;
+	const hasNoData = !isLoading && !!data && allMonthlyEntries.length === 0;
 	const hasNoFilteredMonthlyResults =
 		!isLoading &&
 		!!data &&
@@ -773,20 +627,26 @@ export const TimesheetPage: React.FC = () => {
 	if (errorMessage && viewMode === 'monthly') {
 		return (
 			<div className={styles.container}>
-				<div className={styles.error}>
-					<h2>Unable to load timesheets</h2>
-					<p>{errorMessage}</p>
-					{errorMessage.includes('configured') ? (
-						<Link to="/settings">Go to Settings</Link>
-					) : errorMessage.includes('401') || errorMessage.includes('403') ? (
-						<Link to="/settings">Check your credentials in Settings</Link>
-					) : (
-						<p>
-							Try refreshing the page or check your{' '}
-							<Link to="/settings">connection settings</Link>.
-						</p>
-					)}
-				</div>
+				<ReportsMonthlyView
+					filteredVisibleEntries={filteredVisibleEntries}
+					selectedUser={selectedUser}
+					isValidUser={isValidUser}
+					selectedEntry={selectedEntry}
+					userEmails={userEmails}
+					issueSummaries={issueSummaries}
+					monthlyAbsenceDaysByUser={monthlyAbsenceDaysByUser}
+					currentYear={currentYear}
+					currentMonth={currentMonth}
+					isLoading={isLoading}
+					hasData={!!data}
+					hasNoData={hasNoData}
+					hasNoFilteredMonthlyResults={hasNoFilteredMonthlyResults}
+					monthlyWorklogProgress={monthlyWorklogProgress}
+					monthlySummary={monthlySummary}
+					errorMessage={errorMessage}
+					onUserChange={handleUserChange}
+					onDownloadUser={handleDownloadUser}
+				/>
 			</div>
 		);
 	}
@@ -915,180 +775,29 @@ export const TimesheetPage: React.FC = () => {
 				dataFreshnessTone={reportsFreshness.tone}
 			/>
 
-			{/* ---- WEEKLY VIEW ---- */}
-			{viewMode === 'weekly' && (
-				<>
-					{weeklySummary && (
-						<div className={styles.reportSummary}>
-							<strong>Weekly Snapshot</strong>
-							<span>
-								{formatHours(weeklySummary.totalSeconds)} logged across the team
-							</span>
-							<span>
-								{weeklySummary.totalGapSeconds > 0
-									? `${formatHours(weeklySummary.totalGapSeconds)} remaining gap`
-									: 'No team gap remaining'}
-							</span>
-						</div>
-					)}
-					{teamError && (
-						<div className={styles.error}>
-							<h2>Unable to load team data</h2>
-							<p>{teamError.message}</p>
-							<Link to="/settings">Check your settings</Link>
-						</div>
-					)}
-
-					{teamLoading && teamMembers.length === 0 && (
-						<div className={styles.loading}>
-							<WorklogLoadingStatus
-								title="Loading team worklogs"
-								progress={teamLoadingProgress}
-							/>
-						</div>
-					)}
-
-					{!teamLoading && !teamError && teamMembers.length === 0 && (
-						<div className={styles.emptyState}>
-							<div className={styles.emptyIcon}>&#128203;</div>
-							<div className={styles.emptyTitle}>No team data found</div>
-							<div className={styles.emptyDescription}>
-								No worklogs were found for this week. Make sure team members
-								have logged time, or configure your team members list in
-								Settings.
-							</div>
-						</div>
-					)}
-
-					{managerMode && teamMembers.length > 0 ? (
-						<ManagerInsightsPanel
-							trendWeeks={trendWeeks}
-							onTrendWeeksChange={setTrendWeeks}
-							currentMembers={teamMembers}
-							model={trendModel}
-							isLoading={trendsLoading}
-							errorMessage={
-								trendsError instanceof Error ? trendsError.message : undefined
-							}
-						/>
-					) : null}
-
-					{hasNoFilteredWeeklyResults && (
-						<div className={styles.emptyState}>
-							<div className={styles.emptyIcon}>&#128269;</div>
-							<div className={styles.emptyTitle}>
-								No team members match these filters
-							</div>
-							<div className={styles.emptyDescription}>
-								Try clearing the people filter or disable attention-only mode to
-								see the full weekly report again.
-							</div>
-						</div>
-					)}
-
-					{teamMembers.length > 0 && !hasNoFilteredWeeklyResults && (
-						<>
-							{teamLoading && (
-								<div className={styles.refetching}>
-									<WorklogLoadingStatus
-										title="Updating team worklogs"
-										progress={teamLoadingProgress}
-										compact
-									/>
-								</div>
-							)}
-							<TeamStatsCards teamMembers={sortedMembers} />
-
-							<div className={styles.tableWrapper}>
-								<table className={styles.table}>
-									<thead>
-										<tr>
-											<th className={styles.sortableHeader}>
-												<button
-													type="button"
-													className={styles.sortButton}
-													onClick={() => handleSort('name')}
-												>
-													Team Member
-													<SortIndicator
-														field="name"
-														activeField={sortField}
-														direction={sortDirection}
-													/>
-												</button>
-											</th>
-											{weekdays.map((day, i) => (
-												<th key={day} className={styles.dayHeader}>
-													{formatDayHeader(day, i)}
-												</th>
-											))}
-											<th
-												className={`${styles.dayHeader} ${styles.sortableHeader}`}
-											>
-												<button
-													type="button"
-													className={styles.sortButton}
-													onClick={() => handleSort('total')}
-												>
-													Total
-													<SortIndicator
-														field="total"
-														activeField={sortField}
-														direction={sortDirection}
-													/>
-												</button>
-											</th>
-											<th
-												className={`${styles.dayHeader} ${styles.sortableHeader}`}
-											>
-												<button
-													type="button"
-													className={styles.sortButton}
-													onClick={() => handleSort('gap')}
-												>
-													Gap
-													<SortIndicator
-														field="gap"
-														activeField={sortField}
-														direction={sortDirection}
-													/>
-												</button>
-											</th>
-										</tr>
-									</thead>
-									<tbody>
-										{sortedMembers.map((member) => (
-											<TeamMemberRow
-												key={member.email}
-												member={member}
-												weekdays={weekdays}
-												onMemberClick={handleMemberClick}
-											/>
-										))}
-										<SummaryRow members={sortedMembers} weekdays={weekdays} />
-									</tbody>
-								</table>
-							</div>
-
-							{sortedMembers.some((m) => m.targetSeconds > 0) &&
-								sortedMembers.every((m) => m.gapSeconds === 0) && (
-									<div className={styles.allCompliant}>
-										<div className={styles.allCompliantIcon}>&#10003;</div>
-										<div className={styles.allCompliantTitle}>
-											Full team compliance!
-										</div>
-										<div className={styles.allCompliantText}>
-											Every team member has logged 40+ hours this week.
-										</div>
-									</div>
-								)}
-						</>
-					)}
-				</>
-			)}
-
-			{/* ---- MONTHLY VIEW ---- */}
-			{viewMode === 'monthly' && (
+			{viewMode === 'weekly' ? (
+				<ReportsWeeklyView
+					teamMembers={teamMembers}
+					sortedMembers={sortedMembers}
+					weekStart={weekStart}
+					weekLoading={teamLoading}
+					weekFetching={teamFetching}
+					teamError={teamError}
+					teamLoadingProgress={teamLoadingProgress}
+					sortField={sortField}
+					sortDirection={sortDirection}
+					onSort={handleSort}
+					managerMode={managerMode}
+					trendWeeks={trendWeeks}
+					setTrendWeeks={setTrendWeeks}
+					trendModel={trendModel}
+					trendsLoading={trendsLoading}
+					trendsError={trendsError}
+					hasNoFilteredWeeklyResults={hasNoFilteredWeeklyResults}
+					weeklySummary={weeklySummary}
+					onMemberClick={handleMemberClick}
+				/>
+			) : (
 				<ReportsMonthlyView
 					filteredVisibleEntries={filteredVisibleEntries}
 					selectedUser={selectedUser}
@@ -1105,7 +814,7 @@ export const TimesheetPage: React.FC = () => {
 					hasNoFilteredMonthlyResults={hasNoFilteredMonthlyResults}
 					monthlyWorklogProgress={monthlyWorklogProgress}
 					monthlySummary={monthlySummary}
-					errorMessage={undefined}
+					errorMessage={errorMessage}
 					onUserChange={handleUserChange}
 					onDownloadUser={handleDownloadUser}
 				/>
