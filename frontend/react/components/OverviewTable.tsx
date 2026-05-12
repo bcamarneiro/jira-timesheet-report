@@ -6,7 +6,6 @@ import { countAbsenceWorkdaysInMonth } from '../utils/absence';
 import { getWorkingDaysInMonth, isDateInMonth } from '../utils/date';
 import { computeCompliancePct } from '../utils/format';
 import { getInitials } from '../utils/text';
-import { classifyWorklog } from '../utils/worklogClassifier';
 import * as styles from './OverviewTable.module.css';
 import { ProgressBar } from './ui/ProgressBar';
 
@@ -53,15 +52,14 @@ export const OverviewTable: React.FC<Props> = ({
 			let totalSeconds = 0;
 			let worklogCount = 0;
 
-			// Bucket each worklog by its classified `loggedOn` (the same
-			// logged-policy rule used by TimesheetGrid and CSV exports).
-			// Without this, OverviewTable disagreed with the calendar grid for
-			// Pattern B (jira-native) backdated entries.
-			for (const worklogs of Object.values(days)) {
+			// After ADA-219, the outer date key from `deriveMonthlyReportState`
+			// is already `classifyWorklog(wl).loggedOn`, so we can trust the
+			// key directly (same logged-policy rule as TimesheetGrid and CSV
+			// exports).
+			for (const [dateKey, worklogs] of Object.entries(days)) {
+				if (!dateKey) continue;
+				if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
 				for (const wl of worklogs) {
-					const c = classifyWorklog(wl);
-					if (!c.loggedOn) continue;
-					if (!isDateInMonth(c.loggedOn, year, monthZeroIndexed)) continue;
 					totalSeconds += wl.timeSpentSeconds ?? 0;
 					worklogCount++;
 				}

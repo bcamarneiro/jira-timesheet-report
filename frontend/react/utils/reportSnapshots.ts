@@ -7,7 +7,6 @@ import {
 } from './date';
 import { formatHours } from './format';
 import type { ManagerTrendModel } from './teamReports';
-import { classifyWorklog } from './worklogClassifier';
 
 type SnapshotValidationState = {
 	status: string;
@@ -85,18 +84,17 @@ function summarizeMonthlyEntries(
 			let entryCount = 0;
 			const activeDaySet = new Set<string>();
 
-			// Bucket each worklog by its classified `loggedOn` (the same
-			// logged-policy rule used by TimesheetGrid, OverviewTable, and CSV
-			// exports). Without this, snapshots disagreed with the calendar
-			// grid for Pattern B (jira-native) backdated entries.
-			for (const worklogs of Object.values(days)) {
+			// After ADA-219, the outer date key from `deriveMonthlyReportState`
+			// is already `classifyWorklog(wl).loggedOn`, so we can trust the
+			// key directly (same logged-policy rule as TimesheetGrid,
+			// OverviewTable, and CSV exports).
+			for (const [dateKey, worklogs] of Object.entries(days)) {
+				if (!dateKey) continue;
+				if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
 				for (const worklog of worklogs) {
-					const c = classifyWorklog(worklog);
-					if (!c.loggedOn) continue;
-					if (!isDateInMonth(c.loggedOn, year, monthZeroIndexed)) continue;
 					totalSeconds += worklog.timeSpentSeconds ?? 0;
 					entryCount += 1;
-					activeDaySet.add(c.loggedOn);
+					activeDaySet.add(dateKey);
 				}
 			}
 
@@ -122,21 +120,21 @@ function buildDailyBreakdown(
 ): DailyBreakdownRow[] {
 	if (!entry) return [];
 
-	// Regroup worklogs by their classified `loggedOn` so the breakdown
-	// matches what users see in the calendar grid for backdated entries.
+	// After ADA-219, the outer date key from `deriveMonthlyReportState` is
+	// already `classifyWorklog(wl).loggedOn`, so the breakdown matches the
+	// calendar grid by trusting the key directly.
 	const buckets = new Map<string, { entries: number; totalSeconds: number }>();
-	for (const worklogs of Object.values(entry[1])) {
+	for (const [dateKey, worklogs] of Object.entries(entry[1])) {
+		if (!dateKey) continue;
+		if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
 		for (const worklog of worklogs) {
-			const c = classifyWorklog(worklog);
-			if (!c.loggedOn) continue;
-			if (!isDateInMonth(c.loggedOn, year, monthZeroIndexed)) continue;
-			const bucket = buckets.get(c.loggedOn) ?? {
+			const bucket = buckets.get(dateKey) ?? {
 				entries: 0,
 				totalSeconds: 0,
 			};
 			bucket.entries += 1;
 			bucket.totalSeconds += worklog.timeSpentSeconds ?? 0;
-			buckets.set(c.loggedOn, bucket);
+			buckets.set(dateKey, bucket);
 		}
 	}
 
