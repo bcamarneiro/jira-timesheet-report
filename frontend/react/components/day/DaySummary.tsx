@@ -36,7 +36,8 @@ export const DaySummary: React.FC<Props> = ({
 							className={styles.workedOnPto}
 							title="You logged work on a day marked as time off — confirm whether this is intentional."
 						>
-							{' '}⚠ worked
+							{' '}
+							⚠ worked
 						</span>
 					)}
 				</span>

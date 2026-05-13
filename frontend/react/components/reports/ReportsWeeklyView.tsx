@@ -84,7 +84,8 @@ function TeamMemberRow({
 						title={`Logged work on a PTO/holiday day: ${workedOnPto.join(', ')}`}
 						aria-label={`Worked on time off: ${workedOnPto.join(', ')}`}
 					>
-						{' '}⚠
+						{' '}
+						⚠
 					</span>
 				)}
 				<div className={styles.memberEmail}>{member.email}</div>

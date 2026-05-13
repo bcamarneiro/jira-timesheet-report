@@ -94,8 +94,18 @@
 		135deg,
 		color-mix(in srgb, var(--color-warning-bg) 60%, var(--color-surface)),
 		color-mix(in srgb, var(--color-warning-bg) 60%, var(--color-surface)) 8px,
-		color-mix(in srgb, var(--color-error-bg, var(--color-warning-bg)) 70%, var(--color-surface)) 8px,
-		color-mix(in srgb, var(--color-error-bg, var(--color-warning-bg)) 70%, var(--color-surface)) 16px
+		color-mix(
+				in srgb,
+				var(--color-error-bg, var(--color-warning-bg)) 70%,
+				var(--color-surface)
+			)
+			8px,
+		color-mix(
+				in srgb,
+				var(--color-error-bg, var(--color-warning-bg)) 70%,
+				var(--color-surface)
+			)
+			16px
 	);
 	border-color: var(--color-error, var(--color-warning-border));
 }

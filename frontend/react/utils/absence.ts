@@ -59,4 +59,3 @@ export function getAbsenceKindShortLabel(
 			return 'off';
 	}
 }
-

@@ -2,10 +2,7 @@ import type React from 'react';
 import { useMemo, useState } from 'react';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
 import type { UserAbsenceDays } from '../../services/absenceService';
-import {
-	getWorkdayDatesInMonth,
-	isDateInMonth,
-} from '../utils/date';
+import { getWorkdayDatesInMonth, isDateInMonth } from '../utils/date';
 import { sumWeekdayTargetSeconds } from '../utils/dayTarget';
 import { computeCompliancePct } from '../utils/format';
 import { getInitials } from '../utils/text';

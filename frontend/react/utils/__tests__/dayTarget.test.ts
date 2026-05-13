@@ -51,7 +51,13 @@ describe('computeDayTargetSeconds', () => {
 });
 
 describe('sumWeekdayTargetSeconds', () => {
-	const weekdays = ['2026-03-02', '2026-03-03', '2026-03-04', '2026-03-05', '2026-03-06'];
+	const weekdays = [
+		'2026-03-02',
+		'2026-03-03',
+		'2026-03-04',
+		'2026-03-05',
+		'2026-03-06',
+	];
 
 	it('returns full week × 8h when no absences and no logs', () => {
 		const total = sumWeekdayTargetSeconds(

@@ -109,8 +109,7 @@ export function buildTeamSummaries(
 			0,
 		);
 		const memberAbsenceMap = absenceDaysByUser?.get(email);
-		const isAbsentOnDay = (day: string) =>
-			memberAbsenceMap?.has(day) ?? false;
+		const isAbsentOnDay = (day: string) => memberAbsenceMap?.has(day) ?? false;
 		const loggedOnDay = (day: string) => member.dailySeconds.get(day) ?? 0;
 		const targetSeconds = sumWeekdayTargetSeconds(
 			targetWeekdays,

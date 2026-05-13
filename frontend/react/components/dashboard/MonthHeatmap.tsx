@@ -153,9 +153,8 @@ export const MonthHeatmap: React.FC<Props> = ({
 					// stripe marks the conflict. A clean PTO day still gets the
 					// vacation level.
 					const workedOnPto = isTimeOff && cell.seconds > 0;
-					const level = isTimeOff && !workedOnPto
-						? 'vacation'
-						: getLevel(cell.seconds);
+					const level =
+						isTimeOff && !workedOnPto ? 'vacation' : getLevel(cell.seconds);
 					const levelClass = cellLevelMap[level] ?? cellLevelMap.empty;
 					const weekendClass = cell.isWeekend ? styles.cellWeekend : '';
 					const backdated = backdatedSeconds?.get(cell.dateStr) ?? 0;
