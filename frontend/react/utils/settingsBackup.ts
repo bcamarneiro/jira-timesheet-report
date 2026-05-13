@@ -96,19 +96,30 @@ function normalizeCalendarMapping(
 }
 
 function normalizeAbsenceAssignment(
-	assignment: Partial<AbsenceAssignment>,
+	assignment: Partial<AbsenceAssignment> & { userEmail?: string },
 ): AbsenceAssignment | null {
 	const pattern =
 		typeof assignment.pattern === 'string' ? assignment.pattern.trim() : '';
-	const userEmail =
-		typeof assignment.userEmail === 'string'
-			? assignment.userEmail.trim().toLowerCase()
-			: '';
-	if (!pattern || !userEmail) return null;
+	const rawEmails: string[] = Array.isArray(assignment.userEmails)
+		? (assignment.userEmails as unknown[]).filter(
+				(value): value is string => typeof value === 'string',
+			)
+		: [];
+	const legacyEmail =
+		typeof assignment.userEmail === 'string' ? assignment.userEmail : '';
+	const merged = legacyEmail ? [...rawEmails, legacyEmail] : rawEmails;
+	const userEmails = Array.from(
+		new Set(
+			merged
+				.map((email) => email.trim().toLowerCase())
+				.filter((email) => email.length > 0),
+		),
+	);
+	if (!pattern || userEmails.length === 0) return null;
 
 	return {
 		pattern,
-		userEmail,
+		userEmails,
 	};
 }
 

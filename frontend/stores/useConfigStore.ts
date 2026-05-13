@@ -20,7 +20,12 @@ export interface CalendarFeed {
 
 export interface AbsenceAssignment {
 	pattern: string;
-	userEmail: string;
+	/**
+	 * Emails of teammates this pattern applies to. The same pattern routes a
+	 * single calendar event to one (most absences) or many (regional holidays)
+	 * users. Empty arrays are normalised out.
+	 */
+	userEmails: string[];
 }
 
 export interface Config {
@@ -55,7 +60,7 @@ interface ConfigState {
 	setConfig: (newConfig: Config) => void;
 }
 
-export const CONFIG_STORAGE_VERSION = 5;
+export const CONFIG_STORAGE_VERSION = 6;
 
 function normalizeHost(value: unknown): string {
 	if (typeof value !== 'string') return '';
@@ -116,19 +121,34 @@ function normalizeCalendarFeed(
 }
 
 function normalizeAbsenceAssignment(
-	assignment: Partial<AbsenceAssignment> | undefined,
+	assignment:
+		| (Partial<AbsenceAssignment> & { userEmail?: string })
+		| undefined,
 ): AbsenceAssignment | null {
 	const pattern =
 		typeof assignment?.pattern === 'string' ? assignment.pattern.trim() : '';
-	const userEmail =
-		typeof assignment?.userEmail === 'string'
-			? assignment.userEmail.trim().toLowerCase()
-			: '';
-	if (!pattern || !userEmail) return null;
+	const rawEmails: string[] = Array.isArray(assignment?.userEmails)
+		? (assignment.userEmails as unknown[]).filter(
+				(value): value is string => typeof value === 'string',
+			)
+		: [];
+	// Migrate the v5 single-email shape `{ pattern, userEmail }` to the v6
+	// list shape transparently.
+	const legacyEmail =
+		typeof assignment?.userEmail === 'string' ? assignment.userEmail : '';
+	const merged = legacyEmail ? [...rawEmails, legacyEmail] : rawEmails;
+	const userEmails = Array.from(
+		new Set(
+			merged
+				.map((email) => email.trim().toLowerCase())
+				.filter((email) => email.length > 0),
+		),
+	);
+	if (!pattern || userEmails.length === 0) return null;
 
 	return {
 		pattern,
-		userEmail,
+		userEmails,
 	};
 }
 
@@ -259,6 +279,9 @@ export function normalizeConfig(
  *   v4 → added timeRounding tri-state, theme widening
  *   v5 → added 'holiday' as a CalendarFeed.type (no shape change; existing
  *        'absence' feeds remain valid)
+ *   v6 → AbsenceAssignment.userEmail (string) → userEmails (string[]). The
+ *        legacy shape is handled by `normalizeAbsenceAssignment` so the
+ *        migrate step is a no-op pass-through normaliser.
  * Each "v0_to_vN" helper is a defensive normaliser that accepts whatever
  * legacy shape was on disk and produces a valid current Config. Today,
  * all branches collapse to `normalizeConfig` because every persisted
@@ -266,7 +289,7 @@ export function normalizeConfig(
  * Keep the explicit branching so future schema changes can be added
  * without re-introducing the no-op pattern.
  */
-function migrateLegacy_v0_to_v5(
+function migrateLegacy_v0_to_v6(
 	legacyConfig: Partial<Config> | undefined,
 ): Config {
 	return normalizeConfig(legacyConfig);
@@ -280,7 +303,7 @@ export function migratePersistedConfigState(
 	const legacyConfig = persistedState?.config;
 
 	if (version < CONFIG_STORAGE_VERSION) {
-		return { config: migrateLegacy_v0_to_v5(legacyConfig) };
+		return { config: migrateLegacy_v0_to_v6(legacyConfig) };
 	}
 
 	// Same-version path: still normalise to absorb hand-edited blobs and

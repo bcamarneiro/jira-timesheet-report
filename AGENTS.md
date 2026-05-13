@@ -128,7 +128,9 @@ All rollups (DayCell, OverviewTable, TimesheetGrid, teamService, teamReports, su
 `CalendarFeed.type` is `'suggestion' | 'absence' | 'holiday'`:
 - `suggestion`: drives Dashboard worklog suggestions.
 - `absence`: per-user PTO. Needs `absenceAttribution: 'self' | 'shared'` and (for `'shared'`) `AbsenceAssignment[]` patterns mapping event titles to user emails.
-- `holiday`: public holidays. No attribution; events apply to **every** user automatically (merged into each known user's absence map in `fetchAbsenceDaysByUser`).
+- `holiday`: public holidays. **Nationwide by default** — events apply to every user automatically. **Regional holidays** are scoped by adding an `AbsenceAssignment` whose pattern matches the event title; the assignment's `userEmails` list determines who gets the holiday. A holiday with no matching assignment stays nationwide.
+
+`AbsenceAssignment` shape is `{ pattern: string; userEmails: string[] }`. Same record powers both shared-absence and regional-holiday scoping. The legacy v5 single-email shape `{ pattern, userEmail }` is auto-migrated to `userEmails: [userEmail]` by `normalizeAbsenceAssignment`.
 
 `AbsenceKind` is `'vacation' | 'sick' | 'off' | 'holiday'`. The per-day target rule treats all four identically — what changes is the label users see.
 

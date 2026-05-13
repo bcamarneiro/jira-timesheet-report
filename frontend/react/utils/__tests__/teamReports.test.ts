@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { UserAbsenceDays } from '../../../services/absenceService';
 import type { WorklogItem } from '../../../services/monthWorklogService';
 import { buildManagerTrendModel, buildTeamSummaries } from '../teamReports';
 
@@ -244,34 +245,33 @@ describe('buildManagerTrendModel', () => {
 	it('reduces target for multiple users when a shared/team absence map is passed', () => {
 		// Shared-feed style: absenceDaysByUser holds entries for several users
 		// keyed by their email (as `fetchAbsenceDaysByUser` produces).
-		const absenceDaysByUser = new Map([
-			[
-				'alice@example.com',
-				new Map([
-					[
-						'2026-03-04',
-						{
-							date: '2026-03-04',
-							reasons: ['[Team PTO] Vacation - Alice'],
-							kind: 'vacation' as const,
-						},
-					],
-				]),
-			],
-			[
-				'bob@example.com',
-				new Map([
-					[
-						'2026-03-05',
-						{
-							date: '2026-03-05',
-							reasons: ['[Team PTO] Sick - Bob'],
-							kind: 'sick' as const,
-						},
-					],
-				]),
-			],
-		]);
+		const absenceDaysByUser: UserAbsenceDays = new Map();
+		absenceDaysByUser.set(
+			'alice@example.com',
+			new Map([
+				[
+					'2026-03-04',
+					{
+						date: '2026-03-04',
+						reasons: ['[Team PTO] Vacation - Alice'],
+						kind: 'vacation',
+					},
+				],
+			]),
+		);
+		absenceDaysByUser.set(
+			'bob@example.com',
+			new Map([
+				[
+					'2026-03-05',
+					{
+						date: '2026-03-05',
+						reasons: ['[Team PTO] Sick - Bob'],
+						kind: 'sick',
+					},
+				],
+			]),
+		);
 
 		const summaries = buildTeamSummaries(
 			[

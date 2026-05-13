@@ -41,8 +41,8 @@ describe('absenceService', () => {
 				},
 			],
 			[
-				{ pattern: 'Bruno C', userEmail: 'bruno@example.com' },
-				{ pattern: 'Daniel D', userEmail: 'daniel@example.com' },
+				{ pattern: 'Bruno C', userEmails: ['bruno@example.com'] },
+				{ pattern: 'Daniel D', userEmails: ['daniel@example.com'] },
 			],
 			'bruno@example.com',
 			'',
@@ -191,8 +191,8 @@ END:VCALENDAR`,
 				},
 			],
 			[
-				{ pattern: 'Alice', userEmail: 'alice@example.com' },
-				{ pattern: 'Bob', userEmail: 'bob@example.com' },
+				{ pattern: 'Alice', userEmails: ['alice@example.com'] },
+				{ pattern: 'Bob', userEmails: ['bob@example.com'] },
 			],
 			'alice@example.com',
 			'',
@@ -213,6 +213,104 @@ END:VCALENDAR`,
 		expect(result.get('bob@example.com')?.get('2026-05-05')?.kind).toBe(
 			'vacation',
 		);
+	});
+
+	it('scopes regional holidays to assigned users; leaves nationwide ones applying to everyone', async () => {
+		// One holiday feed mixing a nationwide event (Labour Day) and a
+		// regional one (Lisbon Day). Three users known via shared absence feed.
+		vi.spyOn(global, 'fetch').mockImplementation(async (input) => {
+			const url = String(input);
+			if (url.includes('absence')) {
+				return {
+					ok: true,
+					text: async () => `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Alice - Vacation
+DTSTART;VALUE=DATE:20260520
+DTEND;VALUE=DATE:20260521
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Bob - Vacation
+DTSTART;VALUE=DATE:20260521
+DTEND;VALUE=DATE:20260522
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Carla - Vacation
+DTSTART;VALUE=DATE:20260522
+DTEND;VALUE=DATE:20260523
+END:VEVENT
+END:VCALENDAR`,
+				} as Response;
+			}
+			return {
+				ok: true,
+				text: async () => `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Labour Day
+DTSTART;VALUE=DATE:20260501
+DTEND;VALUE=DATE:20260502
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Lisbon Day
+DTSTART;VALUE=DATE:20260613
+DTEND;VALUE=DATE:20260614
+END:VEVENT
+END:VCALENDAR`,
+			} as Response;
+		});
+
+		const result = await fetchAbsenceDaysByUser(
+			[
+				{
+					label: 'Team time off',
+					url: 'https://calendar.example.com/absence.ics',
+					type: 'absence',
+					absenceAttribution: 'shared',
+				},
+				{
+					label: 'PT holidays',
+					url: 'https://calendar.example.com/holidays.ics',
+					type: 'holiday',
+				},
+			],
+			[
+				{ pattern: 'Alice', userEmails: ['alice@example.com'] },
+				{ pattern: 'Bob', userEmails: ['bob@example.com'] },
+				{ pattern: 'Carla', userEmails: ['carla@example.com'] },
+				// Regional holiday assignment — Lisbon Day applies only to
+				// Alice + Bob, not Carla.
+				{
+					pattern: 'Lisbon Day',
+					userEmails: ['alice@example.com', 'bob@example.com'],
+				},
+			],
+			'alice@example.com',
+			'',
+			'2026-05-01',
+			'2026-06-30',
+		);
+
+		// Nationwide Labour Day → everyone
+		expect(result.get('alice@example.com')?.get('2026-05-01')?.kind).toBe(
+			'holiday',
+		);
+		expect(result.get('bob@example.com')?.get('2026-05-01')?.kind).toBe(
+			'holiday',
+		);
+		expect(result.get('carla@example.com')?.get('2026-05-01')?.kind).toBe(
+			'holiday',
+		);
+
+		// Regional Lisbon Day → only Alice + Bob
+		expect(result.get('alice@example.com')?.get('2026-06-13')?.kind).toBe(
+			'holiday',
+		);
+		expect(result.get('bob@example.com')?.get('2026-06-13')?.kind).toBe(
+			'holiday',
+		);
+		expect(result.get('carla@example.com')?.has('2026-06-13')).toBe(false);
 	});
 
 	it('returns the current user with holidays even when no absence feed exists', async () => {
@@ -274,7 +372,7 @@ END:VCALENDAR`,
 					absenceAttribution: 'shared',
 				},
 			],
-			[{ pattern: 'Bruno C', userEmail: 'bruno@example.com' }],
+			[{ pattern: 'Bruno C', userEmails: ['bruno@example.com'] }],
 			'bruno@example.com',
 			'',
 			'2026-04-06',

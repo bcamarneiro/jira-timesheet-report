@@ -25,7 +25,7 @@ describe('useConfigStore helpers', () => {
 				},
 			],
 			absenceAssignments: [
-				{ pattern: ' Bruno ', userEmail: ' BRUNO@EXAMPLE.COM ' },
+				{ pattern: ' Bruno ', userEmails: [' BRUNO@EXAMPLE.COM '] },
 			],
 		});
 
@@ -45,7 +45,7 @@ describe('useConfigStore helpers', () => {
 			},
 		]);
 		expect(config.absenceAssignments).toEqual([
-			{ pattern: 'Bruno', userEmail: 'bruno@example.com' },
+			{ pattern: 'Bruno', userEmails: ['bruno@example.com'] },
 		]);
 	});
 
@@ -82,7 +82,7 @@ describe('useConfigStore helpers', () => {
 				},
 			],
 			absenceAssignments: [
-				{ pattern: 'Bruno', userEmail: 'bruno@example.com' },
+				{ pattern: 'Bruno', userEmails: ['bruno@example.com'] },
 			],
 		});
 

@@ -224,7 +224,7 @@ describe('settingsBackup', () => {
 			},
 		]);
 		expect(parsed.config.absenceAssignments).toEqual([
-			{ pattern: 'Bruno', userEmail: 'bruno@example.com' },
+			{ pattern: 'Bruno', userEmails: ['bruno@example.com'] },
 		]);
 		expect(parsed.calendarMappings).toEqual([
 			{ pattern: 'Standup', issueKey: 'PROJ-10', issueSummary: undefined },

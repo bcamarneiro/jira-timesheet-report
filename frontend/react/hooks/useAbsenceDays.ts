@@ -36,7 +36,10 @@ function buildAbsenceQueryKey(
 			)
 			.join('||'),
 		assignments
-			.map((assignment) => `${assignment.pattern}|${assignment.userEmail}`)
+			.map(
+				(assignment) =>
+					`${assignment.pattern}|${[...assignment.userEmails].sort().join(',')}`,
+			)
 			.join('||'),
 	] as const;
 }

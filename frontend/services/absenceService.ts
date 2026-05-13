@@ -327,13 +327,21 @@ function addAbsenceReason(
 
 function findMatchedUsers(
 	summary: string,
-	assignments: AbsenceAssignment[],
+	assignments: NormalisedAssignment[],
 ): string[] {
 	const matched = assignments.filter((assignment) =>
-		summary.toLowerCase().includes(assignment.pattern.trim().toLowerCase()),
+		summary.toLowerCase().includes(assignment.pattern.toLowerCase()),
 	);
+	const out = new Set<string>();
+	for (const a of matched) {
+		for (const email of a.userEmails) out.add(email);
+	}
+	return [...out];
+}
 
-	return [...new Set(matched.map((assignment) => assignment.userEmail))];
+interface NormalisedAssignment {
+	pattern: string;
+	userEmails: string[];
 }
 
 export async function fetchAbsenceDaysByUser(
@@ -353,12 +361,14 @@ export async function fetchAbsenceDaysByUser(
 	);
 	if (absenceFeeds.length === 0 && holidayFeeds.length === 0) return new Map();
 
-	const normalizedAssignments = assignments
+	const normalizedAssignments: NormalisedAssignment[] = assignments
 		.map((assignment) => ({
 			pattern: assignment.pattern.trim(),
-			userEmail: assignment.userEmail.trim().toLowerCase(),
+			userEmails: assignment.userEmails
+				.map((email) => email.trim().toLowerCase())
+				.filter((email) => email.length > 0),
 		}))
-		.filter((assignment) => assignment.pattern && assignment.userEmail);
+		.filter((assignment) => assignment.pattern && assignment.userEmails.length > 0);
 	const normalizedCurrentUser = currentUserEmail.trim().toLowerCase();
 
 	type FeedResult = {
@@ -393,9 +403,11 @@ export async function fetchAbsenceDaysByUser(
 	);
 
 	const userAbsenceDays: UserAbsenceDays = new Map();
-	// Holidays are collected separately first so we can merge them onto every
-	// user's map after the per-user absence loop populates the known users.
-	const holidayDates = new Map<string, { reason: string }>();
+	// Holiday events whose summary doesn't match any assignment pattern apply
+	// to *every* user (the nationwide default). We collect them here and merge
+	// onto every known user after the per-user passes populate the recipient
+	// set.
+	const nationwideHolidays = new Map<string, { reason: string }>();
 
 	for (const result of results) {
 		if (result.status !== 'fulfilled') {
@@ -411,11 +423,32 @@ export async function fetchAbsenceDaysByUser(
 		if (feedType === 'holiday') {
 			for (const event of events) {
 				if (!matchesTitleFilter(event.summary, titleFilter)) continue;
+				// Regional holidays: assignments whose pattern matches the event
+				// title scope the holiday to those users. No match → nationwide.
+				const regionalUsers = findMatchedUsers(
+					event.summary,
+					normalizedAssignments,
+				);
 				const dates = expandAbsenceDates(event, rangeStart, rangeEnd);
-				for (const { date, summary } of dates) {
-					if (!holidayDates.has(date)) {
+				if (regionalUsers.length > 0) {
+					for (const { date, summary } of dates) {
 						const reason = label ? `[${label}] ${summary}` : summary;
-						holidayDates.set(date, { reason });
+						for (const userEmail of regionalUsers) {
+							addAbsenceReason(
+								userAbsenceDays,
+								userEmail,
+								date,
+								reason,
+								'holiday',
+							);
+						}
+					}
+				} else {
+					for (const { date, summary } of dates) {
+						if (!nationwideHolidays.has(date)) {
+							const reason = label ? `[${label}] ${summary}` : summary;
+							nationwideHolidays.set(date, { reason });
+						}
 					}
 				}
 			}
@@ -447,13 +480,16 @@ export async function fetchAbsenceDaysByUser(
 		}
 	}
 
-	// Merge holiday dates into every known user, plus the current user (so a
-	// workspace configured with only a holiday feed still has the current
-	// user in the map).
-	if (holidayDates.size > 0) {
+	// Merge nationwide holiday dates into every known user, plus the current
+	// user (so a workspace configured with only a holiday feed still has the
+	// current user in the map).
+	if (nationwideHolidays.size > 0) {
 		const recipients = new Set<string>(userAbsenceDays.keys());
 		if (normalizedCurrentUser) recipients.add(normalizedCurrentUser);
-		for (const [date, { reason }] of holidayDates) {
+		// Include any user that received a regional holiday from the same
+		// feed loop above so they pick up nationwide ones too.
+		for (const email of userAbsenceDays.keys()) recipients.add(email);
+		for (const [date, { reason }] of nationwideHolidays) {
 			for (const userEmail of recipients) {
 				addAbsenceReason(userAbsenceDays, userEmail, date, reason, 'holiday');
 			}

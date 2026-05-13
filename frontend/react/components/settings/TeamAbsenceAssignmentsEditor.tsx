@@ -20,8 +20,19 @@ function normalizePattern(value: string): string {
 	return value.trim();
 }
 
+function parseEmailList(raw: string): string[] {
+	return Array.from(
+		new Set(
+			raw
+				.split(/[,\n]/)
+				.map((entry) => normalizeEmailEntry(entry))
+				.filter((email) => email.length > 0),
+		),
+	);
+}
+
 function assignmentKey(assignment: AbsenceAssignment): string {
-	return `${assignment.pattern.toLowerCase()}::${assignment.userEmail.toLowerCase()}`;
+	return assignment.pattern.toLowerCase();
 }
 
 export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
@@ -35,9 +46,9 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 	const [editingAssignment, setEditingAssignment] =
 		useState<AbsenceAssignment | null>(null);
 	const [draftPattern, setDraftPattern] = useState('');
-	const [draftUserEmail, setDraftUserEmail] = useState('');
+	const [draftEmailsRaw, setDraftEmailsRaw] = useState('');
 	const patternInputId = useId();
-	const userEmailInputId = useId();
+	const emailsInputId = useId();
 	const datalistId = useId();
 
 	const visibleAssignments = useMemo(() => {
@@ -46,38 +57,40 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 
 		return assignments.filter((assignment) => {
 			const haystack =
-				`${assignment.pattern} ${assignment.userEmail}`.toLowerCase();
+				`${assignment.pattern} ${assignment.userEmails.join(' ')}`.toLowerCase();
 			return haystack.includes(normalizedQuery);
 		});
 	}, [assignments, searchQuery]);
 
 	const validationError = useMemo(() => {
 		const pattern = normalizePattern(draftPattern);
-		const userEmail = normalizeEmailEntry(draftUserEmail);
+		const emails = parseEmailList(draftEmailsRaw);
 
 		if (!pattern) return 'Add an event title pattern to continue.';
-		if (!userEmail) return 'Choose which user should receive this time off.';
-		if (!isValidEmailEntry(userEmail)) {
-			return 'Enter a valid email address for the affected user.';
+		if (emails.length === 0)
+			return 'Add at least one team member email (comma-separate for multiple).';
+		const invalid = emails.find((email) => !isValidEmailEntry(email));
+		if (invalid) {
+			return `"${invalid}" is not a valid email address.`;
 		}
 
 		const duplicate = assignments.some(
 			(assignment) =>
-				assignmentKey(assignment) === assignmentKey({ pattern, userEmail }) &&
+				assignmentKey(assignment) === assignmentKey({ pattern, userEmails: emails }) &&
 				(!editingAssignment ||
 					assignmentKey(assignment) !== assignmentKey(editingAssignment)),
 		);
 		if (duplicate) {
-			return 'That pattern is already assigned to this user.';
+			return 'That pattern already has an assignment. Edit it instead.';
 		}
 
 		return null;
-	}, [assignments, draftPattern, draftUserEmail, editingAssignment]);
+	}, [assignments, draftPattern, draftEmailsRaw, editingAssignment]);
 
 	const resetComposer = () => {
 		setEditingAssignment(null);
 		setDraftPattern('');
-		setDraftUserEmail('');
+		setDraftEmailsRaw('');
 	};
 
 	const handleSubmit = (event: React.FormEvent) => {
@@ -86,7 +99,7 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 
 		const nextAssignment: AbsenceAssignment = {
 			pattern: normalizePattern(draftPattern),
-			userEmail: normalizeEmailEntry(draftUserEmail),
+			userEmails: parseEmailList(draftEmailsRaw),
 		};
 
 		if (editingAssignment) {
@@ -104,9 +117,9 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 				<div>
 					<h3>Shared calendar assignments</h3>
 					<p>
-						Use this when one time-off calendar includes several people. Each
-						matching title pattern reduces target hours for the assigned user in
-						Reports and for you in Dashboard when it matches your email.
+						Use this when one time-off calendar mixes several people, or when a
+						public holiday only applies to a region (e.g. Lisbon-only). One
+						pattern can route to one or many teammates.
 					</p>
 				</div>
 				<div className={styles.headerMeta}>
@@ -139,9 +152,9 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 								</div>
 								<div className={styles.assignmentCell}>
 									<span className={styles.cellLabel}>
-										Counts as time off for
+										Counts as time off for ({assignment.userEmails.length})
 									</span>
-									<code>{assignment.userEmail}</code>
+									<code>{assignment.userEmails.join(', ')}</code>
 								</div>
 							</div>
 							<div className={styles.assignmentActions}>
@@ -151,7 +164,7 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 									onClick={() => {
 										setEditingAssignment(assignment);
 										setDraftPattern(assignment.pattern);
-										setDraftUserEmail(assignment.userEmail);
+										setDraftEmailsRaw(assignment.userEmails.join(', '));
 									}}
 								>
 									Edit
@@ -185,7 +198,8 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 			) : (
 				<p className={styles.emptyState}>
 					No shared-calendar assignments yet. Add one when a single time-off
-					calendar mixes several people’s vacations together.
+					calendar mixes several people’s vacations together — or to scope a
+					regional holiday to a subset of the team.
 				</p>
 			)}
 
@@ -198,7 +212,9 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 								: 'Add shared-calendar assignment'}
 						</strong>
 						<p>
-							Example: <code>Bruno</code> or <code>Vacation - Daniel</code>.
+							Examples: <code>Vacation - Bruno</code> (one person) or{' '}
+							<code>Lisbon Holiday</code> (multiple people for a regional
+							holiday).
 						</p>
 					</div>
 					{editingAssignment ? (
@@ -215,17 +231,17 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 							type="text"
 							value={draftPattern}
 							onChange={(event) => setDraftPattern(event.target.value)}
-							placeholder="Vacation - Bruno"
+							placeholder="Lisbon Holiday"
 						/>
 					</label>
-					<label className={styles.field} htmlFor={userEmailInputId}>
-						<span>Team member email</span>
+					<label className={styles.field} htmlFor={emailsInputId}>
+						<span>Team member email(s)</span>
 						<input
-							id={userEmailInputId}
-							type="email"
-							value={draftUserEmail}
-							onChange={(event) => setDraftUserEmail(event.target.value)}
-							placeholder="bruno@example.com"
+							id={emailsInputId}
+							type="text"
+							value={draftEmailsRaw}
+							onChange={(event) => setDraftEmailsRaw(event.target.value)}
+							placeholder="alice@example.com, bob@example.com"
 							list={datalistId}
 							autoCapitalize="off"
 							autoCorrect="off"
@@ -237,7 +253,8 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 							))}
 						</datalist>
 						<small className={styles.fieldHint}>
-							Suggestions come from the Team Members list above.
+							Comma-separated for multiple. Suggestions come from your Team
+							Members list.
 						</small>
 					</label>
 				</div>
@@ -245,7 +262,7 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 					<p className={styles.validationText} aria-live="polite">
 						{validationError
 							? validationError
-							: 'Looks good. Save it to reduce that user’s target hours automatically.'}
+							: 'Looks good. Save it to reduce target hours for the matched teammate(s) automatically.'}
 					</p>
 					<Button type="submit" disabled={!!validationError}>
 						{editingAssignment ? 'Update assignment' : 'Add assignment'}

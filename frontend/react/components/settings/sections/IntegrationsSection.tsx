@@ -75,13 +75,10 @@ type Props = {
 	// Absence assignments
 	addAbsenceAssignment: (assignment: AbsenceAssignment) => void;
 	updateAbsenceAssignment: (
-		target: { pattern: string; userEmail: string },
+		target: AbsenceAssignment,
 		next: AbsenceAssignment,
 	) => void;
-	removeAbsenceAssignment: (target: {
-		pattern: string;
-		userEmail: string;
-	}) => void;
+	removeAbsenceAssignment: (target: AbsenceAssignment) => void;
 	allowedUserSuggestions: string[];
 
 	// Input change handler
@@ -509,11 +506,11 @@ export const IntegrationsSection: React.FC<Props> = ({
 					) : null}
 				</div>
 
-				<div className={styles.calendarSection}>
-					<div className={styles.calendarSectionHeader}>
+				<div className={styles.feedGroup}>
+					<div className={styles.feedGroupHeader}>
 						<div>
-							<h3 className={styles.calendarSectionTitle}>Public holidays</h3>
-							<p className={styles.feedHelper}>
+							<h4>Public holidays</h4>
+							<p>
 								Holiday feeds apply to <strong>everyone</strong> — no assignment
 								rules needed. A Thursday holiday automatically drops the team's
 								weekly target by 8h.

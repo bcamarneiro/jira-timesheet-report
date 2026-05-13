@@ -1,6 +1,9 @@
 import type React from 'react';
 import { useEffect, useId, useMemo, useRef } from 'react';
-import type { CalendarFeed } from '../../../stores/useConfigStore';
+import type {
+	AbsenceAssignment,
+	CalendarFeed,
+} from '../../../stores/useConfigStore';
 import { useConfigStore } from '../../../stores/useConfigStore';
 import { useSettingsFormStore } from '../../../stores/useSettingsFormStore';
 import { useUserDataStore } from '../../../stores/useUserDataStore';
@@ -219,10 +222,7 @@ export const SettingsForm: React.FC = () => {
 		updateFormField('calendarFeeds', feeds as never);
 	};
 
-	const addAbsenceAssignment = (assignment: {
-		pattern: string;
-		userEmail: string;
-	}) => {
+	const addAbsenceAssignment = (assignment: AbsenceAssignment) => {
 		updateFormField('absenceAssignments', [
 			...(formData.absenceAssignments ?? []),
 			assignment,
@@ -230,30 +230,22 @@ export const SettingsForm: React.FC = () => {
 	};
 
 	const updateAbsenceAssignment = (
-		original: { pattern: string; userEmail: string },
-		nextAssignment: { pattern: string; userEmail: string },
+		original: AbsenceAssignment,
+		nextAssignment: AbsenceAssignment,
 	) => {
 		updateFormField(
 			'absenceAssignments',
 			(formData.absenceAssignments ?? []).map((assignment) =>
-				assignment.pattern === original.pattern &&
-				assignment.userEmail === original.userEmail
-					? nextAssignment
-					: assignment,
+				assignment.pattern === original.pattern ? nextAssignment : assignment,
 			) as never,
 		);
 	};
 
-	const removeAbsenceAssignment = (target: {
-		pattern: string;
-		userEmail: string;
-	}) => {
+	const removeAbsenceAssignment = (target: AbsenceAssignment) => {
 		updateFormField(
 			'absenceAssignments',
 			(formData.absenceAssignments ?? []).filter(
-				(assignment) =>
-					assignment.pattern !== target.pattern ||
-					assignment.userEmail !== target.userEmail,
+				(assignment) => assignment.pattern !== target.pattern,
 			) as never,
 		);
 	};
