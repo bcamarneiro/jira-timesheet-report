@@ -22,7 +22,7 @@ export const SourceStatusBar: React.FC = () => {
 
 	const hasGitlab = !!(config.gitlabToken && config.gitlabHost);
 	const hasCalendar = (config.calendarFeeds ?? []).some(
-		(feed) => feed.type !== 'absence' && feed.url.trim(),
+		(feed) => feed.type === 'suggestion' && feed.url.trim(),
 	);
 	const hasRescueTime = !!config.rescueTimeApiKey;
 

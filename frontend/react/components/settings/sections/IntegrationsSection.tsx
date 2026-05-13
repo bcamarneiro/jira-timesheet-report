@@ -514,9 +514,9 @@ export const IntegrationsSection: React.FC<Props> = ({
 						<div>
 							<h3 className={styles.calendarSectionTitle}>Public holidays</h3>
 							<p className={styles.feedHelper}>
-								Holiday feeds apply to <strong>everyone</strong> — no
-								assignment rules needed. A Thursday holiday automatically drops
-								the team's weekly target by 8h.
+								Holiday feeds apply to <strong>everyone</strong> — no assignment
+								rules needed. A Thursday holiday automatically drops the team's
+								weekly target by 8h.
 							</p>
 						</div>
 						<Button

@@ -49,8 +49,7 @@ export function useAbsenceDaysByUser(
 	const config = useConfigStore((s) => s.config);
 	const absenceFeeds = (config.calendarFeeds ?? []).filter(
 		(feed) =>
-			(feed.type === 'absence' || feed.type === 'holiday') &&
-			feed.url.trim(),
+			(feed.type === 'absence' || feed.type === 'holiday') && feed.url.trim(),
 	);
 	const enabled = (options?.enabled ?? true) && absenceFeeds.length > 0;
 

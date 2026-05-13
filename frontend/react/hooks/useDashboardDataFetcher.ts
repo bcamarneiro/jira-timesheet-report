@@ -128,8 +128,7 @@ export function useDashboardDataFetcher() {
 	const queryClient = useQueryClient();
 	const hasAbsenceFeeds = (calendarFeeds ?? []).some(
 		(feed) =>
-			(feed.type === 'absence' || feed.type === 'holiday') &&
-			feed.url.trim(),
+			(feed.type === 'absence' || feed.type === 'holiday') && feed.url.trim(),
 	);
 	const { data: absenceDays } = useAbsenceDays(weekStart, weekEnd, {
 		enabled: hasAbsenceFeeds,
@@ -178,7 +177,7 @@ export function useDashboardDataFetcher() {
 			setLoading('jira', true);
 			if (gitlabToken && gitlabHost) setLoading('gitlab', true);
 			const suggestionFeeds = (config.calendarFeeds ?? []).filter(
-				(f) => f.type !== 'absence',
+				(f) => f.type === 'suggestion',
 			);
 			const hasCalendar = suggestionFeeds.length > 0;
 			if (hasCalendar) setLoading('calendar', true);

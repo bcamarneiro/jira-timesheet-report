@@ -53,7 +53,12 @@ function normalizeCalendarFeed(
 	return {
 		label: typeof feed.label === 'string' ? feed.label.trim() : '',
 		url,
-		type: feed.type === 'absence' ? 'absence' : 'suggestion',
+		type:
+			feed.type === 'absence'
+				? 'absence'
+				: feed.type === 'holiday'
+					? 'holiday'
+					: 'suggestion',
 		absenceAttribution:
 			feed.type === 'absence'
 				? feed.absenceAttribution === 'shared'
