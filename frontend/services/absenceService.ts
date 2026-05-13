@@ -201,11 +201,10 @@ function expandAbsenceDates(
 		while (cursor < endDate) {
 			const iso = toLocalDateStr(cursor);
 			if (iso >= rangeStart && iso <= rangeEnd && !exdateSet.has(iso)) {
-				// Skip weekends
-				const dow = cursor.getDay();
-				if (dow !== 0 && dow !== 6) {
-					results.push({ date: iso, summary: event.summary });
-				}
+				// Weekends are kept too — they have a zero target so they
+				// don't change compliance %, but they remain visible on the
+				// calendar/heatmap (e.g. sick day that spans Sat–Mon).
+				results.push({ date: iso, summary: event.summary });
 			}
 			cursor.setDate(cursor.getDate() + 1);
 		}
@@ -236,10 +235,8 @@ function expandAbsenceDates(
 	const addIfInRange = (d: Date) => {
 		const iso = toLocalDateStr(d);
 		if (d >= rangeStartDate && d <= rangeEndDate && !exdateSet.has(iso)) {
-			const dow = d.getDay();
-			if (dow !== 0 && dow !== 6) {
-				results.push({ date: iso, summary: event.summary });
-			}
+			// Weekends kept (see expansion of non-recurring events above).
+			results.push({ date: iso, summary: event.summary });
 		}
 	};
 

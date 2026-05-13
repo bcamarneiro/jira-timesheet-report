@@ -100,6 +100,46 @@ describe('absenceService', () => {
 		expect(result.get('2026-04-09')?.kind).toBe('off');
 	});
 
+	it('keeps weekend dates in the expanded absence range (no silent skipping)', async () => {
+		// Event spans Saturday 2026-04-11 through Monday 2026-04-13 (DTEND is
+		// exclusive, so 04-14). All three dates should appear in the user's
+		// absence map even though Sat/Sun have zero compliance target.
+		vi.spyOn(global, 'fetch').mockResolvedValue({
+			ok: true,
+			text: async () => `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Bruno C - Sick
+DTSTART;VALUE=DATE:20260411
+DTEND;VALUE=DATE:20260414
+END:VEVENT
+END:VCALENDAR`,
+		} as Response);
+
+		const result = await fetchAbsenceDays(
+			[
+				{
+					label: 'Team time off',
+					url: 'https://calendar.example.com/team.ics',
+					type: 'absence',
+					absenceAttribution: 'self',
+					titleFilter: 'Bruno C',
+				},
+			],
+			[],
+			'bruno@example.com',
+			'',
+			'2026-04-11',
+			'2026-04-13',
+		);
+
+		expect([...result.keys()]).toEqual([
+			'2026-04-11',
+			'2026-04-12',
+			'2026-04-13',
+		]);
+	});
+
 	it('prefers sick over other absence kinds when a day has multiple events', async () => {
 		vi.spyOn(global, 'fetch').mockResolvedValue({
 			ok: true,
