@@ -267,6 +267,61 @@ describe('generateWeeklyCsv', () => {
 		expect(fields[6]).toBe('true');
 	});
 
+	it('adds IsAbsence/AbsenceKind columns and an Absence Days subtotal when enabled', () => {
+		const worklogs: WeekWorklogEntry[] = [
+			{
+				date: '2026-03-10',
+				issueKey: 'PROJ-100',
+				issueSummary: 'Worked through PTO',
+				timeSpentSeconds: 14400,
+			},
+		];
+		const absenceDays = new Map([
+			[
+				'2026-03-10',
+				{
+					date: '2026-03-10',
+					reasons: ['Vacation'],
+					kind: 'vacation' as const,
+				},
+			],
+		]);
+		const result = generateWeeklyCsv(weekStart, weekEnd, worklogs, {
+			provenance: fixedProvenance,
+			absenceDays,
+			includeAbsenceColumns: true,
+		});
+		const lines = result.split('\n');
+		expect(lines[1]).toBe(
+			'Date;Day;Issue Key;Issue Summary;Time Spent (hours);Time Spent (formatted);IsBackdated;IsAbsence;AbsenceKind',
+		);
+		// Row carries true + 'Vacation' for the absence column pair.
+		expect(lines[2]).toContain(';true;Vacation');
+		// Absence Days subtotal counts dates in range.
+		expect(result).toContain('Absence Days;;;;1');
+	});
+
+	it('legacy single-arg call (bare provenance) preserves byte-stable output', () => {
+		const worklogs: WeekWorklogEntry[] = [
+			{
+				date: '2026-03-10',
+				issueKey: 'PROJ-100',
+				issueSummary: 'Test',
+				timeSpentSeconds: 3600,
+			},
+		];
+		const withOptions = generateWeeklyCsv(weekStart, weekEnd, worklogs, {
+			provenance: fixedProvenance,
+		});
+		const withLegacy = generateWeeklyCsv(
+			weekStart,
+			weekEnd,
+			worklogs,
+			fixedProvenance,
+		);
+		expect(withOptions).toBe(withLegacy);
+	});
+
 	it('should default provenance metadata when not supplied', () => {
 		const result = generateWeeklyCsv(weekStart, weekEnd, []);
 		const last = result.split('\n').at(-1) ?? '';

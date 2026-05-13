@@ -41,6 +41,13 @@ export interface Config {
 	complianceReminderEnabled: boolean;
 	theme: 'system' | 'light' | 'dark';
 	timeRounding: 'off' | '15m' | '30m';
+	/**
+	 * When true (default), CSV exports include `IsAbsence` / `AbsenceKind`
+	 * columns and an `AbsenceDays` subtotal so finance/HR consumers can
+	 * reconcile reduced targets against external records. Off by default
+	 * for new installs would silently strip data — keep on.
+	 */
+	includeAbsenceInCsv: boolean;
 }
 
 interface ConfigState {
@@ -144,6 +151,7 @@ export function createDefaultConfig(): Config {
 		complianceReminderEnabled: false,
 		theme: 'system',
 		timeRounding: 'off',
+		includeAbsenceInCsv: true,
 	};
 }
 
@@ -236,6 +244,10 @@ export function normalizeConfig(
 			config?.timeRounding === 'off'
 				? config.timeRounding
 				: fallback.timeRounding,
+		includeAbsenceInCsv:
+			typeof config?.includeAbsenceInCsv === 'boolean'
+				? config.includeAbsenceInCsv
+				: fallback.includeAbsenceInCsv,
 	};
 }
 

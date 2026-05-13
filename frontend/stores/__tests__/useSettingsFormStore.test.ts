@@ -22,6 +22,7 @@ const baseConfig = {
 	complianceReminderEnabled: false,
 	theme: 'system' as const,
 	timeRounding: 'off' as const,
+	includeAbsenceInCsv: true,
 };
 
 describe('useSettingsFormStore', () => {

@@ -108,6 +108,7 @@ describe('useConfigStore helpers', () => {
 			jiraHost: 'jira.example.com',
 			theme: 'system',
 			timeRounding: 'off',
+		includeAbsenceInCsv: true,
 			canAddWorklogs: true,
 		});
 		expect(CONFIG_STORAGE_VERSION).toBeGreaterThan(0);

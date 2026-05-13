@@ -23,6 +23,7 @@ const defaultConfig = {
 	complianceReminderEnabled: false,
 	theme: 'system' as const,
 	timeRounding: 'off' as const,
+	includeAbsenceInCsv: true,
 };
 
 describe('settingsBackup', () => {

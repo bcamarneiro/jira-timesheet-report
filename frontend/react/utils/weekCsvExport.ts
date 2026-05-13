@@ -1,4 +1,6 @@
+import type { AbsenceDay } from '../../services/absenceService';
 import type { WeekWorklogEntry } from '../../stores/useDashboardStore';
+import { getAbsenceKindLabel } from './absence';
 import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
 import { parseIsoDateLocal } from './date';
 import { classifyWorklog } from './worklogClassifier';
@@ -35,13 +37,32 @@ function isEntryBackdated(entry: WeekWorklogEntry): boolean {
 	}).isBackdated;
 }
 
+export interface GenerateWeeklyCsvOptions {
+	provenance?: WeeklyCsvProvenance;
+	absenceDays?: Map<string, AbsenceDay>;
+	includeAbsenceColumns?: boolean;
+}
+
 export function generateWeeklyCsv(
 	weekStart: string,
 	weekEnd: string,
 	worklogs: WeekWorklogEntry[],
-	provenance?: WeeklyCsvProvenance,
+	provenanceOrOptions?: WeeklyCsvProvenance | GenerateWeeklyCsvOptions,
 ): string {
-	const headers = [
+	// Backwards-compat: legacy callers pass a bare provenance object; new
+	// callers pass an options object whose marker key is `provenance`
+	// (`absenceDays`/`includeAbsenceColumns` are also accepted).
+	const isOptionsShape =
+		provenanceOrOptions !== undefined &&
+		('provenance' in provenanceOrOptions ||
+			'absenceDays' in provenanceOrOptions ||
+			'includeAbsenceColumns' in provenanceOrOptions);
+	const opts: GenerateWeeklyCsvOptions = isOptionsShape
+		? (provenanceOrOptions as GenerateWeeklyCsvOptions)
+		: { provenance: provenanceOrOptions as WeeklyCsvProvenance | undefined };
+	const { provenance, absenceDays, includeAbsenceColumns = false } = opts;
+
+	const baseHeaders = [
 		'Date',
 		'Day',
 		'Issue Key',
@@ -49,7 +70,10 @@ export function generateWeeklyCsv(
 		'Time Spent (hours)',
 		'Time Spent (formatted)',
 		'IsBackdated',
-	].join(SEP);
+	];
+	const headers = (
+		includeAbsenceColumns ? [...baseHeaders, 'IsAbsence', 'AbsenceKind'] : baseHeaders
+	).join(SEP);
 	const metadata = [`Week Range`, `${weekStart} to ${weekEnd}`].join(SEP);
 
 	// Sort by date then issue key
@@ -69,8 +93,7 @@ export function generateWeeklyCsv(
 		const dayLabel = DAY_LABELS[d.getDay()];
 		const hours = entry.timeSpentSeconds / 3600;
 		const formatted = formatDuration(entry.timeSpentSeconds);
-
-		return [
+		const baseCols = [
 			entry.date,
 			dayLabel,
 			entry.issueKey,
@@ -78,6 +101,13 @@ export function generateWeeklyCsv(
 			hours.toFixed(2),
 			formatted,
 			isBackdated ? 'true' : 'false',
+		];
+		if (!includeAbsenceColumns) return baseCols.join(SEP);
+		const absence = absenceDays?.get(entry.date);
+		return [
+			...baseCols,
+			absence ? 'true' : 'false',
+			absence ? getAbsenceKindLabel(absence.kind) : '',
 		].join(SEP);
 	});
 
@@ -90,8 +120,8 @@ export function generateWeeklyCsv(
 		0,
 	);
 	const nonBackdatedSeconds = totalSeconds - backdatedSeconds;
-	const makeTotalRow = (label: string, seconds: number) =>
-		[
+	const makeTotalRow = (label: string, seconds: number) => {
+		const cols = [
 			label,
 			'',
 			'',
@@ -99,10 +129,35 @@ export function generateWeeklyCsv(
 			(seconds / 3600).toFixed(2),
 			formatDuration(seconds),
 			'',
-		].join(SEP);
+		];
+		if (includeAbsenceColumns) cols.push('', '');
+		return cols.join(SEP);
+	};
 	const backdatedRow = makeTotalRow('Backdated', backdatedSeconds);
 	const nonBackdatedRow = makeTotalRow('Non-backdated', nonBackdatedSeconds);
 	const totalRow = makeTotalRow('Week Total', totalSeconds);
+	const absenceDaysInWeek =
+		includeAbsenceColumns && absenceDays
+			? [...absenceDays.keys()].filter(
+					(d) => d >= weekStart && d <= weekEnd,
+				).length
+			: null;
+	const absenceSubtotalRow =
+		absenceDaysInWeek !== null
+			? (() => {
+					const cols = [
+						'Absence Days',
+						'',
+						'',
+						'',
+						absenceDaysInWeek.toString(),
+						'',
+						'',
+					];
+					if (includeAbsenceColumns) cols.push('', '');
+					return cols.join(SEP);
+				})()
+			: null;
 
 	const provenanceFooter = buildProvenanceFooter({
 		policy: 'logged',
@@ -111,13 +166,10 @@ export function generateWeeklyCsv(
 		omitMissingVersion: true,
 	});
 
-	return [
-		metadata,
-		headers,
-		...rows,
-		backdatedRow,
-		nonBackdatedRow,
-		totalRow,
-		provenanceFooter,
-	].join('\n');
+	const subtotalRows = [backdatedRow, nonBackdatedRow, totalRow];
+	if (absenceSubtotalRow) subtotalRows.push(absenceSubtotalRow);
+
+	return [metadata, headers, ...rows, ...subtotalRows, provenanceFooter].join(
+		'\n',
+	);
 }

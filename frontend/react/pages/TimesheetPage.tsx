@@ -164,7 +164,6 @@ export const TimesheetPage: React.FC = () => {
 		loadingProgress: teamLoadingProgress,
 	} = useTeamData(weekStart, weekEnd, { enabled: viewMode === 'weekly' });
 
-	const { downloadUser, downloadAll } = useDownload();
 	const reportPresets = useUserDataStore((state) => state.reportPresets);
 	const saveReportPreset = useUserDataStore((state) => state.saveReportPreset);
 	const removeReportPreset = useUserDataStore(
@@ -182,6 +181,10 @@ export const TimesheetPage: React.FC = () => {
 			() => deriveMonthlyReportState(data, selectedUser, allowedUsers),
 			[data, selectedUser, allowedUsers],
 		);
+	const { downloadUser, downloadAll } = useDownload({
+		absenceDaysByUser: monthlyAbsenceDaysByUser,
+		userEmails,
+	});
 	const [validationState, setValidationState] =
 		useState<ReportsValidationState>(() =>
 			buildIdleValidationState(viewMode, weekStart, weekEnd),
@@ -333,7 +336,8 @@ export const TimesheetPage: React.FC = () => {
 
 	const handleExportTeamCsv = () => {
 		const csv = buildTeamCsv(sortedMembers, weekdays, {
-			jiraHost: config.jiraHost,
+			provenance: { jiraHost: config.jiraHost },
+			includeAbsenceColumns: config.includeAbsenceInCsv,
 		});
 		const filename = `team-report-${weekStart}.csv`;
 		downloadAsFile(csv, filename, 'text/csv;charset=utf-8');

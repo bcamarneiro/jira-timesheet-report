@@ -1,4 +1,5 @@
 import type { TeamMemberSummary } from '../../services/teamService';
+import { BASELINE_DAY_SECONDS } from './dayTarget';
 import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
 import { parseIsoDateLocal } from './date';
 
@@ -18,11 +19,29 @@ export interface TeamCsvProvenance {
 	generatedAt?: string;
 }
 
+export interface BuildTeamCsvOptions {
+	provenance?: TeamCsvProvenance;
+	/** Adds an "Absence (h)" column showing how much each member's target was
+	 *  reduced for PTO/holidays in the period. Off by default. */
+	includeAbsenceColumns?: boolean;
+}
+
 export function buildTeamCsv(
 	members: TeamMemberSummary[],
 	weekdays: string[],
-	provenance?: TeamCsvProvenance,
+	provenanceOrOptions?: TeamCsvProvenance | BuildTeamCsvOptions,
 ): string {
+	// Legacy callers pass a bare provenance object; new callers an options
+	// object. Same discriminator pattern as `generateWeeklyCsv`.
+	const isOptionsShape =
+		provenanceOrOptions !== undefined &&
+		('provenance' in provenanceOrOptions ||
+			'includeAbsenceColumns' in provenanceOrOptions);
+	const opts: BuildTeamCsvOptions = isOptionsShape
+		? (provenanceOrOptions as BuildTeamCsvOptions)
+		: { provenance: provenanceOrOptions as TeamCsvProvenance | undefined };
+	const { provenance, includeAbsenceColumns = false } = opts;
+
 	const dayHeaders = weekdays.map(formatDayLabel);
 
 	const headers = [
@@ -32,7 +51,14 @@ export function buildTeamCsv(
 		'Total (h)',
 		'Backdated (h)',
 		'Gap (h)',
+		...(includeAbsenceColumns ? ['Absence (h)'] : []),
 	].join(SEP);
+
+	// Per-member absence-target reduction: weekdays × 8h baseline minus
+	// the actual target (which ADA-236 already discounted for PTO).
+	const baselineSeconds = weekdays.length * BASELINE_DAY_SECONDS;
+	const computeAbsenceHours = (m: TeamMemberSummary) =>
+		Math.max(0, baselineSeconds - m.targetSeconds) / 3600;
 
 	const rows = members.map((m) => {
 		const dailyCells = weekdays.map((day) => {
@@ -49,6 +75,9 @@ export function buildTeamCsv(
 			(m.totalSeconds / 3600).toFixed(1),
 			backdatedHours,
 			(m.gapSeconds / 3600).toFixed(1),
+			...(includeAbsenceColumns
+				? [computeAbsenceHours(m).toFixed(1)]
+				: []),
 		].join(SEP);
 	});
 
@@ -70,6 +99,9 @@ export function buildTeamCsv(
 		const avgGap =
 			members.reduce((sum, m) => sum + m.gapSeconds, 0) / count / 3600;
 
+		const avgAbsence =
+			members.reduce((sum, m) => sum + computeAbsenceHours(m), 0) / count;
+
 		rows.push(
 			[
 				'Team Average',
@@ -78,6 +110,7 @@ export function buildTeamCsv(
 				avgTotal.toFixed(1),
 				avgBackdated.toFixed(1),
 				avgGap.toFixed(1),
+				...(includeAbsenceColumns ? [avgAbsence.toFixed(1)] : []),
 			].join(SEP),
 		);
 	}

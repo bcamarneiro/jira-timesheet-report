@@ -39,6 +39,32 @@ function makeMember(
 }
 
 describe('buildTeamCsv', () => {
+	it('adds Absence (h) column when includeAbsenceColumns is on', () => {
+		// 5 weekdays × 8h = 40h baseline. Member's target is 32h → 8h absence.
+		const m = makeMember({
+			targetSeconds: 32 * 3600,
+			totalSeconds: 32 * 3600,
+			gapSeconds: 0,
+		});
+		const csv = buildTeamCsv([m], weekdays, {
+			provenance: fixedProvenance,
+			includeAbsenceColumns: true,
+		});
+		const headerLine = csv.split('\n')[0];
+		expect(headerLine).toContain('Absence (h)');
+		// Data row last field should be 8.0
+		const memberLine = csv.split('\n')[1];
+		const memberCells = memberLine.split(';');
+		expect(memberCells[memberCells.length - 1]).toBe('8.0');
+	});
+
+	it('omits Absence (h) when toggle is off (legacy byte-stable behavior)', () => {
+		const csv = buildTeamCsv([makeMember()], weekdays, {
+			provenance: fixedProvenance,
+		});
+		expect(csv.split('\n')[0]).not.toContain('Absence (h)');
+	});
+
 	it('includes Backdated (h) column in the header', () => {
 		const csv = buildTeamCsv([makeMember()], weekdays, fixedProvenance);
 		const headerLine = csv.split('\n')[0];

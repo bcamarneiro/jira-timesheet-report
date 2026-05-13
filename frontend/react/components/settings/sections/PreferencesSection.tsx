@@ -5,9 +5,12 @@ import * as styles from '../SettingsForm.module.css';
 type Props = {
 	theme: 'system' | 'light' | 'dark';
 	timeRounding: 'off' | '15m' | '30m';
+	includeAbsenceInCsv: boolean;
 	handleSelectChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+	handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	themeId: string;
 	timeRoundingId: string;
+	includeAbsenceInCsvId: string;
 };
 
 /**
@@ -17,9 +20,12 @@ type Props = {
 export const PreferencesSection: React.FC<Props> = ({
 	theme,
 	timeRounding,
+	includeAbsenceInCsv,
 	handleSelectChange,
+	handleChange,
 	themeId,
 	timeRoundingId,
+	includeAbsenceInCsvId,
 }) => {
 	return (
 		<fieldset id={SETTINGS_SECTION_IDS.preferences} className={styles.section}>
@@ -51,6 +57,23 @@ export const PreferencesSection: React.FC<Props> = ({
 					<option value="30m">30 minutes</option>
 				</select>
 				<small>Round suggestion durations to the nearest interval</small>
+			</div>
+			<div className={styles.formGroup}>
+				<label>
+					<input
+						type="checkbox"
+						id={includeAbsenceInCsvId}
+						name="includeAbsenceInCsv"
+						checked={includeAbsenceInCsv}
+						onChange={handleChange}
+					/>{' '}
+					Include absence columns in CSV exports
+				</label>
+				<small>
+					Adds `IsAbsence`, `AbsenceKind`, and an `AbsenceDays` subtotal so
+					finance/HR can reconcile reduced targets. Turn off for byte-stable
+					legacy CSVs.
+				</small>
 			</div>
 		</fieldset>
 	);

@@ -1,4 +1,5 @@
 import type { EnrichedJiraWorklog, GroupedWorklogs } from '../../../types/jira';
+import type { UserAbsenceDays } from '../../services/absenceService';
 import { useConfigStore } from '../../stores/useConfigStore';
 import {
 	type AggregationPolicy,
@@ -66,10 +67,19 @@ function computeUserSummary(
 
 const DEFAULT_POLICY: AggregationPolicy = 'logged';
 
-export function useDownload() {
+export function useDownload(opts?: {
+	absenceDaysByUser?: UserAbsenceDays;
+	userEmails?: Record<string, string>;
+}) {
 	const jiraHost = useConfigStore((state) => state.config.jiraHost);
+	const includeAbsenceInCsv = useConfigStore(
+		(state) => state.config.includeAbsenceInCsv,
+	);
 
 	const provenance = { jiraHost: jiraHost || 'unknown' };
+
+	const resolveAbsenceMap = (user: string) =>
+		opts?.absenceDaysByUser?.get(opts.userEmails?.[user] ?? '') ?? undefined;
 
 	const downloadUser = (
 		user: string,
@@ -86,6 +96,8 @@ export function useDownload() {
 			policy,
 			period: { year, month },
 			provenance,
+			absenceDays: resolveAbsenceMap(user),
+			includeAbsenceColumns: includeAbsenceInCsv,
 		});
 		download(buildTimesheetFilename(user, policy, { year, month }), csvContent);
 	};
@@ -108,6 +120,8 @@ export function useDownload() {
 				policy,
 				period: { year, month },
 				provenance,
+				absenceDays: resolveAbsenceMap(user),
+				includeAbsenceColumns: includeAbsenceInCsv,
 			});
 			download(
 				buildTimesheetFilename(user, policy, { year, month }),

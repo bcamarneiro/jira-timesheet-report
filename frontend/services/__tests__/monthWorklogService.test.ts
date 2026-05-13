@@ -21,6 +21,7 @@ const baseConfig: Config = {
 	complianceReminderEnabled: false,
 	theme: 'system',
 	timeRounding: 'off',
+		includeAbsenceInCsv: true,
 };
 
 describe('fetchMonthWorklogs', () => {

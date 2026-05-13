@@ -1,4 +1,6 @@
 import type { EnrichedJiraWorklog } from '../../../types/jira';
+import type { AbsenceDay } from '../../services/absenceService';
+import { getAbsenceKindLabel } from './absence';
 import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
 import { sanitizeFilename } from './downloadFile';
 import {
@@ -22,9 +24,16 @@ export interface BuildTimesheetCsvOptions {
 	period?: { year: number; month: number };
 	classifierOptions?: ClassifierOptions;
 	provenance?: TimesheetCsvProvenance;
+	/**
+	 * When provided AND `includeAbsenceColumns` is true, adds an
+	 * `IsAbsence` / `AbsenceKind` column pair per row plus an `AbsenceDays`
+	 * subtotal. Map key is the ISO date (matches `LoggedDate`).
+	 */
+	absenceDays?: Map<string, AbsenceDay>;
+	includeAbsenceColumns?: boolean;
 }
 
-const TIMESHEET_HEADERS = [
+const BASE_TIMESHEET_HEADERS = [
 	'Name',
 	'TicketKey',
 	'TicketName',
@@ -33,6 +42,7 @@ const TIMESHEET_HEADERS = [
 	'IsBackdated',
 	'BookedHours',
 ];
+const ABSENCE_HEADERS = ['IsAbsence', 'AbsenceKind'];
 
 function isInPeriod(
 	isoDay: string,
@@ -81,6 +91,8 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 		period,
 		classifierOptions,
 		provenance,
+		absenceDays,
+		includeAbsenceColumns = false,
 	} = opts;
 
 	const classified = worklogs.map((entry) => ({
@@ -96,7 +108,10 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 
 	const sorted = sortRows(filtered, policy);
 
-	const headerLine = TIMESHEET_HEADERS.join(SEP);
+	const headers = includeAbsenceColumns
+		? [...BASE_TIMESHEET_HEADERS, ...ABSENCE_HEADERS]
+		: BASE_TIMESHEET_HEADERS;
+	const headerLine = headers.join(SEP);
 
 	const dataLines = sorted.map(({ entry, classified: c }) => {
 		const name = entry.author?.displayName ?? '';
@@ -107,8 +122,7 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 			entry.issue?.fields?.summary ??
 			'';
 		const hours = ((entry.timeSpentSeconds ?? 0) / 3600).toFixed(2);
-
-		return [
+		const baseCols = [
 			csvEscape(name),
 			ticketKey,
 			csvEscape(ticketName),
@@ -116,6 +130,13 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 			c.loggedOn,
 			c.isBackdated ? 'true' : 'false',
 			hours,
+		];
+		if (!includeAbsenceColumns) return baseCols.join(SEP);
+		const absence = absenceDays?.get(c.loggedOn);
+		return [
+			...baseCols,
+			absence ? 'true' : 'false',
+			absence ? getAbsenceKindLabel(absence.kind) : '',
 		].join(SEP);
 	});
 
@@ -130,18 +151,36 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 		0,
 	);
 	const nonBackdatedHours = totalHours - backdatedHours;
-	const totalsPad = ['', '', '', '', ''];
-	const backdatedRow = [
-		...totalsPad,
-		'Backdated',
-		backdatedHours.toFixed(2),
-	].join(SEP);
-	const nonBackdatedRow = [
-		...totalsPad,
+	const totalsPad = includeAbsenceColumns
+		? ['', '', '', '', '', '', '']
+		: ['', '', '', '', ''];
+	const makeTotalRow = (label: string, value: string) =>
+		[...totalsPad, label, value].join(SEP);
+	const backdatedRow = makeTotalRow('Backdated', backdatedHours.toFixed(2));
+	const nonBackdatedRow = makeTotalRow(
 		'Non-backdated',
 		nonBackdatedHours.toFixed(2),
-	].join(SEP);
-	const totalRow = [...totalsPad, 'Total', totalHours.toFixed(2)].join(SEP);
+	);
+	const totalRow = makeTotalRow('Total', totalHours.toFixed(2));
+
+	// Absence subtotal: count of distinct dates in this period that are
+	// flagged as absent. Computed against the period filter so a snapshot
+	// for a single month doesn't bleed in adjacent-month absences.
+	const periodAbsenceDays =
+		includeAbsenceColumns && absenceDays
+			? (() => {
+					if (!period) return absenceDays.size;
+					let count = 0;
+					for (const date of absenceDays.keys()) {
+						if (isInPeriod(date, period)) count += 1;
+					}
+					return count;
+				})()
+			: null;
+	const absenceSubtotalRow =
+		periodAbsenceDays !== null
+			? makeTotalRow('AbsenceDays', periodAbsenceDays.toString())
+			: null;
 
 	const periodLabel = period
 		? `${period.year}-${String(period.month + 1).padStart(2, '0')}`
@@ -154,14 +193,10 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 		versionFallback: 'dev',
 	});
 
-	return [
-		headerLine,
-		...dataLines,
-		backdatedRow,
-		nonBackdatedRow,
-		totalRow,
-		provenanceLine,
-	].join('\n');
+	const subtotalRows = [backdatedRow, nonBackdatedRow, totalRow];
+	if (absenceSubtotalRow) subtotalRows.push(absenceSubtotalRow);
+
+	return [headerLine, ...dataLines, ...subtotalRows, provenanceLine].join('\n');
 }
 
 export function buildTimesheetFilename(

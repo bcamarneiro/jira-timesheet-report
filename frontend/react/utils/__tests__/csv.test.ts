@@ -277,6 +277,68 @@ describe('buildTimesheetCsv', () => {
 	});
 });
 
+describe('buildTimesheetCsv: includeAbsenceColumns', () => {
+	const absenceDays = new Map([
+		[
+			'2025-01-15',
+			{
+				date: '2025-01-15',
+				reasons: ['Vacation - Bruno'],
+				kind: 'vacation' as const,
+			},
+		],
+		[
+			'2025-01-16',
+			{
+				date: '2025-01-16',
+				reasons: ['Labour Day'],
+				kind: 'holiday' as const,
+			},
+		],
+	]);
+
+	it('adds IsAbsence/AbsenceKind columns and an AbsenceDays subtotal when enabled', () => {
+		const result = buildTimesheetCsv({
+			worklogs: [entry({ comment: 'Some work' })],
+			issueSummaries: { '12345': 'Test Issue Summary' },
+			policy: 'logged',
+			period: { year: 2025, month: 0 },
+			provenance: PROVENANCE,
+			absenceDays,
+			includeAbsenceColumns: true,
+		});
+		const lines = result.split('\n');
+		expect(lines[0]).toBe(
+			'Name;TicketKey;TicketName;IntendedDate;LoggedDate;IsBackdated;BookedHours;IsAbsence;AbsenceKind',
+		);
+		expect(lines[1]).toBe(
+			'John Doe;PROJ-123;Test Issue Summary;2025-01-15;2025-01-15;false;2.00;true;Vacation',
+		);
+		// AbsenceDays subtotal counts dates that fall inside Jan 2025 only.
+		expect(result).toContain(';;;;;;;AbsenceDays;2');
+	});
+
+	it('omits absence columns entirely when toggle is off (byte-identical to legacy)', () => {
+		const withFlagOff = buildTimesheetCsv({
+			worklogs: [entry({ comment: 'Some work' })],
+			issueSummaries: { '12345': 'Test Issue Summary' },
+			policy: 'logged',
+			period: { year: 2025, month: 0 },
+			provenance: PROVENANCE,
+			absenceDays,
+			includeAbsenceColumns: false,
+		});
+		const noAbsenceProvided = buildTimesheetCsv({
+			worklogs: [entry({ comment: 'Some work' })],
+			issueSummaries: { '12345': 'Test Issue Summary' },
+			policy: 'logged',
+			period: { year: 2025, month: 0 },
+			provenance: PROVENANCE,
+		});
+		expect(withFlagOff).toBe(noAbsenceProvided);
+	});
+});
+
 describe('buildSummaryCsv', () => {
 	it('lists per-user totals plus backdated columns and a provenance footer', () => {
 		const result = buildSummaryCsv({
