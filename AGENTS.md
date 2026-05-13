@@ -103,9 +103,34 @@ All service-layer throws go through `frontend/services/serviceErrors.ts`:
 
 Never `throw new Error(...)` from a service module.
 
-### Finance-grade CSV is byte-stable
+### Finance-grade CSV is byte-stable (per setting)
 
-Monthly/team/week CSVs must preserve byte-for-byte output across refactors. The exports include `IsBackdated` / `BackdateSource` columns and a provenance footer (`# Generated from <host> on <iso>`). When extracting helpers, parameterise rather than diverging — see `csvHelpers` for the existing shape.
+Monthly/team/week CSVs preserve byte-for-byte output across refactors **for a given `includeAbsenceInCsv` setting**. Two intentional toggles change the shape:
+- `includeAbsenceInCsv` (Config flag, default `true`): adds `IsAbsence` / `AbsenceKind` columns and an `AbsenceDays` / `Absence Days` subtotal block to all three exports. When `false`, output is byte-identical to the pre-ADA-240 shape.
+- The fixed `IsBackdated` column is always present; `BackdateSource` was retired in the column trim.
+
+When extracting helpers, parameterise rather than diverging — see `csvHelpers` for the existing shape.
+
+### Per-day target (ADA-236)
+
+`frontend/react/utils/dayTarget.ts` is the single source of truth. Rules:
+
+- Weekend → 0
+- Weekday, not absent → 8h
+- Weekday, absent, 0h logged → 0
+- Weekday, absent, 0 < X ≤ 8h logged → X (partial day, 100% compliant)
+- Weekday, absent, >8h logged → 8h (cap)
+
+All rollups (DayCell, OverviewTable, TimesheetGrid, teamService, teamReports, suggestionMerger, monthly snapshot) **must** call `computeDayTargetSeconds` or `sumWeekdayTargetSeconds`. Do NOT reintroduce `weekdays × 8h − absenceDays × 8h` arithmetic — it loses partial-day fidelity. `countAbsenceWorkdaysIn*` helpers were retired for this reason.
+
+### Calendar feed types
+
+`CalendarFeed.type` is `'suggestion' | 'absence' | 'holiday'`:
+- `suggestion`: drives Dashboard worklog suggestions.
+- `absence`: per-user PTO. Needs `absenceAttribution: 'self' | 'shared'` and (for `'shared'`) `AbsenceAssignment[]` patterns mapping event titles to user emails.
+- `holiday`: public holidays. No attribution; events apply to **every** user automatically (merged into each known user's absence map in `fetchAbsenceDaysByUser`).
+
+`AbsenceKind` is `'vacation' | 'sick' | 'off' | 'holiday'`. The per-day target rule treats all four identically — what changes is the label users see.
 
 ### Stores have a migration scaffold
 

@@ -72,7 +72,9 @@ export function generateWeeklyCsv(
 		'IsBackdated',
 	];
 	const headers = (
-		includeAbsenceColumns ? [...baseHeaders, 'IsAbsence', 'AbsenceKind'] : baseHeaders
+		includeAbsenceColumns
+			? [...baseHeaders, 'IsAbsence', 'AbsenceKind']
+			: baseHeaders
 	).join(SEP);
 	const metadata = [`Week Range`, `${weekStart} to ${weekEnd}`].join(SEP);
 
@@ -138,9 +140,8 @@ export function generateWeeklyCsv(
 	const totalRow = makeTotalRow('Week Total', totalSeconds);
 	const absenceDaysInWeek =
 		includeAbsenceColumns && absenceDays
-			? [...absenceDays.keys()].filter(
-					(d) => d >= weekStart && d <= weekEnd,
-				).length
+			? [...absenceDays.keys()].filter((d) => d >= weekStart && d <= weekEnd)
+					.length
 			: null;
 	const absenceSubtotalRow =
 		absenceDaysInWeek !== null

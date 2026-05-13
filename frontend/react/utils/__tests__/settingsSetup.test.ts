@@ -28,7 +28,7 @@ const baseConfig: Config = {
 	complianceReminderEnabled: false,
 	theme: 'system',
 	timeRounding: 'off',
-		includeAbsenceInCsv: true,
+	includeAbsenceInCsv: true,
 };
 
 describe('buildSettingsSetupModel', () => {

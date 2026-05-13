@@ -100,6 +100,53 @@ describe('OverviewTable filtering and inclusion policy', () => {
 		).toBeInTheDocument();
 	});
 
+	it('reduces target via absenceDaysByUser keyed by the user email', () => {
+		// May 2026 has 21 weekdays; default target = 168h. With one PTO day
+		// unworked, target becomes 160h. The row's compliance hits 100% if
+		// `dailyHours` matches that reduced target.
+		const entries: Entry[] = [
+			[
+				'Sarah Johnson',
+				{
+					'2026-05-04': [makeWorklog(3600 * 8, '2026-05-04')],
+				},
+			],
+		];
+		const userEmails = { 'Sarah Johnson': 'sarah@example.com' };
+		const absenceDaysByUser = new Map([
+			[
+				'sarah@example.com',
+				new Map([
+					[
+						'2026-05-15',
+						{
+							date: '2026-05-15',
+							reasons: ['[Team PTO] Vacation - Sarah'],
+							kind: 'vacation' as const,
+						},
+					],
+				]),
+			],
+		]);
+
+		render(
+			<OverviewTable
+				entries={entries}
+				year={2026}
+				monthZeroIndexed={4}
+				userEmails={userEmails}
+				absenceDaysByUser={absenceDaysByUser}
+			/>,
+		);
+
+		// 1 weekday absorbed (May 15 is a Friday). Days column reports days
+		// WORKED, not target — Sarah logged 8h so 1 day worked. The hours
+		// column shows 8h of work.
+		const row = screen.getByText('Sarah Johnson').closest('tr');
+		expect(row).not.toBeNull();
+		expect(within(row as HTMLElement).getByText('8.0h')).toBeInTheDocument();
+	});
+
 	it('excludes backdated worklogs from the user row total and entry count', () => {
 		const entries: Entry[] = [
 			[

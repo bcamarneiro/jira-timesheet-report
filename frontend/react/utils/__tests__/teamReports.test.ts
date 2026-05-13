@@ -241,6 +241,66 @@ describe('buildManagerTrendModel', () => {
 		expect(model.weeks[0]?.complianceRate).toBe(100);
 	});
 
+	it('reduces target for multiple users when a shared/team absence map is passed', () => {
+		// Shared-feed style: absenceDaysByUser holds entries for several users
+		// keyed by their email (as `fetchAbsenceDaysByUser` produces).
+		const absenceDaysByUser = new Map([
+			[
+				'alice@example.com',
+				new Map([
+					[
+						'2026-03-04',
+						{
+							date: '2026-03-04',
+							reasons: ['[Team PTO] Vacation - Alice'],
+							kind: 'vacation' as const,
+						},
+					],
+				]),
+			],
+			[
+				'bob@example.com',
+				new Map([
+					[
+						'2026-03-05',
+						{
+							date: '2026-03-05',
+							reasons: ['[Team PTO] Sick - Bob'],
+							kind: 'sick' as const,
+						},
+					],
+				]),
+			],
+		]);
+
+		const summaries = buildTeamSummaries(
+			[
+				createWorklog(
+					'alice@example.com',
+					'Alice',
+					'2026-03-02T09:00:00.000+0000',
+					8 * 3600,
+				),
+				createWorklog(
+					'bob@example.com',
+					'Bob',
+					'2026-03-02T09:00:00.000+0000',
+					8 * 3600,
+				),
+			],
+			'2026-03-02',
+			'2026-03-08',
+			'alice@example.com,bob@example.com',
+			absenceDaysByUser,
+		);
+
+		const alice = summaries.find((s) => s.email === 'alice@example.com');
+		const bob = summaries.find((s) => s.email === 'bob@example.com');
+		// Each has 4 weekdays × 8h = 32h target (one weekday absorbed).
+		expect(alice?.targetSeconds).toBe(32 * 3600);
+		expect(bob?.targetSeconds).toBe(32 * 3600);
+	});
+
 	it('flags workedOnPtoDates when a member logs work on an absence day', () => {
 		const absenceDaysByUser = new Map([
 			[

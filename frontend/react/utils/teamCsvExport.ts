@@ -75,9 +75,7 @@ export function buildTeamCsv(
 			(m.totalSeconds / 3600).toFixed(1),
 			backdatedHours,
 			(m.gapSeconds / 3600).toFixed(1),
-			...(includeAbsenceColumns
-				? [computeAbsenceHours(m).toFixed(1)]
-				: []),
+			...(includeAbsenceColumns ? [computeAbsenceHours(m).toFixed(1)] : []),
 		].join(SEP);
 	});
 
