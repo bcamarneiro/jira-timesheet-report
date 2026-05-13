@@ -17,6 +17,9 @@ export interface TeamMemberSummary {
 	 *  can omit it; consumers default to 0. */
 	backdatedSeconds?: number;
 	backdatedCount?: number;
+	/** Dates (YYYY-MM-DD) where the member logged work on a PTO/holiday day.
+	 *  Drives the "worked on PTO" badge in the team weekly view. */
+	workedOnPtoDates?: string[];
 }
 
 const SECONDS_PER_DAY = 28800; // 8h

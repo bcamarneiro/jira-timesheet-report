@@ -1,11 +1,9 @@
 import type { UserAbsenceDays } from '../../services/absenceService';
 import type { WorklogItem } from '../../services/monthWorklogService';
 import type { TeamMemberSummary } from '../../services/teamService';
-import { countAbsenceWorkdaysInRange } from './absence';
 import { addDaysToIsoDate } from './date';
+import { sumWeekdayTargetSeconds } from './dayTarget';
 import { classifyWorklog } from './worklogClassifier';
-
-const SECONDS_PER_DAY = 28800; // 8h
 
 function toDateStr(date: Date): string {
 	const year = date.getFullYear();
@@ -110,16 +108,21 @@ export function buildTeamSummaries(
 			(sum, seconds) => sum + seconds,
 			0,
 		);
-		const memberAbsenceDates = absenceDaysByUser?.get(email)?.keys();
-		const absenceDays = countAbsenceWorkdaysInRange(
-			memberAbsenceDates,
-			weekStart,
-			effectiveEnd,
+		const memberAbsenceMap = absenceDaysByUser?.get(email);
+		const isAbsentOnDay = (day: string) =>
+			memberAbsenceMap?.has(day) ?? false;
+		const loggedOnDay = (day: string) => member.dailySeconds.get(day) ?? 0;
+		const targetSeconds = sumWeekdayTargetSeconds(
+			targetWeekdays,
+			isAbsentOnDay,
+			loggedOnDay,
 		);
-		const targetSeconds = Math.max(
-			0,
-			(targetWeekdays.length - absenceDays) * SECONDS_PER_DAY,
-		);
+		const workedOnPtoDates: string[] = [];
+		for (const day of weekdays) {
+			if (isAbsentOnDay(day) && loggedOnDay(day) > 0) {
+				workedOnPtoDates.push(day);
+			}
+		}
 
 		for (const day of weekdays) {
 			const seconds = member.dailySeconds.get(day) || 0;
@@ -133,6 +136,8 @@ export function buildTeamSummaries(
 			totalSeconds,
 			targetSeconds,
 			gapSeconds: Math.max(0, targetSeconds - totalSeconds),
+			workedOnPtoDates:
+				workedOnPtoDates.length > 0 ? workedOnPtoDates : undefined,
 		});
 	}
 

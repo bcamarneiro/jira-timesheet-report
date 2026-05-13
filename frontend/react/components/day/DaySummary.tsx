@@ -31,6 +31,14 @@ export const DaySummary: React.FC<Props> = ({
 			{isAbsent && (
 				<span className={styles.absence}>
 					{getAbsenceKindLabel(absenceKind)}
+					{dayTotalSeconds > 0 && (
+						<span
+							className={styles.workedOnPto}
+							title="You logged work on a day marked as time off — confirm whether this is intentional."
+						>
+							{' '}⚠ worked
+						</span>
+					)}
 				</span>
 			)}
 			{backdatedSeconds > 0 && (

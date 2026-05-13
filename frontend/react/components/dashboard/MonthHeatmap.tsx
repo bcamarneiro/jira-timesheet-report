@@ -147,17 +147,29 @@ export const MonthHeatmap: React.FC<Props> = ({
 
 					const absenceDay = absenceDays?.get(cell.dateStr);
 					const isTimeOff = !!absenceDay;
-					const level = isTimeOff ? 'vacation' : getLevel(cell.seconds);
+					const hours = cell.seconds / 3600;
+					// When PTO collides with logged work, drop the vacation tint
+					// and show the regular intensity level — a separate overlay
+					// stripe marks the conflict. A clean PTO day still gets the
+					// vacation level.
+					const workedOnPto = isTimeOff && cell.seconds > 0;
+					const level = isTimeOff && !workedOnPto
+						? 'vacation'
+						: getLevel(cell.seconds);
 					const levelClass = cellLevelMap[level] ?? cellLevelMap.empty;
 					const weekendClass = cell.isWeekend ? styles.cellWeekend : '';
-					const hours = cell.seconds / 3600;
 					const backdated = backdatedSeconds?.get(cell.dateStr) ?? 0;
 					const hasBackdated = backdated > 0 && !isTimeOff;
-					const baseTitle = isTimeOff
-						? `${cell.dateStr}: ${getAbsenceKindLabel(absenceDay.kind)}`
-						: hours > 0
-							? `${cell.dateStr}: ${formatHours(cell.seconds)}`
-							: `${cell.dateStr}: no time logged`;
+					let baseTitle: string;
+					if (workedOnPto) {
+						baseTitle = `${cell.dateStr}: ${formatHours(cell.seconds)} logged on ${getAbsenceKindLabel(absenceDay.kind)} ⚠`;
+					} else if (isTimeOff) {
+						baseTitle = `${cell.dateStr}: ${getAbsenceKindLabel(absenceDay.kind)}`;
+					} else if (hours > 0) {
+						baseTitle = `${cell.dateStr}: ${formatHours(cell.seconds)}`;
+					} else {
+						baseTitle = `${cell.dateStr}: no time logged`;
+					}
 					const title = hasBackdated
 						? `${baseTitle} (+ ${formatHours(backdated)} backdated, not counted)`
 						: baseTitle;
@@ -165,7 +177,7 @@ export const MonthHeatmap: React.FC<Props> = ({
 					return (
 						<li
 							key={cell.dateStr}
-							className={`${styles.cell} ${levelClass} ${weekendClass} ${hasBackdated ? styles.cellBackdated : ''}`}
+							className={`${styles.cell} ${levelClass} ${weekendClass} ${hasBackdated ? styles.cellBackdated : ''} ${workedOnPto ? styles.cellWorkedOnPto : ''}`}
 							title={title}
 							aria-label={title}
 						>

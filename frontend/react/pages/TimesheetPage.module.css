@@ -234,6 +234,12 @@
 	color: var(--color-text-tertiary);
 }
 
+.workedOnPtoBadge {
+	color: var(--color-error);
+	font-weight: var(--font-semibold);
+	cursor: help;
+}
+
 .rowProgress {
 	margin-top: var(--space-1);
 	max-width: 120px;

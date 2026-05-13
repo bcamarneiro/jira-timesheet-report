@@ -67,7 +67,9 @@ export const DayCell: React.FC<Props> = ({
 		if (isWeekend) {
 			classes.push(dayTotalSeconds > 0 ? styles.weekend : styles.weekendEmpty);
 		} else if (hasAbsence) {
-			classes.push(styles.absenceDay);
+			classes.push(
+				dayTotalSeconds > 0 ? styles.absenceWorked : styles.absenceDay,
+			);
 		} else {
 			if (effectiveSeconds === 8 * 3600) classes.push(styles.weekdayComplete);
 			else if (effectiveSeconds < 8 * 3600)

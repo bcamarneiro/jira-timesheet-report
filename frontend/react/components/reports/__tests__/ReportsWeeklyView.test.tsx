@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+import type { TeamMemberSummary } from '../../../../services/teamService';
 import { ReportsWeeklyView } from '../ReportsWeeklyView';
 
 const noop = () => {};
@@ -35,6 +36,50 @@ describe('ReportsWeeklyView', () => {
 			</MemoryRouter>,
 		);
 		expect(screen.getByText('No team data found')).toBeTruthy();
+	});
+
+	it('shows the worked-on-PTO badge for a member with workedOnPtoDates', () => {
+		const member: TeamMemberSummary = {
+			email: 'alice@example.com',
+			displayName: 'Alice',
+			dailyHours: new Map([['2025-05-07', 4]]),
+			totalSeconds: 4 * 3600,
+			targetSeconds: 4 * 3600,
+			gapSeconds: 0,
+			workedOnPtoDates: ['2025-05-07'],
+		};
+		render(
+			<MemoryRouter>
+				<ReportsWeeklyView
+					{...baseProps}
+					teamMembers={[member]}
+					sortedMembers={[member]}
+				/>
+			</MemoryRouter>,
+		);
+		const badge = screen.getByLabelText(/Worked on time off: 2025-05-07/);
+		expect(badge).toBeTruthy();
+	});
+
+	it('does NOT show the worked-on-PTO badge when the member has no conflict', () => {
+		const member: TeamMemberSummary = {
+			email: 'bob@example.com',
+			displayName: 'Bob',
+			dailyHours: new Map([['2025-05-07', 8]]),
+			totalSeconds: 8 * 3600,
+			targetSeconds: 8 * 3600,
+			gapSeconds: 0,
+		};
+		render(
+			<MemoryRouter>
+				<ReportsWeeklyView
+					{...baseProps}
+					teamMembers={[member]}
+					sortedMembers={[member]}
+				/>
+			</MemoryRouter>,
+		);
+		expect(screen.queryByLabelText(/Worked on time off/)).toBeNull();
 	});
 
 	it('renders the team error block when teamError is provided', () => {

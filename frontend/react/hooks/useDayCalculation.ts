@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { JiraWorklog } from '../../../types/JiraWorklog';
-import { BASELINE_HOURS } from '../constants/timesheet';
+import { computeDayTargetSeconds } from '../utils/dayTarget';
 import { classifyWorklog } from '../utils/worklogClassifier';
 
 export function useDayCalculation(
@@ -20,7 +20,11 @@ export function useDayCalculation(
 			}
 		}
 
-		const baselineSeconds = isWeekend || isAbsent ? 0 : BASELINE_HOURS * 3600;
+		const baselineSeconds = computeDayTargetSeconds(
+			isWeekend,
+			isAbsent,
+			countedSeconds,
+		);
 		const dayTotalSeconds = countedSeconds;
 		const effectiveSeconds = countedSeconds;
 		const missingSeconds = Math.max(0, baselineSeconds - effectiveSeconds);

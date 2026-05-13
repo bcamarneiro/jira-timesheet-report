@@ -87,6 +87,19 @@
 	border-color: var(--color-warning-border);
 }
 
+/* Absence day with logged work — striped warning tint so the conflict
+   stands out from a clean PTO day at a glance. */
+.absenceWorked {
+	background: repeating-linear-gradient(
+		135deg,
+		color-mix(in srgb, var(--color-warning-bg) 60%, var(--color-surface)),
+		color-mix(in srgb, var(--color-warning-bg) 60%, var(--color-surface)) 8px,
+		color-mix(in srgb, var(--color-error-bg, var(--color-warning-bg)) 70%, var(--color-surface)) 8px,
+		color-mix(in srgb, var(--color-error-bg, var(--color-warning-bg)) 70%, var(--color-surface)) 16px
+	);
+	border-color: var(--color-error, var(--color-warning-border));
+}
+
 .weekdayOvertime {
 	background: var(--color-day-overtime-bg);
 	border-color: var(--color-day-overtime-border);

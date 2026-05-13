@@ -54,6 +54,26 @@ export function getWorkingDaysInMonth(
 }
 
 /**
+ * Returns the ISO date strings (YYYY-MM-DD) for every weekday (Mon-Fri) in
+ * the given month. Used by per-day target rollups so each surface can iterate
+ * the same canonical list.
+ */
+export function getWorkdayDatesInMonth(
+	year: number,
+	monthZeroIndexed: number,
+): string[] {
+	const numDays = getDaysInMonth(year, monthZeroIndexed);
+	const dates: string[] = [];
+	for (let d = 1; d <= numDays; d++) {
+		const day = new Date(Date.UTC(year, monthZeroIndexed, d)).getUTCDay();
+		if (day !== 0 && day !== 6) {
+			dates.push(isoDateFromYMD(year, monthZeroIndexed, d));
+		}
+	}
+	return dates;
+}
+
+/**
  * Extract local date string (YYYY-MM-DD) from an ISO date string or Date object.
  * This avoids timezone conversion issues that occur with toISOString().
  */

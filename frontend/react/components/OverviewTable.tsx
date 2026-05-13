@@ -2,8 +2,11 @@ import type React from 'react';
 import { useMemo, useState } from 'react';
 import type { EnrichedJiraWorklog } from '../../../types/jira';
 import type { UserAbsenceDays } from '../../services/absenceService';
-import { countAbsenceWorkdaysInMonth } from '../utils/absence';
-import { getWorkingDaysInMonth, isDateInMonth } from '../utils/date';
+import {
+	getWorkdayDatesInMonth,
+	isDateInMonth,
+} from '../utils/date';
+import { sumWeekdayTargetSeconds } from '../utils/dayTarget';
 import { computeCompliancePct } from '../utils/format';
 import { getInitials } from '../utils/text';
 import { classifyWorklog } from '../utils/worklogClassifier';
@@ -46,12 +49,17 @@ export const OverviewTable: React.FC<Props> = ({
 	const [sortField, setSortField] = useState<SortField>('user');
 	const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
-	const baseTargetHours = getWorkingDaysInMonth(year, monthZeroIndexed) * 8;
+	const workdayDates = useMemo(
+		() => getWorkdayDatesInMonth(year, monthZeroIndexed),
+		[year, monthZeroIndexed],
+	);
+	const baseTargetHours = workdayDates.length * 8;
 
 	const rows = useMemo(() => {
 		const computed = entries.map(([user, days]) => {
 			let totalSeconds = 0;
 			let worklogCount = 0;
+			const loggedByDay = new Map<string, number>();
 
 			// The outer date key from `deriveMonthlyReportState` is already
 			// `classifyWorklog(wl).loggedOn` (ADA-219). Backdated entries are
@@ -61,19 +69,22 @@ export const OverviewTable: React.FC<Props> = ({
 				if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
 				for (const wl of worklogs) {
 					if (classifyWorklog(wl).isBackdated) continue;
-					totalSeconds += wl.timeSpentSeconds ?? 0;
+					const seconds = wl.timeSpentSeconds ?? 0;
+					totalSeconds += seconds;
 					worklogCount++;
+					loggedByDay.set(dateKey, (loggedByDay.get(dateKey) ?? 0) + seconds);
 				}
 			}
 
+			const absenceMap = absenceDaysByUser?.get(userEmails[user] ?? '');
+			const targetSeconds = sumWeekdayTargetSeconds(
+				workdayDates,
+				(d) => absenceMap?.has(d) ?? false,
+				(d) => loggedByDay.get(d) ?? 0,
+			);
+
 			const totalHours = totalSeconds / 3600;
-			const absenceHours =
-				countAbsenceWorkdaysInMonth(
-					absenceDaysByUser?.get(userEmails[user] ?? '')?.keys(),
-					year,
-					monthZeroIndexed,
-				) * 8;
-			const targetHours = Math.max(0, baseTargetHours - absenceHours);
+			const targetHours = targetSeconds / 3600;
 			return {
 				user,
 				totalHours,
@@ -82,7 +93,7 @@ export const OverviewTable: React.FC<Props> = ({
 				targetHours,
 				// Use the same compliance-pct formula as TimesheetGrid so the two
 				// surfaces don't drift by 1% near integer boundaries (audit #19).
-				pct: computeCompliancePct(totalSeconds, targetHours * 3600),
+				pct: computeCompliancePct(totalSeconds, targetSeconds),
 			};
 		});
 
@@ -128,6 +139,7 @@ export const OverviewTable: React.FC<Props> = ({
 		sortField,
 		sortDirection,
 		baseTargetHours,
+		workdayDates,
 		absenceDaysByUser,
 		userEmails,
 		includeZeroHourUsers,

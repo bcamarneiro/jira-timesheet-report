@@ -4,13 +4,12 @@ import type {
 	WorklogSuggestion,
 } from '../../types/Suggestion';
 import { addDaysToIsoDate, parseIsoDateLocal } from '../react/utils/date';
+import { computeDayTargetSeconds } from '../react/utils/dayTarget';
 import type {
 	FavoriteIssue,
 	RecurringTemplate,
 } from '../stores/useUserDataStore';
 import type { AbsenceDay } from './absenceService';
-
-const BASELINE_SECONDS = 8 * 3600;
 
 interface WorklogEntry {
 	date: string;
@@ -357,7 +356,11 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 		const absenceDay = absenceDays?.get(date);
 		const isTimeOff =
 			!isWeekend && (absenceDay ? true : (absenceDates?.has(date) ?? false));
-		const targetSeconds = isWeekend || isTimeOff ? 0 : BASELINE_SECONDS;
+		const targetSeconds = computeDayTargetSeconds(
+			isWeekend,
+			isTimeOff,
+			loggedSeconds,
+		);
 		const gapSeconds = Math.max(0, targetSeconds - loggedSeconds);
 		const rtDay = rescueTimeData.get(date);
 

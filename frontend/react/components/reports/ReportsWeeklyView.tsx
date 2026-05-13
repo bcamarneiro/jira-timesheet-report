@@ -66,6 +66,7 @@ function TeamMemberRow({
 	onMemberClick: (name: string) => void;
 }) {
 	const pct = (member.totalSeconds / member.targetSeconds) * 100;
+	const workedOnPto = member.workedOnPtoDates ?? [];
 
 	return (
 		<tr>
@@ -77,6 +78,15 @@ function TeamMemberRow({
 				>
 					{member.displayName}
 				</button>
+				{workedOnPto.length > 0 && (
+					<span
+						className={styles.workedOnPtoBadge}
+						title={`Logged work on a PTO/holiday day: ${workedOnPto.join(', ')}`}
+						aria-label={`Worked on time off: ${workedOnPto.join(', ')}`}
+					>
+						{' '}⚠
+					</span>
+				)}
 				<div className={styles.memberEmail}>{member.email}</div>
 				<div className={styles.rowProgress}>
 					<ProgressBar value={pct} height={4} />

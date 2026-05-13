@@ -5,10 +5,11 @@ import type { AbsenceDay } from '../../services/absenceService';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
 import { useCalendar } from '../hooks/useCalendar';
 import { useMonthTotalCalculation } from '../hooks/useMonthTotalCalculation';
-import { countAbsenceWorkdaysInMonth } from '../utils/absence';
-import { getWorkingDaysInMonth, isoDateFromYMD } from '../utils/date';
+import { getWorkdayDatesInMonth, isoDateFromYMD } from '../utils/date';
+import { sumWeekdayTargetSeconds } from '../utils/dayTarget';
 import { computeCompliancePct } from '../utils/format';
 import { projectDays } from '../utils/projectDays';
+import { classifyWorklog } from '../utils/worklogClassifier';
 import { CalendarGrid } from './calendar/CalendarGrid';
 import { DayCell } from './DayCell';
 import * as styles from './TimesheetGrid.module.css';
@@ -50,18 +51,25 @@ export const TimesheetGrid: React.FC<Props> = ({
 		monthZeroIndexed,
 	);
 
-	const targetSeconds =
-		Math.max(
-			0,
-			getWorkingDaysInMonth(year, monthZeroIndexed) -
-				countAbsenceWorkdaysInMonth(
-					absenceDays?.keys(),
-					year,
-					monthZeroIndexed,
-				),
-		) *
-		8 *
-		3600;
+	const targetSeconds = useMemo(() => {
+		const workdays = getWorkdayDatesInMonth(year, monthZeroIndexed);
+		// Per-day logged seconds (non-backdated only) so partial-PTO days
+		// reduce the target by exactly the unworked portion.
+		const loggedByDay = new Map<string, number>();
+		for (const [day, list] of Object.entries(projected.loggedDays)) {
+			let counted = 0;
+			for (const wl of list) {
+				if (classifyWorklog(wl).isBackdated) continue;
+				counted += wl.timeSpentSeconds ?? 0;
+			}
+			if (counted > 0) loggedByDay.set(day, counted);
+		}
+		return sumWeekdayTargetSeconds(
+			workdays,
+			(d) => absenceDays?.has(d) ?? false,
+			(d) => loggedByDay.get(d) ?? 0,
+		);
+	}, [projected.loggedDays, absenceDays, year, monthZeroIndexed]);
 	const pct = computeCompliancePct(totalSeconds, targetSeconds);
 
 	const now = new Date();

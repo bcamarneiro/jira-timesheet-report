@@ -185,6 +185,120 @@ describe('buildManagerTrendModel', () => {
 	});
 
 	it('uses reduced targets when absences are attributed during the trend window', () => {
+		// Bob took Wednesday off (2026-03-11) and logged 8h on each of the
+		// other four weekdays. Per-day target rule: absent day = 0 (no work
+		// logged), workdays = 8h each → weekly target = 32h, matches logged.
+		const absenceDaysByUser = new Map([
+			[
+				'bob@example.com',
+				new Map([
+					[
+						'2026-03-11',
+						{
+							date: '2026-03-11',
+							reasons: ['[Team PTO] Vacation - Bob'],
+							kind: 'vacation' as const,
+						},
+					],
+				]),
+			],
+		]);
+
+		const model = buildManagerTrendModel(
+			[
+				createWorklog(
+					'bob@example.com',
+					'Bob',
+					'2026-03-09T09:00:00.000+0000',
+					8 * 3600,
+				),
+				createWorklog(
+					'bob@example.com',
+					'Bob',
+					'2026-03-10T09:00:00.000+0000',
+					8 * 3600,
+				),
+				createWorklog(
+					'bob@example.com',
+					'Bob',
+					'2026-03-12T09:00:00.000+0000',
+					8 * 3600,
+				),
+				createWorklog(
+					'bob@example.com',
+					'Bob',
+					'2026-03-13T09:00:00.000+0000',
+					8 * 3600,
+				),
+			],
+			'2026-03-09',
+			1,
+			'bob@example.com',
+			absenceDaysByUser,
+		);
+
+		expect(model.weeks[0]?.totalGapSeconds).toBe(0);
+		expect(model.weeks[0]?.complianceRate).toBe(100);
+	});
+
+	it('flags workedOnPtoDates when a member logs work on an absence day', () => {
+		const absenceDaysByUser = new Map([
+			[
+				'alice@example.com',
+				new Map([
+					[
+						'2026-03-04',
+						{
+							date: '2026-03-04',
+							reasons: ['[Team PTO] Vacation - Alice'],
+							kind: 'vacation' as const,
+						},
+					],
+				]),
+			],
+		]);
+
+		const summaries = buildTeamSummaries(
+			[
+				createWorklog(
+					'alice@example.com',
+					'Alice',
+					'2026-03-04T09:00:00.000+0000',
+					4 * 3600,
+				),
+			],
+			'2026-03-02',
+			'2026-03-08',
+			'alice@example.com',
+			absenceDaysByUser,
+		);
+
+		expect(summaries[0]?.workedOnPtoDates).toEqual(['2026-03-04']);
+	});
+
+	it('omits workedOnPtoDates when no absence/work conflict exists', () => {
+		const summaries = buildTeamSummaries(
+			[
+				createWorklog(
+					'alice@example.com',
+					'Alice',
+					'2026-03-04T09:00:00.000+0000',
+					4 * 3600,
+				),
+			],
+			'2026-03-02',
+			'2026-03-08',
+			'alice@example.com',
+		);
+
+		expect(summaries[0]?.workedOnPtoDates).toBeUndefined();
+	});
+
+	it('partial-day absence: target tracks logged hours (100% compliant)', () => {
+		// New per-day target rule: Bob worked 4h on his absence day. Target
+		// for that day = min(logged, 8h) = 4h. Other 4 workdays unworked
+		// (would be missing). Total target = 4*8 + 4 = 36h. Bob logged 4h,
+		// so gap = 32h.
 		const absenceDaysByUser = new Map([
 			[
 				'bob@example.com',
@@ -207,7 +321,7 @@ describe('buildManagerTrendModel', () => {
 					'bob@example.com',
 					'Bob',
 					'2026-03-11T09:00:00.000+0000',
-					32 * 3600,
+					4 * 3600,
 				),
 			],
 			'2026-03-09',
@@ -216,8 +330,8 @@ describe('buildManagerTrendModel', () => {
 			absenceDaysByUser,
 		);
 
-		expect(model.weeks[0]?.totalGapSeconds).toBe(0);
-		expect(model.weeks[0]?.complianceRate).toBe(100);
+		expect(model.weeks[0]?.totalSeconds).toBe(4 * 3600);
+		expect(model.weeks[0]?.totalGapSeconds).toBe(32 * 3600);
 	});
 
 	it('excludes Pattern B jira-native backdates from weekly totals entirely', () => {
