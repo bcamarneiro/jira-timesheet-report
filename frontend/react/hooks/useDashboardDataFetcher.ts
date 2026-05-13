@@ -129,15 +129,17 @@ export function useDashboardDataFetcher() {
 	const hasAbsenceFeeds = (calendarFeeds ?? []).some(
 		(feed) => feed.type === 'absence' && feed.url.trim(),
 	);
-	const { data: absenceDays, isFetched: absenceDaysReady } = useAbsenceDays(
-		weekStart,
-		weekEnd,
-		{ enabled: hasAbsenceFeeds },
-	);
+	const { data: absenceDays } = useAbsenceDays(weekStart, weekEnd, {
+		enabled: hasAbsenceFeeds,
+	});
 
 	useEffect(() => {
 		if (!jiraHost || !apiToken) return;
-		if (hasAbsenceFeeds && !absenceDaysReady) return;
+		// Do NOT block on absence-feed readiness. If the absence query is
+		// slow / unreachable, the dashboard renders with an empty absence
+		// map and re-runs (via the `absenceDays` dep below) once it resolves.
+		// Errors surface via the absence query's own error state — handled
+		// upstream in DashboardPage so the rest of the dashboard stays usable.
 
 		const controller = new AbortController();
 		const { signal } = controller;
@@ -378,7 +380,6 @@ export function useDashboardDataFetcher() {
 		weekStart,
 		weekEnd,
 		hasAbsenceFeeds,
-		absenceDaysReady,
 		absenceDays,
 		setLoading,
 		setError,

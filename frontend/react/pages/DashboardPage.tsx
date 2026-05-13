@@ -72,7 +72,7 @@ export const DashboardPage: React.FC = () => {
 		heatmapMonthStart,
 		heatmapDaysInMonth - 1,
 	);
-	const { data: absenceDays } = useAbsenceDays(
+	const { data: absenceDays, error: absenceError } = useAbsenceDays(
 		heatmapMonthStart,
 		heatmapMonthEnd,
 	);
@@ -233,6 +233,22 @@ export const DashboardPage: React.FC = () => {
 					<SourceStatusBar />
 				</div>
 			</div>
+
+			{absenceError && (
+				<div
+					className={styles.absenceBanner}
+					role="status"
+					aria-live="polite"
+				>
+					<strong>Time-off calendar unavailable.</strong>{' '}
+					Your absence feed couldn't be loaded — compliance targets won't be
+					adjusted for vacation/holidays until it's reachable again. Other
+					dashboard data is unaffected.
+					<span className={styles.absenceBannerDetail}>
+						({absenceError instanceof Error ? absenceError.message : 'unknown error'})
+					</span>
+				</div>
+			)}
 
 			{!isLoadingWorklogs && daySummaries.length === 0 && (
 				<div className={styles.emptyWeek}>
