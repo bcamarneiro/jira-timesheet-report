@@ -1,7 +1,7 @@
 import type { AbsenceDay } from '../../services/absenceService';
 import type { WeekWorklogEntry } from '../../stores/useDashboardStore';
 import { getAbsenceKindLabel } from './absence';
-import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
+import { buildProvenanceFooter, csvEscape, CSV_SEP as SEP } from './csvHelpers';
 import { parseIsoDateLocal } from './date';
 import { classifyWorklog } from './worklogClassifier';
 

@@ -1,7 +1,7 @@
 import type { EnrichedJiraWorklog } from '../../../types/jira';
 import type { AbsenceDay } from '../../services/absenceService';
 import { getAbsenceKindLabel } from './absence';
-import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
+import { buildProvenanceFooter, csvEscape, CSV_SEP as SEP } from './csvHelpers';
 import { sanitizeFilename } from './downloadFile';
 import {
 	type ClassifiedWorklog,

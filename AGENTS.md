@@ -126,17 +126,27 @@ All rollups (DayCell, OverviewTable, TimesheetGrid, teamService, teamReports, su
 ### Calendar feed types
 
 `CalendarFeed.type` is `'suggestion' | 'absence' | 'holiday'`:
-- `suggestion`: drives Dashboard worklog suggestions.
-- `absence`: per-user PTO. Needs `absenceAttribution: 'self' | 'shared'` and (for `'shared'`) `AbsenceAssignment[]` patterns mapping event titles to user emails.
+- `suggestion`: drives Dashboard worklog suggestions. Routed to issues via `CalendarMapping[]` (see below) when the event title has no inline Jira key.
+- `absence`: per-user PTO. Needs `absenceAttribution: 'self' | 'shared'` and (for `'shared'`) `AbsenceAssignment[]` patterns mapping event titles to user emails. **Unmatched events are silently ignored** — the assignment list is the allowlist.
 - `holiday`: public holidays. **Nationwide by default** — events apply to every user automatically. **Regional holidays** are scoped by adding an `AbsenceAssignment` whose pattern matches the event title; the assignment's `userEmails` list determines who gets the holiday. A holiday with no matching assignment stays nationwide.
+
+A single ICS calendar can be subscribed to twice (once as `absence`, once as `holiday`) to drive both behaviours, but each type still respects its own unmatched-policy. Truly mixed feeds (national + regional holidays + personal time-off in one file) currently require enumerating every event title in the assignments — there is no per-feed "unmatched policy" toggle today.
 
 `AbsenceAssignment` shape is `{ pattern: string; userEmails: string[] }`. Same record powers both shared-absence and regional-holiday scoping. The legacy v5 single-email shape `{ pattern, userEmail }` is auto-migrated to `userEmails: [userEmail]` by `normalizeAbsenceAssignment`.
 
 `AbsenceKind` is `'vacation' | 'sick' | 'off' | 'holiday'`. The per-day target rule treats all four identically — what changes is the label users see.
 
+### Calendar mappings (suggestion feeds)
+
+`CalendarMapping` shape is `{ issueKey: string; issueSummary?: string; patterns: string[] }` — one row per Jira issue, with many event-title patterns per issue (because the same ticket often catches several recurring meetings). Matching is case-insensitive substring against the event summary.
+
+Persisted in `useUserDataStore` at `USER_DATA_STORAGE_VERSION = 2`. The legacy v1 shape `{ pattern, issueKey }` is read transparently and **grouped by `issueKey`** during migration (`normalizeCalendarMapping` + `mergeCalendarMappings`). Backup imports go through the same grouping step in `settingsBackup.normalizeCalendarMapping` / `mergeImportedMappings`.
+
+Store actions are keyed by `issueKey`. The `SuggestionCard`'s "Map to Issue" CTA uses `addPatternToMapping(issueKey, pattern, summary?)`, which appends the pattern to an existing mapping or creates a new one.
+
 ### Stores have a migration scaffold
 
-`useConfigStore`, `useUserDataStore`, `useUIStore` use Zustand persist with a versioned `migrate` and a defensive `merge`. Bumping `*_STORAGE_VERSION` requires a `v(N) → v(N+1)` step in `migratePersistedConfigState` (or the equivalent for the other stores). The scaffold tests in `__tests__/useConfigStore.test.ts` rehearse this.
+`useConfigStore`, `useUserDataStore`, `useUIStore` use Zustand persist with a versioned `migrate` and a defensive `merge`. Bumping `*_STORAGE_VERSION` requires a `v(N) → v(N+1)` step in `migratePersistedConfigState` (or the equivalent for the other stores). The scaffold tests in `__tests__/useConfigStore.test.ts` rehearse this. Current versions: config v6, user-data v2 (v1 → v2 grouped legacy single-pattern calendar mappings by `issueKey`).
 
 ### Audit follow-up tickets
 

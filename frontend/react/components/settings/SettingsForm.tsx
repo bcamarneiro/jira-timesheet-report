@@ -17,12 +17,12 @@ import {
 } from '../../utils/settingsBackup';
 import { Button } from '../ui/Button';
 import { toast } from '../ui/Toast';
+import * as styles from './SettingsForm.module.css';
 import { ConnectionSection } from './sections/ConnectionSection';
 import { IntegrationsSection } from './sections/IntegrationsSection';
 import { PermissionsSection } from './sections/PermissionsSection';
 import { PreferencesSection } from './sections/PreferencesSection';
 import { ScopeSection } from './sections/ScopeSection';
-import * as styles from './SettingsForm.module.css';
 
 type FeedEntry = {
 	feed: CalendarFeed;
@@ -175,8 +175,11 @@ export const SettingsForm: React.FC = () => {
 		integrationTests.calendar.result,
 	);
 	const hasSharedAbsenceFeeds = sharedAbsenceFeedEntries.length > 0;
+	const hasHolidayFeeds = holidayFeedEntries.length > 0;
 	const showAbsenceAssignments =
-		hasSharedAbsenceFeeds || (formData.absenceAssignments ?? []).length > 0;
+		hasSharedAbsenceFeeds ||
+		hasHolidayFeeds ||
+		(formData.absenceAssignments ?? []).length > 0;
 	const hasSharedAbsenceFeedsWithoutAssignments =
 		hasSharedAbsenceFeeds && (formData.absenceAssignments ?? []).length === 0;
 	const allowedUserSuggestions = useMemo(

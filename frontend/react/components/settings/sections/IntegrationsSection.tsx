@@ -1,10 +1,10 @@
 import type React from 'react';
-import { SETTINGS_SECTION_IDS } from '../../../constants/settingsSections';
 import type {
 	AbsenceAssignment,
 	CalendarFeed,
 } from '../../../../stores/useConfigStore';
 import type { CalendarMapping } from '../../../../stores/useUserDataStore';
+import { SETTINGS_SECTION_IDS } from '../../../constants/settingsSections';
 import { Button } from '../../ui/Button';
 import { CalendarMappingsEditor } from '../CalendarMappingsEditor';
 import * as styles from '../SettingsForm.module.css';
@@ -69,8 +69,8 @@ type Props = {
 	// Calendar mappings
 	calendarMappings: CalendarMapping[];
 	addCalendarMapping: (mapping: CalendarMapping) => void;
-	updateCalendarMapping: (pattern: string, updated: CalendarMapping) => void;
-	removeCalendarMapping: (pattern: string) => void;
+	updateCalendarMapping: (issueKey: string, updated: CalendarMapping) => void;
+	removeCalendarMapping: (issueKey: string) => void;
 
 	// Absence assignments
 	addAbsenceAssignment: (assignment: AbsenceAssignment) => void;
@@ -274,12 +274,12 @@ export const IntegrationsSection: React.FC<Props> = ({
 			<section className={`${styles.serviceCard} ${styles.serviceCardWide}`}>
 				<div className={styles.serviceHeader}>
 					<div className={styles.serviceHeading}>
-						<p className={styles.serviceKicker}>Calendars</p>
-						<h3>Suggestion feeds and time off calendars</h3>
+						<p className={styles.serviceKicker}>Suggestion calendars</p>
+						<h3>Turn meetings into worklog suggestions</h3>
 						<p>
-							Suggestion feeds turn meetings into worklog candidates. Time off
-							calendars reduce target hours for the right person in Reports and
-							for you in Dashboard.
+							Subscribe to calendars whose event titles either already contain a
+							Jira key or can be mapped to one below. Suggestions show up in
+							Dashboard alongside the rest of your day.
 						</p>
 					</div>
 					<span
@@ -294,8 +294,8 @@ export const IntegrationsSection: React.FC<Props> = ({
 						<div>
 							<h4>Suggestion feeds</h4>
 							<p>
-								Best for calendars whose event titles already include Jira keys
-								or can be mapped with the editor below.
+								Add one feed per calendar. Events with no Jira key in the title
+								can be routed using the mappings below.
 							</p>
 						</div>
 						<Button
@@ -367,6 +367,29 @@ export const IntegrationsSection: React.FC<Props> = ({
 								worklog suggestions.
 							</p>
 						)}
+					</div>
+				</div>
+
+				<div id={SETTINGS_SECTION_IDS.calendarMappings}>
+					<CalendarMappingsEditor
+						mappings={calendarMappings}
+						onAdd={addCalendarMapping}
+						onUpdate={updateCalendarMapping}
+						onRemove={removeCalendarMapping}
+					/>
+				</div>
+			</section>
+
+			<section className={`${styles.serviceCard} ${styles.serviceCardWide}`}>
+				<div className={styles.serviceHeader}>
+					<div className={styles.serviceHeading}>
+						<p className={styles.serviceKicker}>Time off & holidays</p>
+						<h3>Reduce target hours for absences and public holidays</h3>
+						<p>
+							Time off calendars reduce target hours for the matched teammate.
+							Public holidays apply to everyone by default, or can be scoped to
+							a region using the same assignment rules below.
+						</p>
 					</div>
 				</div>
 
@@ -588,6 +611,16 @@ export const IntegrationsSection: React.FC<Props> = ({
 					</div>
 				</div>
 
+				{showAbsenceAssignments ? (
+					<TeamAbsenceAssignmentsEditor
+						assignments={absenceAssignments}
+						userSuggestions={allowedUserSuggestions}
+						onAdd={addAbsenceAssignment}
+						onUpdate={updateAbsenceAssignment}
+						onRemove={removeAbsenceAssignment}
+					/>
+				) : null}
+
 				<div className={styles.serviceActions}>
 					<Button
 						type="button"
@@ -608,30 +641,10 @@ export const IntegrationsSection: React.FC<Props> = ({
 					</p>
 				) : (
 					<p className={styles.serviceHint}>
-						Calendar tests confirm the feed URLs are reachable and parse as
-						ICS/iCal. They do not yet validate whether your title filters or
-						shared-calendar assignment rules are too broad.
+						Calendar tests confirm every feed URL (suggestions, time off,
+						holidays) is reachable and parses as ICS/iCal.
 					</p>
 				)}
-
-				<div id={SETTINGS_SECTION_IDS.calendarMappings}>
-					<CalendarMappingsEditor
-						mappings={calendarMappings}
-						onAdd={addCalendarMapping}
-						onUpdate={updateCalendarMapping}
-						onRemove={removeCalendarMapping}
-					/>
-				</div>
-
-				{showAbsenceAssignments ? (
-					<TeamAbsenceAssignmentsEditor
-						assignments={absenceAssignments}
-						userSuggestions={allowedUserSuggestions}
-						onAdd={addAbsenceAssignment}
-						onUpdate={updateAbsenceAssignment}
-						onRemove={removeAbsenceAssignment}
-					/>
-				) : null}
 			</section>
 		</fieldset>
 	);

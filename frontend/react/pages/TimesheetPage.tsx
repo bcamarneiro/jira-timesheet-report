@@ -30,13 +30,13 @@ import { addDaysToIsoDate, monthLabel } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
 import { deriveMonthlyReportState } from '../utils/monthlyReport';
 import { validateReportsConsistency } from '../utils/reportConsistency';
-import { classifyWorklog } from '../utils/worklogClassifier';
 import {
 	buildReportsSnapshotHtml,
 	buildReportsSnapshotMarkdown,
 } from '../utils/reportSnapshots';
 import { buildTeamCsv } from '../utils/teamCsvExport';
 import { uid } from '../utils/uid';
+import { classifyWorklog } from '../utils/worklogClassifier';
 import * as styles from './TimesheetPage.module.css';
 
 type SortField = 'name' | 'total' | 'gap';

@@ -20,15 +20,18 @@ function normalizePattern(value: string): string {
 	return value.trim();
 }
 
-function parseEmailList(raw: string): string[] {
-	return Array.from(
-		new Set(
-			raw
-				.split(/[,\n]/)
-				.map((entry) => normalizeEmailEntry(entry))
-				.filter((email) => email.length > 0),
-		),
-	);
+function mergeEmails(existing: string[], incoming: string[]): string[] {
+	const seen = new Set(existing.map((email) => email.toLowerCase()));
+	const out = [...existing];
+	for (const email of incoming) {
+		const normalised = normalizeEmailEntry(email);
+		if (!normalised) continue;
+		const key = normalised.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push(normalised);
+	}
+	return out;
 }
 
 function assignmentKey(assignment: AbsenceAssignment): string {
@@ -46,7 +49,8 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 	const [editingAssignment, setEditingAssignment] =
 		useState<AbsenceAssignment | null>(null);
 	const [draftPattern, setDraftPattern] = useState('');
-	const [draftEmailsRaw, setDraftEmailsRaw] = useState('');
+	const [draftEmails, setDraftEmails] = useState<string[]>([]);
+	const [draftEmailEntry, setDraftEmailEntry] = useState('');
 	const patternInputId = useId();
 	const emailsInputId = useId();
 	const datalistId = useId();
@@ -64,19 +68,18 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 
 	const validationError = useMemo(() => {
 		const pattern = normalizePattern(draftPattern);
-		const emails = parseEmailList(draftEmailsRaw);
 
 		if (!pattern) return 'Add an event title pattern to continue.';
-		if (emails.length === 0)
-			return 'Add at least one team member email (comma-separate for multiple).';
-		const invalid = emails.find((email) => !isValidEmailEntry(email));
+		if (draftEmails.length === 0) return 'Pick at least one team member.';
+		const invalid = draftEmails.find((email) => !isValidEmailEntry(email));
 		if (invalid) {
 			return `"${invalid}" is not a valid email address.`;
 		}
 
 		const duplicate = assignments.some(
 			(assignment) =>
-				assignmentKey(assignment) === assignmentKey({ pattern, userEmails: emails }) &&
+				assignmentKey(assignment) ===
+					assignmentKey({ pattern, userEmails: draftEmails }) &&
 				(!editingAssignment ||
 					assignmentKey(assignment) !== assignmentKey(editingAssignment)),
 		);
@@ -85,21 +88,41 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 		}
 
 		return null;
-	}, [assignments, draftPattern, draftEmailsRaw, editingAssignment]);
+	}, [assignments, draftPattern, draftEmails, editingAssignment]);
+
+	const availableSuggestions = useMemo(() => {
+		const selected = new Set(draftEmails.map((email) => email.toLowerCase()));
+		return userSuggestions.filter(
+			(email) => !selected.has(email.toLowerCase()),
+		);
+	}, [userSuggestions, draftEmails]);
 
 	const resetComposer = () => {
 		setEditingAssignment(null);
 		setDraftPattern('');
-		setDraftEmailsRaw('');
+		setDraftEmails([]);
+		setDraftEmailEntry('');
+	};
+
+	const commitDraftEntry = () => {
+		if (!draftEmailEntry.trim()) return;
+		const incoming = draftEmailEntry.split(/[,\n]/);
+		setDraftEmails((prev) => mergeEmails(prev, incoming));
+		setDraftEmailEntry('');
 	};
 
 	const handleSubmit = (event: React.FormEvent) => {
 		event.preventDefault();
+		// Flush any half-typed entry sitting in the text input.
+		const finalEmails =
+			draftEmailEntry.trim().length > 0
+				? mergeEmails(draftEmails, draftEmailEntry.split(/[,\n]/))
+				: draftEmails;
 		if (validationError) return;
 
 		const nextAssignment: AbsenceAssignment = {
 			pattern: normalizePattern(draftPattern),
-			userEmails: parseEmailList(draftEmailsRaw),
+			userEmails: finalEmails,
 		};
 
 		if (editingAssignment) {
@@ -164,7 +187,8 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 									onClick={() => {
 										setEditingAssignment(assignment);
 										setDraftPattern(assignment.pattern);
-										setDraftEmailsRaw(assignment.userEmails.join(', '));
+										setDraftEmails([...assignment.userEmails]);
+										setDraftEmailEntry('');
 									}}
 								>
 									Edit
@@ -234,29 +258,122 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 							placeholder="Lisbon Holiday"
 						/>
 					</label>
-					<label className={styles.field} htmlFor={emailsInputId}>
-						<span>Team member email(s)</span>
-						<input
-							id={emailsInputId}
-							type="text"
-							value={draftEmailsRaw}
-							onChange={(event) => setDraftEmailsRaw(event.target.value)}
-							placeholder="alice@example.com, bob@example.com"
-							list={datalistId}
-							autoCapitalize="off"
-							autoCorrect="off"
-							spellCheck={false}
-						/>
-						<datalist id={datalistId}>
-							{userSuggestions.map((suggestion) => (
-								<option key={suggestion} value={suggestion} />
-							))}
-						</datalist>
+					<div className={styles.field}>
+						<span id={`${emailsInputId}-label`}>Team member email(s)</span>
+						<div
+							className={styles.emailPicker}
+							aria-labelledby={`${emailsInputId}-label`}
+						>
+							<div className={styles.chipRow}>
+								{draftEmails.length === 0 ? (
+									<span className={styles.emptyChipRow}>
+										No teammates selected yet
+									</span>
+								) : (
+									draftEmails.map((email) => (
+										<span key={email} className={styles.emailChip}>
+											{email}
+											<button
+												type="button"
+												className={styles.emailChipRemove}
+												onClick={() =>
+													setDraftEmails((prev) =>
+														prev.filter(
+															(value) =>
+																value.toLowerCase() !== email.toLowerCase(),
+														),
+													)
+												}
+												aria-label={`Remove ${email}`}
+											>
+												&times;
+											</button>
+										</span>
+									))
+								)}
+							</div>
+							<input
+								id={emailsInputId}
+								type="text"
+								value={draftEmailEntry}
+								onChange={(event) => setDraftEmailEntry(event.target.value)}
+								onKeyDown={(event) => {
+									if (
+										event.key === 'Enter' ||
+										event.key === ',' ||
+										event.key === 'Tab'
+									) {
+										if (draftEmailEntry.trim()) {
+											event.preventDefault();
+											commitDraftEntry();
+										}
+									} else if (
+										event.key === 'Backspace' &&
+										draftEmailEntry === '' &&
+										draftEmails.length > 0
+									) {
+										event.preventDefault();
+										setDraftEmails((prev) => prev.slice(0, -1));
+									}
+								}}
+								onBlur={commitDraftEntry}
+								placeholder="Type or paste email, then Enter"
+								list={datalistId}
+								autoCapitalize="off"
+								autoCorrect="off"
+								spellCheck={false}
+							/>
+							<datalist id={datalistId}>
+								{availableSuggestions.map((suggestion) => (
+									<option key={suggestion} value={suggestion} />
+								))}
+							</datalist>
+							<div className={styles.pickerActions}>
+								<button
+									type="button"
+									className={styles.linkButton}
+									onClick={() =>
+										setDraftEmails((prev) => mergeEmails(prev, userSuggestions))
+									}
+									disabled={
+										userSuggestions.length === 0 ||
+										availableSuggestions.length === 0
+									}
+								>
+									Select all from team ({userSuggestions.length})
+								</button>
+								<button
+									type="button"
+									className={styles.linkButton}
+									onClick={() => setDraftEmails([])}
+									disabled={draftEmails.length === 0}
+								>
+									Clear
+								</button>
+							</div>
+							{availableSuggestions.length > 0 ? (
+								<div className={styles.suggestionRow}>
+									{availableSuggestions.map((email) => (
+										<button
+											key={email}
+											type="button"
+											className={styles.suggestionChip}
+											onClick={() =>
+												setDraftEmails((prev) => mergeEmails(prev, [email]))
+											}
+											aria-label={`Add ${email}`}
+										>
+											+ {email}
+										</button>
+									))}
+								</div>
+							) : null}
+						</div>
 						<small className={styles.fieldHint}>
-							Comma-separated for multiple. Suggestions come from your Team
-							Members list.
+							Click a teammate to add, the × on a chip to remove. You can also
+							paste a comma-separated list.
 						</small>
-					</label>
+					</div>
 				</div>
 				<div className={styles.composerFooter}>
 					<p className={styles.validationText} aria-live="polite">

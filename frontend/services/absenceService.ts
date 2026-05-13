@@ -368,7 +368,9 @@ export async function fetchAbsenceDaysByUser(
 				.map((email) => email.trim().toLowerCase())
 				.filter((email) => email.length > 0),
 		}))
-		.filter((assignment) => assignment.pattern && assignment.userEmails.length > 0);
+		.filter(
+			(assignment) => assignment.pattern && assignment.userEmails.length > 0,
+		);
 	const normalizedCurrentUser = currentUserEmail.trim().toLowerCase();
 
 	type FeedResult = {

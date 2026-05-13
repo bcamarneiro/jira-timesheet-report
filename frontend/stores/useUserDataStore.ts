@@ -4,11 +4,14 @@ import { getPersistStorage } from './persistStorage';
 
 /**
  * Bumped when the persisted shape changes in a way that requires
- * migration. v1 is the first explicit version (prior persisted blobs
- * had no version field; the migrate function treats them as v0 and
- * runs the same defensive normalisation).
+ * migration.
+ *   v1 → initial explicit version (prior blobs had no version field).
+ *   v2 → CalendarMapping shape flipped from { pattern, issueKey } to
+ *        { issueKey, patterns[] }. Legacy single-pattern entries are
+ *        grouped by issueKey during migration via `normalizeCalendarMapping`
+ *        + the dedupe/merge step in `mergeCalendarMappings`.
  */
-export const USER_DATA_STORAGE_VERSION = 1;
+export const USER_DATA_STORAGE_VERSION = 2;
 
 function safeArray<T>(value: unknown, fallback: T[]): T[] {
 	return Array.isArray(value) ? (value as T[]) : fallback;
@@ -38,10 +41,14 @@ export interface FavoriteIssue {
 }
 
 export interface CalendarMapping {
-	/** Text pattern to match against event summary (case-insensitive substring) */
-	pattern: string;
 	issueKey: string;
 	issueSummary?: string;
+	/**
+	 * Event title patterns (case-insensitive substring) that should resolve
+	 * to this issue. Many event names commonly share a single ticket, so
+	 * the mapping is keyed by `issueKey` rather than by pattern.
+	 */
+	patterns: string[];
 }
 
 export interface RecurringTemplate {
@@ -84,9 +91,19 @@ interface UserDataState {
 	removeCommentPreset: (preset: string) => void;
 	setDayNote: (date: string, note: string) => void;
 	addCalendarMapping: (mapping: CalendarMapping) => void;
-	removeCalendarMapping: (pattern: string) => void;
-	updateCalendarMapping: (pattern: string, updated: CalendarMapping) => void;
+	removeCalendarMapping: (issueKey: string) => void;
+	updateCalendarMapping: (issueKey: string, updated: CalendarMapping) => void;
 	replaceCalendarMappings: (mappings: CalendarMapping[]) => void;
+	/**
+	 * Convenience for "map this event title to an issue". If a mapping
+	 * already exists for the issue, the pattern is appended; otherwise a
+	 * new mapping is created.
+	 */
+	addPatternToMapping: (
+		issueKey: string,
+		pattern: string,
+		issueSummary?: string,
+	) => void;
 	saveReportPreset: (preset: ReportPreset) => void;
 	removeReportPreset: (id: string) => void;
 }
@@ -146,14 +163,63 @@ function normalizeTemplate(template: RecurringTemplate): RecurringTemplate {
 }
 
 function normalizeCalendarMapping(mapping: CalendarMapping): CalendarMapping {
-	const raw = mapping as Partial<CalendarMapping>;
+	// Accept both the current shape and the legacy v1 shape
+	// `{ pattern, issueKey, issueSummary }` from persisted blobs.
+	const raw = mapping as Partial<CalendarMapping> & { pattern?: unknown };
 	const summary =
 		typeof raw.issueSummary === 'string' ? raw.issueSummary.trim() : '';
+	const legacyPattern =
+		typeof raw.pattern === 'string' ? normalizePattern(raw.pattern) : '';
+	const collected: string[] = Array.isArray(raw.patterns)
+		? raw.patterns
+				.filter((p): p is string => typeof p === 'string')
+				.map((p) => normalizePattern(p))
+		: [];
+	if (legacyPattern) collected.push(legacyPattern);
+	const patterns = dedupePreserveOrder(collected.filter(Boolean));
 	return {
-		pattern: normalizePattern(raw.pattern),
 		issueKey: normalizeIssueKey(raw.issueKey),
 		issueSummary: summary || undefined,
+		patterns,
 	};
+}
+
+function dedupePreserveOrder(values: string[]): string[] {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const value of values) {
+		const key = value.toLowerCase();
+		if (!key || seen.has(key)) continue;
+		seen.add(key);
+		out.push(value);
+	}
+	return out;
+}
+
+/**
+ * Merge mappings with the same `issueKey` (combining their pattern lists).
+ * This is the load-bearing step that turns the v1 "one row per pattern"
+ * shape into the v2 "one row per issue" shape during migration, and is
+ * also used to dedupe the import path.
+ */
+function mergeCalendarMappings(mappings: CalendarMapping[]): CalendarMapping[] {
+	const byIssue = new Map<string, CalendarMapping>();
+	for (const mapping of mappings) {
+		if (!mapping.issueKey) continue;
+		const existing = byIssue.get(mapping.issueKey);
+		if (existing) {
+			existing.patterns = dedupePreserveOrder([
+				...existing.patterns,
+				...mapping.patterns,
+			]);
+			if (!existing.issueSummary && mapping.issueSummary) {
+				existing.issueSummary = mapping.issueSummary;
+			}
+		} else {
+			byIssue.set(mapping.issueKey, { ...mapping });
+		}
+	}
+	return [...byIssue.values()].filter((m) => m.patterns.length > 0);
 }
 
 function normalizeReportPreset(preset: ReportPreset): ReportPreset {
@@ -290,12 +356,11 @@ export const useUserDataStore = create<UserDataState>()(
 			addCalendarMapping: (mapping) =>
 				set((state) => {
 					const normalized = normalizeCalendarMapping(mapping);
-					const normalizedPattern = normalized.pattern.toLowerCase();
 					if (
-						!normalized.pattern ||
 						!normalized.issueKey ||
+						normalized.patterns.length === 0 ||
 						state.calendarMappings.some(
-							(m) => m.pattern.toLowerCase() === normalizedPattern,
+							(m) => m.issueKey === normalized.issueKey,
 						)
 					) {
 						return state;
@@ -305,43 +370,86 @@ export const useUserDataStore = create<UserDataState>()(
 					};
 				}),
 
-			removeCalendarMapping: (pattern) =>
-				set((state) => ({
-					calendarMappings: state.calendarMappings.filter(
-						(m) => m.pattern.toLowerCase() !== pattern.trim().toLowerCase(),
-					),
-				})),
-
-			updateCalendarMapping: (pattern, updated) =>
+			removeCalendarMapping: (issueKey) =>
 				set((state) => {
-					const normalizedPattern = pattern.trim().toLowerCase();
+					const key = issueKey.trim().toUpperCase();
+					return {
+						calendarMappings: state.calendarMappings.filter(
+							(m) => m.issueKey !== key,
+						),
+					};
+				}),
+
+			updateCalendarMapping: (issueKey, updated) =>
+				set((state) => {
+					const targetKey = issueKey.trim().toUpperCase();
 					const normalized = normalizeCalendarMapping(updated);
-					if (!normalized.pattern || !normalized.issueKey) {
+					if (!normalized.issueKey || normalized.patterns.length === 0) {
 						return state;
 					}
 					const isDuplicate = state.calendarMappings.some(
 						(m) =>
-							m.pattern.toLowerCase() === normalized.pattern.toLowerCase() &&
-							m.pattern.toLowerCase() !== normalizedPattern,
+							m.issueKey === normalized.issueKey && m.issueKey !== targetKey,
 					);
 					if (isDuplicate) {
 						return state;
 					}
 					return {
 						calendarMappings: state.calendarMappings.map((m) =>
-							m.pattern.toLowerCase() === normalizedPattern ? normalized : m,
+							m.issueKey === targetKey ? normalized : m,
 						),
 					};
 				}),
 
 			replaceCalendarMappings: (mappings) =>
 				set({
-					calendarMappings: dedupeByCaseInsensitive(
+					calendarMappings: mergeCalendarMappings(
 						mappings
 							.map(normalizeCalendarMapping)
-							.filter((mapping) => !!mapping.pattern && !!mapping.issueKey),
-						(mapping) => mapping.pattern,
+							.filter(
+								(mapping) => !!mapping.issueKey && mapping.patterns.length > 0,
+							),
 					),
+				}),
+
+			addPatternToMapping: (issueKey, pattern, issueSummary) =>
+				set((state) => {
+					const key = normalizeIssueKey(issueKey);
+					const trimmed = normalizePattern(pattern);
+					if (!key || !trimmed) return state;
+					const existing = state.calendarMappings.find(
+						(m) => m.issueKey === key,
+					);
+					if (existing) {
+						const nextPatterns = dedupePreserveOrder([
+							...existing.patterns,
+							trimmed,
+						]);
+						if (nextPatterns.length === existing.patterns.length) {
+							return state;
+						}
+						return {
+							calendarMappings: state.calendarMappings.map((m) =>
+								m.issueKey === key
+									? {
+											...m,
+											patterns: nextPatterns,
+											issueSummary: m.issueSummary || issueSummary?.trim(),
+										}
+									: m,
+							),
+						};
+					}
+					return {
+						calendarMappings: [
+							...state.calendarMappings,
+							{
+								issueKey: key,
+								issueSummary: issueSummary?.trim() || undefined,
+								patterns: [trimmed],
+							},
+						],
+					};
 				}),
 
 			saveReportPreset: (preset) =>
@@ -417,14 +525,15 @@ export const useUserDataStore = create<UserDataState>()(
 						persistedState?.dayNotes,
 						currentState.dayNotes,
 					),
-					calendarMappings: dedupeByCaseInsensitive(
+					calendarMappings: mergeCalendarMappings(
 						safeArray<CalendarMapping>(
 							persistedState?.calendarMappings,
 							currentState.calendarMappings,
 						)
 							.map(normalizeCalendarMapping)
-							.filter((mapping) => !!mapping.pattern && !!mapping.issueKey),
-						(mapping) => mapping.pattern,
+							.filter(
+								(mapping) => !!mapping.issueKey && mapping.patterns.length > 0,
+							),
 					),
 					reportPresets: dedupeByCaseInsensitive(
 						safeArray<ReportPreset>(

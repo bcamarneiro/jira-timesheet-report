@@ -90,20 +90,49 @@ describe('useUserDataStore', () => {
 	it('normalizes calendar mappings and updates them safely', () => {
 		act(() => {
 			useUserDataStore.getState().addCalendarMapping({
-				pattern: ' Team Sync ',
 				issueKey: 'proj-9',
+				patterns: [' Team Sync '],
 			});
-			useUserDataStore.getState().updateCalendarMapping('team sync', {
-				pattern: ' Delivery Sync ',
+			useUserDataStore.getState().updateCalendarMapping('proj-9', {
 				issueKey: 'proj-10',
+				patterns: [' Delivery Sync ', 'delivery sync'],
 			});
 		});
 
 		expect(useUserDataStore.getState().calendarMappings).toEqual([
 			{
-				pattern: 'Delivery Sync',
 				issueKey: 'PROJ-10',
 				issueSummary: undefined,
+				patterns: ['Delivery Sync'],
+			},
+		]);
+	});
+
+	it('addPatternToMapping appends to existing mapping or creates a new one', () => {
+		act(() => {
+			useUserDataStore
+				.getState()
+				.addPatternToMapping('proj-11', 'Daily standup');
+			useUserDataStore
+				.getState()
+				.addPatternToMapping('proj-11', 'Daily Sync', 'Daily ceremonies');
+			// Duplicate pattern (case-insensitive) is a no-op.
+			useUserDataStore
+				.getState()
+				.addPatternToMapping('proj-11', 'daily standup');
+			useUserDataStore.getState().addPatternToMapping('proj-12', 'Retro');
+		});
+
+		expect(useUserDataStore.getState().calendarMappings).toEqual([
+			{
+				issueKey: 'PROJ-11',
+				issueSummary: 'Daily ceremonies',
+				patterns: ['Daily standup', 'Daily Sync'],
+			},
+			{
+				issueKey: 'PROJ-12',
+				issueSummary: undefined,
+				patterns: ['Retro'],
 			},
 		]);
 	});
@@ -136,18 +165,23 @@ describe('useUserDataStore', () => {
 		]);
 	});
 
-	it('replaces calendar mappings with normalized values', () => {
+	it('replaces calendar mappings and merges duplicates by issue key', () => {
 		act(() => {
 			useUserDataStore.getState().replaceCalendarMappings([
-				{ pattern: ' Planning ', issueKey: 'proj-3' },
-				{ pattern: 'planning', issueKey: 'proj-4' },
-				{ pattern: 'Retro', issueKey: ' proj-5 ' },
+				{ issueKey: 'proj-3', patterns: [' Planning '] },
+				// Duplicate issueKey merges its patterns into the first entry.
+				{ issueKey: 'PROJ-3', patterns: ['planning', 'Sprint Planning'] },
+				{ issueKey: ' proj-5 ', patterns: ['Retro'] },
 			]);
 		});
 
 		expect(useUserDataStore.getState().calendarMappings).toEqual([
-			{ pattern: 'Planning', issueKey: 'PROJ-3', issueSummary: undefined },
-			{ pattern: 'Retro', issueKey: 'PROJ-5', issueSummary: undefined },
+			{
+				issueKey: 'PROJ-3',
+				issueSummary: undefined,
+				patterns: ['Planning', 'Sprint Planning'],
+			},
+			{ issueKey: 'PROJ-5', issueSummary: undefined, patterns: ['Retro'] },
 		]);
 	});
 

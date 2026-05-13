@@ -52,7 +52,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 	const unmarkLogged = useDashboardStore((s) => s.unmarkSuggestionLogged);
 	const dismiss = useDashboardStore((s) => s.dismissSuggestion);
 	const adjustTime = useDashboardStore((s) => s.adjustSuggestionTime);
-	const addCalendarMapping = useUserDataStore((s) => s.addCalendarMapping);
+	const addPatternToMapping = useUserDataStore((s) => s.addPatternToMapping);
 	const { createWorklog, deleteWorklog, isLoading } = useWorklogOperations();
 	const [isEditOpen, setIsEditOpen] = useState(false);
 	const [isMappingOpen, setIsMappingOpen] = useState(false);
@@ -70,10 +70,7 @@ export const SuggestionCard = memo<Props>(function SuggestionCard({
 		const key = mappingIssueKey.trim().toUpperCase();
 		if (!key) return;
 
-		addCalendarMapping({
-			pattern: suggestion.calendarEventTitle || '',
-			issueKey: key,
-		});
+		addPatternToMapping(key, suggestion.calendarEventTitle || '');
 		setIsMappingOpen(false);
 		setMappingIssueKey('');
 		toast.success(`Mapped "${suggestion.calendarEventTitle}" to ${key}`);

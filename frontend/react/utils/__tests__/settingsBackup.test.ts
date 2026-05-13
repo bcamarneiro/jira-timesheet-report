@@ -29,14 +29,14 @@ const defaultConfig = {
 describe('settingsBackup', () => {
 	it('creates a versioned backup payload', () => {
 		const backup = createSettingsBackup(defaultConfig, [
-			{ pattern: 'Standup', issueKey: 'PROJ-1' },
+			{ issueKey: 'PROJ-1', patterns: ['Standup'] },
 		]);
 
 		expect(backup.version).toBe(3);
 		expect(backup.kind).toBe('full-backup');
 		expect(backup.config).toEqual(defaultConfig);
 		expect(backup.calendarMappings).toEqual([
-			{ pattern: 'Standup', issueKey: 'PROJ-1' },
+			{ issueKey: 'PROJ-1', patterns: ['Standup'] },
 		]);
 		expect(backup.userData).toBeUndefined();
 	});
@@ -82,7 +82,7 @@ describe('settingsBackup', () => {
 		};
 		const backup = createSettingsBackup(
 			defaultConfig,
-			[{ pattern: 'Standup', issueKey: 'PROJ-1' }],
+			[{ issueKey: 'PROJ-1', patterns: ['Standup'] }],
 			userData,
 		);
 
@@ -227,7 +227,32 @@ describe('settingsBackup', () => {
 			{ pattern: 'Bruno', userEmails: ['bruno@example.com'] },
 		]);
 		expect(parsed.calendarMappings).toEqual([
-			{ pattern: 'Standup', issueKey: 'PROJ-10', issueSummary: undefined },
+			{ issueKey: 'PROJ-10', issueSummary: undefined, patterns: ['Standup'] },
+		]);
+	});
+
+	it('groups legacy single-pattern entries by issueKey on import', () => {
+		const raw = JSON.stringify({
+			version: 3,
+			kind: 'full-backup',
+			exportedAt: new Date().toISOString(),
+			config: defaultConfig,
+			calendarMappings: [
+				{ pattern: 'Standup', issueKey: 'proj-1' },
+				{ pattern: 'daily sync', issueKey: 'PROJ-1' },
+				{ pattern: 'Retro', issueKey: 'proj-2' },
+			],
+		});
+
+		const parsed = parseSettingsBackup(raw, defaultConfig);
+
+		expect(parsed.calendarMappings).toEqual([
+			{
+				issueKey: 'PROJ-1',
+				issueSummary: undefined,
+				patterns: ['Standup', 'daily sync'],
+			},
+			{ issueKey: 'PROJ-2', issueSummary: undefined, patterns: ['Retro'] },
 		]);
 	});
 
@@ -247,7 +272,7 @@ describe('settingsBackup', () => {
 			timeRounding: '30m' as const,
 		};
 		const sharePack = createSettingsSharePack(currentConfig, [
-			{ pattern: 'Standup', issueKey: 'APP-1' },
+			{ issueKey: 'APP-1', patterns: ['Standup'] },
 		]);
 
 		expect(sharePack.kind).toBe('share-pack');
@@ -272,7 +297,7 @@ describe('settingsBackup', () => {
 		expect(parsed.config.theme).toBe('dark');
 		expect(parsed.config.jqlFilter).toBe('project = APP');
 		expect(parsed.calendarMappings).toEqual([
-			{ pattern: 'Standup', issueKey: 'APP-1', issueSummary: undefined },
+			{ issueKey: 'APP-1', issueSummary: undefined, patterns: ['Standup'] },
 		]);
 	});
 

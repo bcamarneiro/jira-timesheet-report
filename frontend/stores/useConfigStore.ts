@@ -121,9 +121,7 @@ function normalizeCalendarFeed(
 }
 
 function normalizeAbsenceAssignment(
-	assignment:
-		| (Partial<AbsenceAssignment> & { userEmail?: string })
-		| undefined,
+	assignment: (Partial<AbsenceAssignment> & { userEmail?: string }) | undefined,
 ): AbsenceAssignment | null {
 	const pattern =
 		typeof assignment?.pattern === 'string' ? assignment.pattern.trim() : '';

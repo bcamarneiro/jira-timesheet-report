@@ -75,24 +75,70 @@ function normalizeCalendarFeed(
 }
 
 function normalizeCalendarMapping(
-	mapping: Partial<CalendarMapping>,
+	mapping: Partial<CalendarMapping> & { pattern?: unknown },
 ): CalendarMapping | null {
-	const pattern =
-		typeof mapping.pattern === 'string' ? mapping.pattern.trim() : '';
 	const issueKey =
 		typeof mapping.issueKey === 'string'
 			? mapping.issueKey.trim().toUpperCase()
 			: '';
-	if (!pattern || !issueKey) return null;
+	if (!issueKey) return null;
+
+	const collected: string[] = [];
+	if (Array.isArray(mapping.patterns)) {
+		for (const value of mapping.patterns) {
+			if (typeof value === 'string') {
+				const trimmed = value.trim();
+				if (trimmed) collected.push(trimmed);
+			}
+		}
+	}
+	// Accept the legacy `{ pattern }` shape from v1 backups.
+	if (typeof mapping.pattern === 'string') {
+		const trimmed = mapping.pattern.trim();
+		if (trimmed) collected.push(trimmed);
+	}
+
+	const seen = new Set<string>();
+	const patterns: string[] = [];
+	for (const value of collected) {
+		const key = value.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		patterns.push(value);
+	}
+	if (patterns.length === 0) return null;
 
 	return {
-		pattern,
 		issueKey,
 		issueSummary:
 			typeof mapping.issueSummary === 'string'
 				? mapping.issueSummary.trim() || undefined
 				: undefined,
+		patterns,
 	};
+}
+
+/** Merge mappings sharing an issueKey by combining their pattern lists. */
+function mergeImportedMappings(mappings: CalendarMapping[]): CalendarMapping[] {
+	const byIssue = new Map<string, CalendarMapping>();
+	for (const mapping of mappings) {
+		const existing = byIssue.get(mapping.issueKey);
+		if (existing) {
+			const seen = new Set(existing.patterns.map((p) => p.toLowerCase()));
+			for (const pattern of mapping.patterns) {
+				const key = pattern.toLowerCase();
+				if (seen.has(key)) continue;
+				seen.add(key);
+				existing.patterns.push(pattern);
+			}
+			if (!existing.issueSummary && mapping.issueSummary) {
+				existing.issueSummary = mapping.issueSummary;
+			}
+		} else {
+			byIssue.set(mapping.issueKey, { ...mapping });
+		}
+	}
+	return [...byIssue.values()];
 }
 
 function normalizeAbsenceAssignment(
@@ -362,9 +408,11 @@ export function parseSettingsBackup(
 	);
 
 	const calendarMappings = Array.isArray(data.calendarMappings)
-		? data.calendarMappings
-				.map(normalizeCalendarMapping)
-				.filter((mapping): mapping is CalendarMapping => mapping !== null)
+		? mergeImportedMappings(
+				data.calendarMappings
+					.map(normalizeCalendarMapping)
+					.filter((mapping): mapping is CalendarMapping => mapping !== null),
+			)
 		: [];
 
 	const userData =

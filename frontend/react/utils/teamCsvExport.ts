@@ -1,7 +1,7 @@
 import type { TeamMemberSummary } from '../../services/teamService';
-import { BASELINE_DAY_SECONDS } from './dayTarget';
-import { buildProvenanceFooter, CSV_SEP as SEP, csvEscape } from './csvHelpers';
+import { buildProvenanceFooter, csvEscape, CSV_SEP as SEP } from './csvHelpers';
 import { parseIsoDateLocal } from './date';
+import { BASELINE_DAY_SECONDS } from './dayTarget';
 
 function formatDayLabel(dateStr: string): string {
 	const d = parseIsoDateLocal(dateStr);

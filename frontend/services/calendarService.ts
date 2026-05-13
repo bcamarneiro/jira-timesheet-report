@@ -44,8 +44,10 @@ function findMappedIssueKey(
 ): CalendarMapping | null {
 	const lower = summary.toLowerCase();
 	for (const mapping of mappings) {
-		if (lower.includes(mapping.pattern.toLowerCase())) {
-			return mapping;
+		for (const pattern of mapping.patterns) {
+			if (pattern && lower.includes(pattern.toLowerCase())) {
+				return mapping;
+			}
 		}
 	}
 	return null;
