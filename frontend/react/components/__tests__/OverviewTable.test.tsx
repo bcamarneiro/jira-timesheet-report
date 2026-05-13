@@ -112,7 +112,9 @@ describe('OverviewTable filtering and inclusion policy', () => {
 				},
 			],
 		];
-		render(<OverviewTable entries={entries} year={2026} monthZeroIndexed={4} />);
+		render(
+			<OverviewTable entries={entries} year={2026} monthZeroIndexed={4} />,
+		);
 		const row = screen.getByText('Mixed User').closest('tr');
 		expect(row).not.toBeNull();
 		// Hours column: only the 4h regular entry counts (not 7h).

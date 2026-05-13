@@ -131,9 +131,11 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 	);
 	const nonBackdatedHours = totalHours - backdatedHours;
 	const totalsPad = ['', '', '', '', ''];
-	const backdatedRow = [...totalsPad, 'Backdated', backdatedHours.toFixed(2)].join(
-		SEP,
-	);
+	const backdatedRow = [
+		...totalsPad,
+		'Backdated',
+		backdatedHours.toFixed(2),
+	].join(SEP);
 	const nonBackdatedRow = [
 		...totalsPad,
 		'Non-backdated',

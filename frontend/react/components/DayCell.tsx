@@ -53,8 +53,12 @@ export const DayCell: React.FC<Props> = ({
 		useWorklogOperations();
 	const hasAbsence = isAbsent || !!absenceDay;
 
-	const { dayTotalSeconds, effectiveSeconds, missingSeconds, backdatedSeconds } =
-		useDayCalculation(worklogs, isWeekend, hasAbsence);
+	const {
+		dayTotalSeconds,
+		effectiveSeconds,
+		missingSeconds,
+		backdatedSeconds,
+	} = useDayCalculation(worklogs, isWeekend, hasAbsence);
 
 	const getDayClass = () => {
 		const classes = [styles.dayCell];
