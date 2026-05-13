@@ -15,6 +15,19 @@ function makeWorklog(seconds: number, day: string): EnrichedJiraWorklog {
 	} as EnrichedJiraWorklog;
 }
 
+function makeBackdatedWorklog(
+	seconds: number,
+	day: string,
+	originalDay: string,
+): EnrichedJiraWorklog {
+	return {
+		timeSpentSeconds: seconds,
+		started: `${day}T09:00:00.000Z`,
+		comment: `Original Worklog Date was: ${originalDay.replace(/-/g, '/')}`,
+		issue: { id: '1', key: 'JIRA-1', fields: { summary: 'x' } },
+	} as EnrichedJiraWorklog;
+}
+
 const sarah: Entry = [
 	'Sarah Johnson',
 	{
@@ -85,6 +98,28 @@ describe('OverviewTable filtering and inclusion policy', () => {
 		expect(
 			within(ghostRow as HTMLElement).getByText('0.0h'),
 		).toBeInTheDocument();
+	});
+
+	it('excludes backdated worklogs from the user row total and entry count', () => {
+		const entries: Entry[] = [
+			[
+				'Mixed User',
+				{
+					'2026-05-04': [
+						makeWorklog(3600 * 4, '2026-05-04'),
+						makeBackdatedWorklog(3600 * 3, '2026-05-04', '2026-04-15'),
+					],
+				},
+			],
+		];
+		render(<OverviewTable entries={entries} year={2026} monthZeroIndexed={4} />);
+		const row = screen.getByText('Mixed User').closest('tr');
+		expect(row).not.toBeNull();
+		// Hours column: only the 4h regular entry counts (not 7h).
+		expect(within(row as HTMLElement).getByText('4.0h')).toBeInTheDocument();
+		// Entries column should also exclude backdated -> 1, not 2.
+		const cells = (row as HTMLElement).querySelectorAll('td');
+		expect(cells[3].textContent).toBe('1');
 	});
 
 	it('sorts by Hours without crashing when zero-hour rows are present', () => {

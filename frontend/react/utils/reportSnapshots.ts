@@ -7,6 +7,7 @@ import {
 } from './date';
 import { formatHours } from './format';
 import type { ManagerTrendModel } from './teamReports';
+import { classifyWorklog } from './worklogClassifier';
 
 type SnapshotValidationState = {
 	status: string;
@@ -84,14 +85,15 @@ function summarizeMonthlyEntries(
 			let entryCount = 0;
 			const activeDaySet = new Set<string>();
 
-			// After ADA-219, the outer date key from `deriveMonthlyReportState`
-			// is already `classifyWorklog(wl).loggedOn`, so we can trust the
-			// key directly (same logged-policy rule as TimesheetGrid,
-			// OverviewTable, and CSV exports).
+			// The outer date key is already `classifyWorklog(wl).loggedOn`
+			// (ADA-219). Backdated entries are excluded from totals — they
+			// surface as ghosts / side notes only. CSV exports remain
+			// inclusive (see `csv.ts`).
 			for (const [dateKey, worklogs] of Object.entries(days)) {
 				if (!dateKey) continue;
 				if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
 				for (const worklog of worklogs) {
+					if (classifyWorklog(worklog).isBackdated) continue;
 					totalSeconds += worklog.timeSpentSeconds ?? 0;
 					entryCount += 1;
 					activeDaySet.add(dateKey);
@@ -120,14 +122,14 @@ function buildDailyBreakdown(
 ): DailyBreakdownRow[] {
 	if (!entry) return [];
 
-	// After ADA-219, the outer date key from `deriveMonthlyReportState` is
-	// already `classifyWorklog(wl).loggedOn`, so the breakdown matches the
-	// calendar grid by trusting the key directly.
+	// Outer key is `loggedOn` (ADA-219). Backdated entries are excluded so
+	// the breakdown matches the per-day totals shown in the calendar.
 	const buckets = new Map<string, { entries: number; totalSeconds: number }>();
 	for (const [dateKey, worklogs] of Object.entries(entry[1])) {
 		if (!dateKey) continue;
 		if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
 		for (const worklog of worklogs) {
+			if (classifyWorklog(worklog).isBackdated) continue;
 			const bucket = buckets.get(dateKey) ?? {
 				entries: 0,
 				totalSeconds: 0,

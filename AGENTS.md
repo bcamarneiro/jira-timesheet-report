@@ -80,7 +80,19 @@ Do not introduce a new `started`-based bucketing path. If a service-layer filter
 
 ### Ghost reconciliation UX
 
-Backdated entries render as **non-counting ghost placeholders** on their `intendedFor` day, with the real (counted) entry on `loggedOn`. Hours only sum once — on `loggedOn`. Ghosts are visual reconciliation, not data.
+Backdated entries (`classifyWorklog(wl).isBackdated === true`) are **never counted toward any total in the UI** — Dashboard, Reports weekly, Reports monthly, heatmaps, KPI cards, snapshots, copy-previous-week suggestions. They appear in two places, both informational:
+- On their `intendedFor` day as a **non-counting ghost placeholder**.
+- On their `loggedOn` day as a **non-counting side note** under the day total (e.g. `+2h backdated`) and in the day's "Backdated submissions" worklog section.
+
+Filtering sites (each guards a summation with `if (classifyWorklog(wl).isBackdated) continue;`):
+- **Day / Month**: `useDayCalculation`, `useMonthTotalCalculation`
+- **Monthly Reports KPIs / tables**: `TimesheetStatsCards`, `OverviewTable`, `TimesheetPage.sumMonthlyHours`, `reportSnapshots.summarizeMonthlyEntries` / `buildDailyBreakdown`
+- **Team weekly compliance**: `teamService` (daily/weekly totals — backdated tracked in a separate `backdatedSeconds` field), `teamReports.buildTeamSummaries`
+- **Heatmap**: `useMonthHeatmapData.buildMonthHeatmapBuckets` (excludes from `data`, populates separate `backdatedSeconds` for the overlay)
+- **Dashboard weekly**: `WorklogEntry.isBackdated` carried from `useDashboardDataFetcher.deriveWeekWorklogs` → consumed by `suggestionMerger.loggedByDay`
+- **Copy previous week**: `useCopyPreviousWeek.deriveWeekWorklogs`
+
+CSV exports (`csv.ts`, `weekCsvExport.ts`, `teamCsvExport.ts`) are the deliberate exception — they remain inclusive with `IsBackdated` / `BackdateSource` columns so downstream finance tooling can bucket on its own terms. The byte-stable invariant below applies.
 
 ### ServiceError, not raw Error
 

@@ -141,21 +141,21 @@ describe('useMonthTotalCalculation', () => {
 		expect(result.current.totalSeconds).toBe(10800); // 3 hours total
 	});
 
-	it('should count all worklogs in the days object regardless of comments', () => {
-		// Viewing February 2025
-		// Some worklogs have retroactive comments but we count ALL worklogs in the days object
+	it('excludes backdated worklogs from the month total', () => {
+		// Viewing February 2025 — backdated submissions show as ghosts/side notes,
+		// they do not contribute to the counted total for the month.
 		const days: Record<string, JiraWorklog[]> = {
 			'2025-02-05': [
-				createMockWorklog(3600, '2025-02-05T10:00:00.000Z'), // 1 hour
+				createMockWorklog(3600, '2025-02-05T10:00:00.000Z'), // 1 hour, regular
 				{
-					...createMockWorklog(7200, '2025-02-05T14:00:00.000Z'), // 2 hours
+					...createMockWorklog(7200, '2025-02-05T14:00:00.000Z'),
 					comment: 'Original Worklog Date was: 2025/01/20',
 				},
 			],
 			'2025-02-06': [
-				createMockWorklog(5400, '2025-02-06T10:00:00.000Z'), // 1.5 hours
+				createMockWorklog(5400, '2025-02-06T10:00:00.000Z'), // 1.5 hours, regular
 				{
-					...createMockWorklog(3600, '2025-02-06T14:00:00.000Z'), // 1 hour
+					...createMockWorklog(3600, '2025-02-06T14:00:00.000Z'),
 					comment: 'Work done earlier. Original Worklog Date was: 2025/01/15',
 				},
 			],
@@ -163,10 +163,10 @@ describe('useMonthTotalCalculation', () => {
 
 		const { result } = renderHook(() =>
 			useMonthTotalCalculation(days, 2025, 1),
-		); // Viewing February 2025
+		);
 
-		// Should count ALL worklogs: 3600 + 7200 + 5400 + 3600 = 19800 seconds
-		expect(result.current.totalSeconds).toBe(19800); // 5.5 hours total
+		// Only the non-backdated logs are counted: 3600 + 5400 = 9000 seconds
+		expect(result.current.totalSeconds).toBe(9000);
 	});
 
 	it('should handle large numbers of worklogs', () => {

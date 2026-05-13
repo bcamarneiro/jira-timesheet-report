@@ -38,10 +38,10 @@ describe('deriveWeekWorklogs (Copy Prev Week)', () => {
 		expect(entries[0].issueKey).toBe('PROJ-1');
 	});
 
-	it('Pattern A: comment marker for an earlier day — entry buckets by logged-on day (started), not the intended day', () => {
-		// Logged on 2026-04-22 (this prev week), but comment claims it was for 2026-04-15 (older week).
-		// Pattern A: started == loggedDate, comment marker carries the intended date.
-		// classifyWorklog.loggedOn should be 2026-04-22, so the entry shows up in this week.
+	it('Pattern A: comment-marker backdates are skipped — Copy Prev Week should not propagate them', () => {
+		// Backdated submissions don't represent recurring work for the previous
+		// week; they're catch-up entries. Excluding them prevents the
+		// suggestion engine from cloning a one-off backdate into next week.
 		const wl = makeWorklog({
 			started: '2026-04-22T10:00:00.000+0000',
 			created: '2026-04-22T10:00:00.000+0000',
@@ -54,10 +54,9 @@ describe('deriveWeekWorklogs (Copy Prev Week)', () => {
 			weekStart,
 			weekEnd,
 		);
-		expect(entriesInThisWeek).toHaveLength(1);
-		expect(entriesInThisWeek[0].date).toBe('2026-04-22');
+		expect(entriesInThisWeek).toHaveLength(0);
 
-		// And it must NOT show up under the older intended week (2026-04-13..2026-04-19).
+		// Same data: not in the older intended week either.
 		const entriesInOlderWeek = deriveWeekWorklogs(
 			[wl],
 			EMAIL,
@@ -67,21 +66,16 @@ describe('deriveWeekWorklogs (Copy Prev Week)', () => {
 		expect(entriesInOlderWeek).toHaveLength(0);
 	});
 
-	it('Pattern B (jira-native): started in past week, created later — entry buckets by created (logged-on)', () => {
-		// Pattern B: started is the past intended date, created is the actual log date.
-		// loggedOn === created. The entry should show up in the week of `created`,
-		// not the week of `started`.
+	it('Pattern B (jira-native): backdates are skipped — Copy Prev Week should not propagate them', () => {
 		const wl = makeWorklog({
 			started: '2026-03-10T09:00:00.000+0000', // March intended date
-			created: '2026-04-22T15:00:00.000+0000', // logged in April
+			created: '2026-04-22T15:00:00.000+0000', // logged in April (different month → backdate)
 			comment: '',
 		});
 
 		const aprilWeek = deriveWeekWorklogs([wl], EMAIL, weekStart, weekEnd);
-		expect(aprilWeek).toHaveLength(1);
-		expect(aprilWeek[0].date).toBe('2026-04-22');
+		expect(aprilWeek).toHaveLength(0);
 
-		// Same data: must NOT bucket into the original March week.
 		const marchWeek = deriveWeekWorklogs(
 			[wl],
 			EMAIL,

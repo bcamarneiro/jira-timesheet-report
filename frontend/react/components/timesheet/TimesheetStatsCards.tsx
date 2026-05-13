@@ -2,6 +2,7 @@ import type React from 'react';
 import { useMemo } from 'react';
 import type { EnrichedJiraWorklog } from '../../../../types/jira';
 import { isDateInMonth } from '../../utils/date';
+import { classifyWorklog } from '../../utils/worklogClassifier';
 import { StatCard } from '../ui/StatCard';
 import * as styles from './TimesheetStatsCards.module.css';
 
@@ -24,6 +25,7 @@ export const TimesheetStatsCards: React.FC<Props> = ({
 			for (const [dateKey, worklogs] of Object.entries(days)) {
 				if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
 				for (const wl of worklogs) {
+					if (classifyWorklog(wl).isBackdated) continue;
 					totalSeconds += wl.timeSpentSeconds ?? 0;
 					totalEntries++;
 				}

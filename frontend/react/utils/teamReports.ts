@@ -62,9 +62,13 @@ export function buildTeamSummaries(
 		if (!email) continue;
 		if (allowedSet && !allowedSet.has(email)) continue;
 
-		const day = classifyWorklog(worklog).loggedOn;
+		const c = classifyWorklog(worklog);
+		const day = c.loggedOn;
 		if (!day) continue;
 		if (day < weekStart || day > weekEnd) continue;
+		// Backdated worklogs don't count toward weekly totals — see
+		// AGENTS.md ghost-reconciliation invariant.
+		if (c.isBackdated) continue;
 
 		let member = memberMap.get(email);
 		if (!member) {

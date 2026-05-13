@@ -31,9 +31,13 @@ export function buildMonthHeatmapBuckets(
 		const day = c.loggedOn;
 		const seconds = wl.timeSpentSeconds ?? 0;
 		if (day) {
-			dayMap.set(day, (dayMap.get(day) ?? 0) + seconds);
 			if (c.isBackdated) {
+				// Backdated entries don't contribute to the cell total — they
+				// only feed the overlay stripe. Matches the day-cell rule in
+				// useDayCalculation.
 				backdated.set(day, (backdated.get(day) ?? 0) + seconds);
+			} else {
+				dayMap.set(day, (dayMap.get(day) ?? 0) + seconds);
 			}
 		}
 	}
@@ -43,10 +47,9 @@ export function buildMonthHeatmapBuckets(
 interface MonthHeatmapResult {
 	data: Map<string, number>;
 	/**
-	 * Per-day backdated seconds: portion of `data[day]` that came from
-	 * worklogs whose intendedFor predates loggedOn. Drives a stripe overlay
-	 * on the heatmap so users can tell "this day's hours include backdated
-	 * work" without changing the cell's total.
+	 * Per-day backdated seconds — NOT counted in `data`. Drives a stripe
+	 * overlay on the heatmap so users can see "this day has backdated
+	 * submissions" without inflating the cell's total/colour intensity.
 	 */
 	backdatedSeconds: Map<string, number>;
 	isLoading: boolean;

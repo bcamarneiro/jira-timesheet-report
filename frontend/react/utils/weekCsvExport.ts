@@ -24,19 +24,15 @@ export interface WeeklyCsvProvenance {
 	generatedAt?: string;
 }
 
-function classifyEntry(entry: WeekWorklogEntry): {
-	isBackdated: boolean;
-	daysLate: number;
-} {
+function isEntryBackdated(entry: WeekWorklogEntry): boolean {
 	// `entry.date` is already the classifier-bucketed `loggedOn` for the
 	// dashboard. We synthesise a shape compatible with the classifier so the
-	// returned isBackdated/daysLate match what the rest of the app reports.
-	const c = classifyWorklog({
+	// returned isBackdated matches what the rest of the app reports.
+	return classifyWorklog({
 		started: `${entry.date}T00:00:00`,
 		created: entry.created,
 		comment: entry.comment,
-	});
-	return { isBackdated: c.isBackdated, daysLate: c.daysLate };
+	}).isBackdated;
 }
 
 export function generateWeeklyCsv(
@@ -53,7 +49,6 @@ export function generateWeeklyCsv(
 		'Time Spent (hours)',
 		'Time Spent (formatted)',
 		'IsBackdated',
-		'DaysLate',
 	].join(SEP);
 	const metadata = [`Week Range`, `${weekStart} to ${weekEnd}`].join(SEP);
 
@@ -64,12 +59,16 @@ export function generateWeeklyCsv(
 		return a.issueKey.localeCompare(b.issueKey);
 	});
 
-	const rows = sorted.map((entry) => {
+	const classified = sorted.map((entry) => ({
+		entry,
+		isBackdated: isEntryBackdated(entry),
+	}));
+
+	const rows = classified.map(({ entry, isBackdated }) => {
 		const d = parseIsoDateLocal(entry.date);
 		const dayLabel = DAY_LABELS[d.getDay()];
 		const hours = entry.timeSpentSeconds / 3600;
 		const formatted = formatDuration(entry.timeSpentSeconds);
-		const { isBackdated, daysLate } = classifyEntry(entry);
 
 		return [
 			entry.date,
@@ -79,7 +78,6 @@ export function generateWeeklyCsv(
 			hours.toFixed(2),
 			formatted,
 			isBackdated ? 'true' : 'false',
-			String(daysLate),
 		].join(SEP);
 	});
 
@@ -87,16 +85,24 @@ export function generateWeeklyCsv(
 		(sum, entry) => sum + entry.timeSpentSeconds,
 		0,
 	);
-	const totalRow = [
-		'Week Total',
-		'',
-		'',
-		'',
-		(totalSeconds / 3600).toFixed(2),
-		formatDuration(totalSeconds),
-		'',
-		'',
-	].join(SEP);
+	const backdatedSeconds = classified.reduce(
+		(sum, c) => sum + (c.isBackdated ? c.entry.timeSpentSeconds : 0),
+		0,
+	);
+	const nonBackdatedSeconds = totalSeconds - backdatedSeconds;
+	const makeTotalRow = (label: string, seconds: number) =>
+		[
+			label,
+			'',
+			'',
+			'',
+			(seconds / 3600).toFixed(2),
+			formatDuration(seconds),
+			'',
+		].join(SEP);
+	const backdatedRow = makeTotalRow('Backdated', backdatedSeconds);
+	const nonBackdatedRow = makeTotalRow('Non-backdated', nonBackdatedSeconds);
+	const totalRow = makeTotalRow('Week Total', totalSeconds);
 
 	const provenanceFooter = buildProvenanceFooter({
 		policy: 'logged',
@@ -105,5 +111,13 @@ export function generateWeeklyCsv(
 		omitMissingVersion: true,
 	});
 
-	return [metadata, headers, ...rows, totalRow, provenanceFooter].join('\n');
+	return [
+		metadata,
+		headers,
+		...rows,
+		backdatedRow,
+		nonBackdatedRow,
+		totalRow,
+		provenanceFooter,
+	].join('\n');
 }

@@ -30,6 +30,7 @@ import { addDaysToIsoDate, monthLabel } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
 import { deriveMonthlyReportState } from '../utils/monthlyReport';
 import { validateReportsConsistency } from '../utils/reportConsistency';
+import { classifyWorklog } from '../utils/worklogClassifier';
 import {
 	buildReportsSnapshotHtml,
 	buildReportsSnapshotMarkdown,
@@ -92,6 +93,7 @@ function sumMonthlyHours(
 		for (const [dateKey, worklogs] of Object.entries(days)) {
 			if (!dateKey.startsWith(monthPrefix)) continue;
 			for (const worklog of worklogs) {
+				if (classifyWorklog(worklog).isBackdated) continue;
 				totalSeconds += worklog.timeSpentSeconds ?? 0;
 			}
 		}

@@ -297,6 +297,37 @@ describe('mergeSuggestions: classifier contract for existingWorklogs', () => {
 	});
 });
 
+describe('mergeSuggestions: backdated worklogs do not count toward day totals', () => {
+	it('excludes backdated existingWorklogs from loggedSeconds and gapSeconds', () => {
+		const result = mergeSuggestions({
+			weekStart: '2026-04-13',
+			jiraSuggestions: [],
+			gitlabSuggestions: [],
+			calendarSuggestions: [],
+			rescueTimeData: new Map(),
+			existingWorklogs: [
+				// Regular 4h log on Wed.
+				{
+					date: '2026-04-15',
+					issueKey: 'PROJ-1',
+					timeSpentSeconds: 4 * 3600,
+				},
+				// Backdated 3h log on the SAME day — must NOT inflate loggedSeconds.
+				{
+					date: '2026-04-15',
+					issueKey: 'PROJ-2',
+					timeSpentSeconds: 3 * 3600,
+					isBackdated: true,
+				},
+			],
+		});
+
+		const wed = result.find((d) => d.date === '2026-04-15');
+		expect(wed?.loggedSeconds).toBe(4 * 3600);
+		expect(wed?.gapSeconds).toBe(4 * 3600);
+	});
+});
+
 describe('roundingStepSeconds', () => {
 	it('returns 60 (one-minute) when rounding is off', () => {
 		expect(roundingStepSeconds('off')).toBe(60);

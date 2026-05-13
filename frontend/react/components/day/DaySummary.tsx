@@ -10,6 +10,7 @@ type Props = {
 	isWeekend: boolean;
 	isAbsent?: boolean;
 	absenceKind?: AbsenceKind;
+	backdatedSeconds?: number;
 };
 
 export const DaySummary: React.FC<Props> = ({
@@ -18,9 +19,9 @@ export const DaySummary: React.FC<Props> = ({
 	isWeekend,
 	isAbsent = false,
 	absenceKind,
+	backdatedSeconds = 0,
 }) => {
-	// Don't render anything on days with no activity
-	if (dayTotalSeconds === 0 && isWeekend) return null;
+	if (dayTotalSeconds === 0 && backdatedSeconds === 0 && isWeekend) return null;
 
 	return (
 		<div className={styles.container}>
@@ -30,6 +31,14 @@ export const DaySummary: React.FC<Props> = ({
 			{isAbsent && (
 				<span className={styles.absence}>
 					{getAbsenceKindLabel(absenceKind)}
+				</span>
+			)}
+			{backdatedSeconds > 0 && (
+				<span
+					className={styles.backdated}
+					title="Backdated submissions — not counted toward this day's total"
+				>
+					+{formatHours(backdatedSeconds)} backdated
 				</span>
 			)}
 			{missingSeconds > 0 && (

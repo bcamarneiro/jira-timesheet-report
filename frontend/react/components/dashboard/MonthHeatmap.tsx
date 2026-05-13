@@ -159,7 +159,7 @@ export const MonthHeatmap: React.FC<Props> = ({
 							? `${cell.dateStr}: ${formatHours(cell.seconds)}`
 							: `${cell.dateStr}: no time logged`;
 					const title = hasBackdated
-						? `${baseTitle} (includes ${formatHours(backdated)} backdated)`
+						? `${baseTitle} (+ ${formatHours(backdated)} backdated, not counted)`
 						: baseTitle;
 
 					return (

@@ -15,7 +15,7 @@ const PROVENANCE = {
 };
 
 const HEADER =
-	'Name;TicketKey;TicketName;IntendedDate;LoggedDate;DaysLate;IsBackdated;BackdateSource;BookedHours';
+	'Name;TicketKey;TicketName;IntendedDate;LoggedDate;IsBackdated;BookedHours';
 
 const mockIssue = {
 	id: '12345',
@@ -42,7 +42,7 @@ function entry(over: Partial<EnrichedJiraWorklog>): EnrichedJiraWorklog {
 }
 
 describe('buildTimesheetCsv', () => {
-	it('emits header, total, backdated, and provenance for an empty input', () => {
+	it('emits header, three totals rows, and provenance for an empty input', () => {
 		const result = buildTimesheetCsv({
 			worklogs: [],
 			issueSummaries: {},
@@ -52,9 +52,10 @@ describe('buildTimesheetCsv', () => {
 		});
 		const lines = result.split('\n');
 		expect(lines[0]).toBe(HEADER);
-		expect(lines[1]).toBe(';;;;;;;Total;0.00');
-		expect(lines[2]).toBe(';;;;;;;Backdated;0.00');
-		expect(lines[3]).toBe(
+		expect(lines[1]).toBe(';;;;;Backdated;0.00');
+		expect(lines[2]).toBe(';;;;;Non-backdated;0.00');
+		expect(lines[3]).toBe(';;;;;Total;0.00');
+		expect(lines[4]).toBe(
 			'# generated=2026-05-08T10:00:00.000Z jira=mock.atlassian.net policy=logged period=2025-01 version=test',
 		);
 	});
@@ -69,7 +70,7 @@ describe('buildTimesheetCsv', () => {
 		});
 		const lines = result.split('\n');
 		expect(lines[1]).toBe(
-			'John Doe;PROJ-123;Test Issue Summary;2025-01-15;2025-01-15;0;false;none;2.00',
+			'John Doe;PROJ-123;Test Issue Summary;2025-01-15;2025-01-15;false;2.00',
 		);
 	});
 
@@ -90,7 +91,7 @@ describe('buildTimesheetCsv', () => {
 		});
 		const lines = result.split('\n');
 		expect(lines[1]).toBe(
-			'John Doe;PROJ-123;Test Issue;2025-01-20;2025-02-05;16;true;comment;1.00',
+			'John Doe;PROJ-123;Test Issue;2025-01-20;2025-02-05;true;1.00',
 		);
 	});
 
@@ -111,7 +112,7 @@ describe('buildTimesheetCsv', () => {
 		});
 		const lines = result.split('\n');
 		expect(lines[1]).toBe(
-			'John Doe;PROJ-123;Test Issue;2025-09-28;2025-10-02;4;true;jira-native;8.00',
+			'John Doe;PROJ-123;Test Issue;2025-09-28;2025-10-02;true;8.00',
 		);
 	});
 
@@ -138,10 +139,10 @@ describe('buildTimesheetCsv', () => {
 			provenance: PROVENANCE,
 		}).split('\n');
 
-		// header + 1 data row + total + backdated + provenance
-		expect(loggedMonth).toHaveLength(5);
-		// header + total + backdated + provenance (no data rows)
-		expect(intendedMonth).toHaveLength(4);
+		// header + 1 data row + 3 total rows + provenance
+		expect(loggedMonth).toHaveLength(6);
+		// header + 3 total rows + provenance (no data rows)
+		expect(intendedMonth).toHaveLength(5);
 	});
 
 	it('policy=intended places the backdate in the intended month instead', () => {
@@ -167,25 +168,25 @@ describe('buildTimesheetCsv', () => {
 			provenance: PROVENANCE,
 		}).split('\n');
 
-		expect(intendedMonth).toHaveLength(5);
-		expect(loggedMonth).toHaveLength(4);
+		expect(intendedMonth).toHaveLength(6);
+		expect(loggedMonth).toHaveLength(5);
 	});
 
-	it('totals reconcile to filtered rows and a Backdated subtotal is emitted', () => {
+	it('emits Backdated, Non-backdated, and Total subtotals that reconcile to filtered rows', () => {
 		const result = buildTimesheetCsv({
 			worklogs: [
 				entry({
 					id: '1',
 					started: '2025-10-02T10:00:00.000Z',
 					created: '2025-10-02T10:00:00.000Z',
-					timeSpentSeconds: 14400,
+					timeSpentSeconds: 14400, // 4h regular
 					comment: '',
 				}),
 				entry({
 					id: '2',
 					started: '2025-09-28T10:00:00.000Z',
 					created: '2025-10-02T10:00:00.000Z',
-					timeSpentSeconds: 28800,
+					timeSpentSeconds: 28800, // 8h backdated
 					comment: '',
 				}),
 			],
@@ -195,11 +196,14 @@ describe('buildTimesheetCsv', () => {
 			provenance: PROVENANCE,
 		}).split('\n');
 
-		expect(result.find((l) => l.startsWith(';;;;;;;Total;'))).toBe(
-			';;;;;;;Total;12.00',
+		expect(result.find((l) => l.startsWith(';;;;;Backdated;'))).toBe(
+			';;;;;Backdated;8.00',
 		);
-		expect(result.find((l) => l.startsWith(';;;;;;;Backdated;'))).toBe(
-			';;;;;;;Backdated;8.00',
+		expect(result.find((l) => l.startsWith(';;;;;Non-backdated;'))).toBe(
+			';;;;;Non-backdated;4.00',
+		);
+		expect(result.find((l) => l.startsWith(';;;;;Total;'))).toBe(
+			';;;;;Total;12.00',
 		);
 	});
 
@@ -218,7 +222,7 @@ describe('buildTimesheetCsv', () => {
 		}).split('\n');
 
 		expect(result[1]).toBe(
-			'"Jane, Doe";PROJ-123;"Issue with ""quotes"" and, commas";2025-01-15;2025-01-15;0;false;none;0.50',
+			'"Jane, Doe";PROJ-123;"Issue with ""quotes"" and, commas";2025-01-15;2025-01-15;false;0.50',
 		);
 	});
 

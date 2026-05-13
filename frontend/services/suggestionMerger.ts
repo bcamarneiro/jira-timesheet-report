@@ -16,6 +16,8 @@ interface WorklogEntry {
 	date: string;
 	issueKey?: string;
 	timeSpentSeconds: number;
+	/** Backdated entries are tracked but excluded from `loggedByDay` totals. */
+	isBackdated?: boolean;
 }
 
 export interface MergeSuggestionsInput {
@@ -251,7 +253,11 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 
 	for (const wl of existingWorklogs) {
 		const day = wl.date.slice(0, 10);
-		loggedByDay.set(day, (loggedByDay.get(day) || 0) + wl.timeSpentSeconds);
+		// Backdated entries don't contribute to the day's logged total —
+		// they only feed the Dashboard ghost / side-note UI.
+		if (!wl.isBackdated) {
+			loggedByDay.set(day, (loggedByDay.get(day) || 0) + wl.timeSpentSeconds);
+		}
 		if (wl.issueKey) {
 			loggedSet.add(`${day}::${wl.issueKey}`);
 		}

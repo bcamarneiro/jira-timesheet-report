@@ -66,7 +66,7 @@ describe('buildMonthHeatmapBuckets', () => {
 		expect(r.backdatedSeconds.get('2025-10-15') ?? 0).toBe(0);
 	});
 
-	it('records backdated seconds on the loggedOn day', () => {
+	it('records backdated seconds on the loggedOn day but excludes them from the cell total', () => {
 		// Started 2025-09-30, created 2025-10-15 — jira-native backdate.
 		// loggedOn=2025-10-15, intendedFor=2025-09-30, isBackdated=true.
 		const r = buildMonthHeatmapBuckets(
@@ -79,8 +79,31 @@ describe('buildMonthHeatmapBuckets', () => {
 			],
 			EMAIL,
 		);
-		expect(r.data.get('2025-10-15')).toBe(7200);
+		// `data` is the cell total used for color intensity — must not be
+		// inflated by backdated entries.
+		expect(r.data.get('2025-10-15') ?? 0).toBe(0);
 		expect(r.backdatedSeconds.get('2025-10-15')).toBe(7200);
+	});
+
+	it('keeps regular and backdated hours in separate buckets on the same day', () => {
+		const r = buildMonthHeatmapBuckets(
+			[
+				makeWorklog({
+					id: 'regular',
+					started: '2025-10-15T09:00:00Z',
+					timeSpentSeconds: 3600,
+				}),
+				makeWorklog({
+					id: 'backdated',
+					started: '2025-09-30T09:00:00Z',
+					created: '2025-10-15T09:00:00Z',
+					timeSpentSeconds: 5400,
+				}),
+			],
+			EMAIL,
+		);
+		expect(r.data.get('2025-10-15')).toBe(3600);
+		expect(r.backdatedSeconds.get('2025-10-15')).toBe(5400);
 	});
 
 	it('skips worklogs from other authors', () => {

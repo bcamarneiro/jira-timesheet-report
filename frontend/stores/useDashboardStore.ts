@@ -39,6 +39,12 @@ export interface WeekWorklogEntry {
 	created?: string;
 	/** Worklog comment, used by classifiers to detect retroactive logging. */
 	comment?: string;
+	/**
+	 * Set at fetch time from `classifyWorklog`. Backdated entries are
+	 * excluded from day/week totals everywhere but the CSV export (per
+	 * AGENTS.md ghost-reconciliation invariant).
+	 */
+	isBackdated?: boolean;
 }
 
 /**

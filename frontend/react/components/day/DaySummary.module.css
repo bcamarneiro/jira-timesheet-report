@@ -18,3 +18,9 @@
 .absence {
 	color: var(--color-warning);
 }
+
+.backdated {
+	color: var(--color-text-muted, var(--color-text));
+	font-weight: var(--font-regular);
+	opacity: 0.7;
+}

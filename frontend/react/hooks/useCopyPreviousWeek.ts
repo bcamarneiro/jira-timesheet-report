@@ -56,11 +56,11 @@ export function deriveWeekWorklogs(
 
 	for (const wl of worklogs) {
 		if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
-		// Bucket by classifier-derived logged-policy day so backdated entries
-		// (Pattern A comment-marker, Pattern B jira-native) land in the week
-		// they were actually logged in — matching what the dashboard grid
-		// shows under the previous week.
-		const day = classifyWorklog(wl).loggedOn;
+		// Skip backdated submissions entirely — they don't represent recurring
+		// work for that week and shouldn't seed next-week suggestions.
+		const c = classifyWorklog(wl);
+		if (c.isBackdated) continue;
+		const day = c.loggedOn;
 		if (day && day >= weekStart && day <= weekEnd) {
 			entries.push({
 				date: day,

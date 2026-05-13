@@ -6,6 +6,7 @@ import { countAbsenceWorkdaysInMonth } from '../utils/absence';
 import { getWorkingDaysInMonth, isDateInMonth } from '../utils/date';
 import { computeCompliancePct } from '../utils/format';
 import { getInitials } from '../utils/text';
+import { classifyWorklog } from '../utils/worklogClassifier';
 import * as styles from './OverviewTable.module.css';
 import { ProgressBar } from './ui/ProgressBar';
 
@@ -52,14 +53,14 @@ export const OverviewTable: React.FC<Props> = ({
 			let totalSeconds = 0;
 			let worklogCount = 0;
 
-			// After ADA-219, the outer date key from `deriveMonthlyReportState`
-			// is already `classifyWorklog(wl).loggedOn`, so we can trust the
-			// key directly (same logged-policy rule as TimesheetGrid and CSV
-			// exports).
+			// The outer date key from `deriveMonthlyReportState` is already
+			// `classifyWorklog(wl).loggedOn` (ADA-219). Backdated entries are
+			// excluded from totals — they show as a side note / ghost only.
 			for (const [dateKey, worklogs] of Object.entries(days)) {
 				if (!dateKey) continue;
 				if (!isDateInMonth(dateKey, year, monthZeroIndexed)) continue;
 				for (const wl of worklogs) {
+					if (classifyWorklog(wl).isBackdated) continue;
 					totalSeconds += wl.timeSpentSeconds ?? 0;
 					worklogCount++;
 				}

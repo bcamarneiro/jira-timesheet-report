@@ -235,12 +235,17 @@ export async function fetchTeamWorklogs(
 			memberMap.set(email, member);
 		}
 
-		const existing = member.dailySeconds.get(day) || 0;
-		member.dailySeconds.set(day, existing + wl.timeSpentSeconds);
 		if (c.isBackdated) {
+			// Backdated worklogs are tracked separately for the side-panel
+			// breakdown but do NOT contribute to daily/weekly totals or
+			// compliance % (project-wide invariant — see AGENTS.md).
 			member.backdatedSeconds += wl.timeSpentSeconds;
 			member.backdatedCount += 1;
+			continue;
 		}
+
+		const existing = member.dailySeconds.get(day) || 0;
+		member.dailySeconds.set(day, existing + wl.timeSpentSeconds);
 	}
 
 	// Ensure all allowed users appear even with zero hours

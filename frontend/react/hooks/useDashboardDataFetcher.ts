@@ -28,6 +28,12 @@ interface WorklogEntry {
 	timeSpentSeconds: number;
 	created?: string;
 	comment?: string;
+	/**
+	 * Backdated worklogs (resolved by the classifier at fetch time) are
+	 * carried through so downstream day/week totals can skip them. They still
+	 * appear in the UI as side notes / ghost reconciliations.
+	 */
+	isBackdated?: boolean;
 }
 
 /** Derive WorklogEntry[] from the shared month query, filtered to a week range */
@@ -42,7 +48,8 @@ export function deriveWeekWorklogs(
 
 	for (const wl of worklogs) {
 		if (wl.author?.emailAddress?.toLowerCase() !== lowerEmail) continue;
-		const day = classifyWorklog(wl).loggedOn;
+		const c = classifyWorklog(wl);
+		const day = c.loggedOn;
 		if (day >= weekStart && day <= weekEnd) {
 			entries.push({
 				date: day,
@@ -51,6 +58,7 @@ export function deriveWeekWorklogs(
 				timeSpentSeconds: wl.timeSpentSeconds ?? 0,
 				created: wl.created,
 				comment: typeof wl.comment === 'string' ? wl.comment : undefined,
+				isBackdated: c.isBackdated,
 			});
 		}
 	}

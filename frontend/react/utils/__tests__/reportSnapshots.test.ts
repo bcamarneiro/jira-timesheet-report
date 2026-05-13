@@ -125,6 +125,41 @@ describe('buildReportsSnapshotMarkdown', () => {
 	});
 });
 
+describe('monthly snapshot — backdated exclusion', () => {
+	it('excludes backdated worklogs from the user total, entry count, and daily breakdown', () => {
+		const backdated: EnrichedJiraWorklog = {
+			...createWorklog('Alice', '2026-03-03', 3 * 3600),
+			comment: 'Original Worklog Date was: 2026/02/15',
+		};
+		const output = buildReportsSnapshotMarkdown({
+			viewMode: 'monthly',
+			jiraHost: 'example.atlassian.net',
+			monthLabel: 'March 2026',
+			year: 2026,
+			monthZeroIndexed: 2,
+			searchQuery: '',
+			selectedUser: 'Alice',
+			entries: [
+				[
+					'Alice',
+					{
+						'2026-03-03': [
+							createWorklog('Alice', '2026-03-03', 4 * 3600),
+							backdated,
+						],
+						'2026-03-04': [createWorklog('Alice', '2026-03-04', 2 * 3600)],
+					},
+				],
+			],
+		});
+
+		// Row total = 4h + 2h = 6h (NOT 9h). Entries column = 2 (NOT 3).
+		expect(output).toContain('| Alice | 6h | 2 | 2 |');
+		// Daily breakdown for 03-03 shows only the regular 4h / 1 entry.
+		expect(output).toContain('- 2026-03-03: 4h across 1 entry');
+	});
+});
+
 describe('buildReportsSnapshotHtml', () => {
 	it('builds a weekly html snapshot with a visible team table', () => {
 		const output = buildReportsSnapshotHtml({

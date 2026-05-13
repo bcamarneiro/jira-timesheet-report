@@ -60,6 +60,35 @@ describe('buildTeamSummaries', () => {
 		expect(summaries[2]?.targetSeconds).toBe(40 * 3600);
 	});
 
+	it('excludes backdated worklogs from a member weekly total and gap', () => {
+		const summaries = buildTeamSummaries(
+			[
+				createWorklog(
+					'alice@example.com',
+					'Alice',
+					'2026-03-03T09:00:00.000+0000',
+					32 * 3600,
+				),
+				{
+					...createWorklog(
+						'alice@example.com',
+						'Alice',
+						'2026-03-04T09:00:00.000+0000',
+						8 * 3600,
+					),
+					comment: 'Original Worklog Date was: 2026/02/15',
+				} as WorklogItem,
+			],
+			'2026-03-02',
+			'2026-03-08',
+			'alice@example.com',
+		);
+
+		// Without the 8h backdated log Alice has 32h of 40h target.
+		expect(summaries[0]?.totalSeconds).toBe(32 * 3600);
+		expect(summaries[0]?.gapSeconds).toBe(8 * 3600);
+	});
+
 	it('reduces a member target when a shared absence assignment covers part of the week', () => {
 		const absenceDaysByUser = new Map([
 			[
@@ -191,7 +220,11 @@ describe('buildManagerTrendModel', () => {
 		expect(model.weeks[0]?.complianceRate).toBe(100);
 	});
 
-	it('buckets Pattern B jira-native backdates by loggedOn (created) week, not started', () => {
+	it('excludes Pattern B jira-native backdates from weekly totals entirely', () => {
+		// Started 2025-09-28, created 2025-10-06 (different month) — classifier
+		// flags this as a backdated submission. Per the project-wide invariant,
+		// backdated worklogs never contribute to a week's total. They show as
+		// ghosts/side notes in the UI and remain in CSV exports for finance.
 		const model = buildManagerTrendModel(
 			[
 				createWorklog(
@@ -212,9 +245,9 @@ describe('buildManagerTrendModel', () => {
 			'2025-09-29',
 			'2025-10-06',
 		]);
-		// Worklog should be bucketed into the week containing the created date (2025-10-06).
-		expect(model.weeks[2]?.totalSeconds).toBe(4 * 3600);
-		// And NOT in the week containing the started date (2025-09-28).
+		// Not counted on loggedOn week...
+		expect(model.weeks[2]?.totalSeconds).toBe(0);
+		// ...and not counted on intendedFor week either.
 		expect(model.weeks[1]?.totalSeconds).toBe(0);
 		expect(model.weeks[0]?.totalSeconds).toBe(0);
 	});

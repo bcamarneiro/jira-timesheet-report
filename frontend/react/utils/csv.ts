@@ -30,9 +30,7 @@ const TIMESHEET_HEADERS = [
 	'TicketName',
 	'IntendedDate',
 	'LoggedDate',
-	'DaysLate',
 	'IsBackdated',
-	'BackdateSource',
 	'BookedHours',
 ];
 
@@ -116,9 +114,7 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 			csvEscape(ticketName),
 			c.intendedFor,
 			c.loggedOn,
-			c.daysLate.toString(),
 			c.isBackdated ? 'true' : 'false',
-			c.source,
 			hours,
 		].join(SEP);
 	});
@@ -133,28 +129,17 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 			(r.classified.isBackdated ? (r.entry.timeSpentSeconds ?? 0) / 3600 : 0),
 		0,
 	);
-	const totalRow = [
-		'',
-		'',
-		'',
-		'',
-		'',
-		'',
-		'',
-		'Total',
-		totalHours.toFixed(2),
+	const nonBackdatedHours = totalHours - backdatedHours;
+	const totalsPad = ['', '', '', '', ''];
+	const backdatedRow = [...totalsPad, 'Backdated', backdatedHours.toFixed(2)].join(
+		SEP,
+	);
+	const nonBackdatedRow = [
+		...totalsPad,
+		'Non-backdated',
+		nonBackdatedHours.toFixed(2),
 	].join(SEP);
-	const backdatedRow = [
-		'',
-		'',
-		'',
-		'',
-		'',
-		'',
-		'',
-		'Backdated',
-		backdatedHours.toFixed(2),
-	].join(SEP);
+	const totalRow = [...totalsPad, 'Total', totalHours.toFixed(2)].join(SEP);
 
 	const periodLabel = period
 		? `${period.year}-${String(period.month + 1).padStart(2, '0')}`
@@ -170,8 +155,9 @@ export function buildTimesheetCsv(opts: BuildTimesheetCsvOptions): string {
 	return [
 		headerLine,
 		...dataLines,
-		totalRow,
 		backdatedRow,
+		nonBackdatedRow,
+		totalRow,
 		provenanceLine,
 	].join('\n');
 }

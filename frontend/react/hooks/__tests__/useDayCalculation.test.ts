@@ -115,6 +115,39 @@ describe('useDayCalculation', () => {
 		});
 	});
 
+	describe('backdated worklogs', () => {
+		it('excludes backdated submissions from dayTotalSeconds', () => {
+			const regular = createMockWorklog(28800, '2025-10-15T09:00:00.000Z');
+			const backdated: JiraWorklog = {
+				...createMockWorklog(14400, '2025-10-15T18:00:00.000Z'),
+				comment: 'Original Worklog Date was: 2025/10/01',
+			};
+
+			const { result } = renderHook(() =>
+				useDayCalculation([regular, backdated], false),
+			);
+
+			expect(result.current.dayTotalSeconds).toBe(28800);
+			expect(result.current.backdatedSeconds).toBe(14400);
+			expect(result.current.missingSeconds).toBe(0);
+		});
+
+		it('reports backdatedSeconds even when there are no other logs', () => {
+			const backdated: JiraWorklog = {
+				...createMockWorklog(7200, '2025-10-15T18:00:00.000Z'),
+				comment: 'Original Worklog Date was: 2025/10/01',
+			};
+
+			const { result } = renderHook(() =>
+				useDayCalculation([backdated], false),
+			);
+
+			expect(result.current.dayTotalSeconds).toBe(0);
+			expect(result.current.backdatedSeconds).toBe(7200);
+			expect(result.current.missingSeconds).toBe(28800);
+		});
+	});
+
 	describe('reactivity', () => {
 		it('should recalculate when worklogs change', () => {
 			const initialWorklogs = [
