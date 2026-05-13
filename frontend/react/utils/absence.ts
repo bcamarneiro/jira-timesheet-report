@@ -40,6 +40,8 @@ export function getAbsenceKindLabel(kind: AbsenceKind | undefined): string {
 			return 'Sick';
 		case 'off':
 			return 'Off';
+		case 'holiday':
+			return 'Holiday';
 		default:
 			return 'Time off';
 	}
@@ -55,6 +57,8 @@ export function getAbsenceKindShortLabel(
 			return 'sick';
 		case 'off':
 			return 'off';
+		case 'holiday':
+			return 'hol';
 		default:
 			return 'off';
 	}

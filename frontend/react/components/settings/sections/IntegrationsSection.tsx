@@ -59,6 +59,7 @@ type Props = {
 	// Calendar feeds
 	suggestionFeedEntries: FeedEntry[];
 	absenceFeedEntries: FeedEntry[];
+	holidayFeedEntries: FeedEntry[];
 	hasSharedAbsenceFeedsWithoutAssignments: boolean;
 	showAbsenceAssignments: boolean;
 	addCalendarFeed: (type: CalendarFeed['type']) => void;
@@ -113,6 +114,7 @@ export const IntegrationsSection: React.FC<Props> = ({
 	hasCalendarFeeds,
 	suggestionFeedEntries,
 	absenceFeedEntries,
+	holidayFeedEntries,
 	hasSharedAbsenceFeedsWithoutAssignments,
 	showAbsenceAssignments,
 	addCalendarFeed,
@@ -505,6 +507,88 @@ export const IntegrationsSection: React.FC<Props> = ({
 							below so shared events reduce the right person’s target hours.
 						</p>
 					) : null}
+				</div>
+
+				<div className={styles.calendarSection}>
+					<div className={styles.calendarSectionHeader}>
+						<div>
+							<h3 className={styles.calendarSectionTitle}>Public holidays</h3>
+							<p className={styles.feedHelper}>
+								Holiday feeds apply to <strong>everyone</strong> — no
+								assignment rules needed. A Thursday holiday automatically drops
+								the team's weekly target by 8h.
+							</p>
+						</div>
+						<Button
+							type="button"
+							variant="secondary"
+							onClick={() => addCalendarFeed('holiday')}
+						>
+							+ Holiday calendar
+						</Button>
+					</div>
+					<div className={styles.feedList}>
+						{holidayFeedEntries.length > 0 ? (
+							holidayFeedEntries.map(({ feed, index }) => (
+								<div
+									key={`holiday-${index.toString()}`}
+									className={styles.calendarFeedCard}
+								>
+									<div className={styles.calendarCardHeader}>
+										<div className={styles.calendarCardHeading}>
+											<span className={styles.feedTypeBadge}>
+												Public holidays
+											</span>
+											<strong>
+												{feed.label.trim() || 'Untitled holiday calendar'}
+											</strong>
+										</div>
+										<button
+											type="button"
+											className={styles.calendarRemove}
+											onClick={() => removeCalendarFeed(index)}
+											aria-label={`Remove ${feed.label || 'holiday calendar'}`}
+										>
+											&times;
+										</button>
+									</div>
+									<div className={styles.feedFields}>
+										<label className={styles.feedField}>
+											<span className={styles.feedFieldLabel}>Label</span>
+											<input
+												type="text"
+												value={feed.label}
+												onChange={(e) =>
+													updateCalendarFeed(index, { label: e.target.value })
+												}
+												placeholder="Portugal holidays"
+												className={styles.feedInput}
+											/>
+										</label>
+										<label
+											className={`${styles.feedField} ${styles.feedFieldWide}`}
+										>
+											<span className={styles.feedFieldLabel}>Feed URL</span>
+											<input
+												type="text"
+												value={feed.url}
+												onChange={(e) =>
+													updateCalendarFeed(index, { url: e.target.value })
+												}
+												placeholder="https://www.officeholidays.com/ics/portugal"
+												className={`${styles.feedInput} ${styles.feedUrlInput}`}
+											/>
+										</label>
+									</div>
+								</div>
+							))
+						) : (
+							<p className={styles.feedHelper}>
+								No public holiday calendars yet. Add one to have national /
+								regional holidays automatically reduce everyone's target.
+							</p>
+						)}
+					</div>
 				</div>
 
 				<div className={styles.serviceActions}>

@@ -140,6 +140,113 @@ END:VCALENDAR`,
 		]);
 	});
 
+	it('applies a holiday feed to every user known from absence feeds', async () => {
+		// Two feeds: one absence feed that introduces Alice and Bob, plus a
+		// holiday feed for May 1. Both users should end up with the holiday.
+		vi.spyOn(global, 'fetch').mockImplementation(async (input) => {
+			const url = String(input);
+			if (url.includes('absence')) {
+				return {
+					ok: true,
+					text: async () => `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Alice - Vacation
+DTSTART;VALUE=DATE:20260504
+DTEND;VALUE=DATE:20260505
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:Bob - Vacation
+DTSTART;VALUE=DATE:20260505
+DTEND;VALUE=DATE:20260506
+END:VEVENT
+END:VCALENDAR`,
+				} as Response;
+			}
+			return {
+				ok: true,
+				text: async () => `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Labour Day
+DTSTART;VALUE=DATE:20260501
+DTEND;VALUE=DATE:20260502
+END:VEVENT
+END:VCALENDAR`,
+			} as Response;
+		});
+
+		const result = await fetchAbsenceDaysByUser(
+			[
+				{
+					label: 'Team time off',
+					url: 'https://calendar.example.com/absence.ics',
+					type: 'absence',
+					absenceAttribution: 'shared',
+				},
+				{
+					label: 'PT holidays',
+					url: 'https://calendar.example.com/holidays.ics',
+					type: 'holiday',
+				},
+			],
+			[
+				{ pattern: 'Alice', userEmail: 'alice@example.com' },
+				{ pattern: 'Bob', userEmail: 'bob@example.com' },
+			],
+			'alice@example.com',
+			'',
+			'2026-05-01',
+			'2026-05-08',
+		);
+
+		expect(result.get('alice@example.com')?.get('2026-05-01')?.kind).toBe(
+			'holiday',
+		);
+		expect(result.get('bob@example.com')?.get('2026-05-01')?.kind).toBe(
+			'holiday',
+		);
+		// Personal absences still surface alongside the holiday.
+		expect(result.get('alice@example.com')?.get('2026-05-04')?.kind).toBe(
+			'vacation',
+		);
+		expect(result.get('bob@example.com')?.get('2026-05-05')?.kind).toBe(
+			'vacation',
+		);
+	});
+
+	it('returns the current user with holidays even when no absence feed exists', async () => {
+		vi.spyOn(global, 'fetch').mockResolvedValue({
+			ok: true,
+			text: async () => `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Labour Day
+DTSTART;VALUE=DATE:20260501
+DTEND;VALUE=DATE:20260502
+END:VEVENT
+END:VCALENDAR`,
+		} as Response);
+
+		const result = await fetchAbsenceDays(
+			[
+				{
+					label: 'PT holidays',
+					url: 'https://calendar.example.com/holidays.ics',
+					type: 'holiday',
+				},
+			],
+			[],
+			'solo@example.com',
+			'',
+			'2026-05-01',
+			'2026-05-08',
+		);
+
+		expect([...result.keys()]).toEqual(['2026-05-01']);
+		expect(result.get('2026-05-01')?.kind).toBe('holiday');
+	});
+
 	it('prefers sick over other absence kinds when a day has multiple events', async () => {
 		vi.spyOn(global, 'fetch').mockResolvedValue({
 			ok: true,

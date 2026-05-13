@@ -144,6 +144,10 @@ export const SettingsForm: React.FC = () => {
 		() => buildFeedEntries(formData.calendarFeeds, 'absence'),
 		[formData.calendarFeeds],
 	);
+	const holidayFeedEntries = useMemo(
+		() => buildFeedEntries(formData.calendarFeeds, 'holiday'),
+		[formData.calendarFeeds],
+	);
 	const sharedAbsenceFeedEntries = useMemo(
 		() =>
 			absenceFeedEntries.filter(
@@ -445,6 +449,7 @@ export const SettingsForm: React.FC = () => {
 				hasCalendarFeeds={hasCalendarFeeds}
 				suggestionFeedEntries={suggestionFeedEntries}
 				absenceFeedEntries={absenceFeedEntries}
+				holidayFeedEntries={holidayFeedEntries}
 				hasSharedAbsenceFeedsWithoutAssignments={
 					hasSharedAbsenceFeedsWithoutAssignments
 				}

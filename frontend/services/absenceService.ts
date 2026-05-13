@@ -43,10 +43,14 @@ function resolveAbsenceKind(
 	current: AbsenceKind,
 	next: AbsenceKind,
 ): AbsenceKind {
+	// Priority: a more specific reason wins. Sick > holiday > vacation > off.
+	// `holiday` ranks above `vacation` so that a public holiday colliding with
+	// a personal vacation day still surfaces as "Holiday" in the label.
 	const priority: Record<AbsenceKind, number> = {
 		off: 1,
 		vacation: 2,
-		sick: 3,
+		holiday: 3,
+		sick: 4,
 	};
 	return priority[next] >= priority[current] ? next : current;
 }
@@ -344,7 +348,10 @@ export async function fetchAbsenceDaysByUser(
 	const absenceFeeds = feeds.filter(
 		(feed) => feed.type === 'absence' && feed.url.trim(),
 	);
-	if (absenceFeeds.length === 0) return new Map();
+	const holidayFeeds = feeds.filter(
+		(feed) => feed.type === 'holiday' && feed.url.trim(),
+	);
+	if (absenceFeeds.length === 0 && holidayFeeds.length === 0) return new Map();
 
 	const normalizedAssignments = assignments
 		.map((assignment) => ({
@@ -354,8 +361,21 @@ export async function fetchAbsenceDaysByUser(
 		.filter((assignment) => assignment.pattern && assignment.userEmail);
 	const normalizedCurrentUser = currentUserEmail.trim().toLowerCase();
 
+	type FeedResult = {
+		feedType: 'absence' | 'holiday';
+		label: string;
+		absenceAttribution: 'self' | 'shared';
+		titleFilter?: string;
+		events: AbsenceEvent[];
+	};
+
+	const allFeeds: { feed: CalendarFeed; feedType: 'absence' | 'holiday' }[] = [
+		...absenceFeeds.map((feed) => ({ feed, feedType: 'absence' as const })),
+		...holidayFeeds.map((feed) => ({ feed, feedType: 'holiday' as const })),
+	];
+
 	const results = await Promise.allSettled(
-		absenceFeeds.map(async (feed) => {
+		allFeeds.map<Promise<FeedResult>>(async ({ feed, feedType }) => {
 			const url = corsProxy
 				? `${corsProxy.replace(/\/$/, '')}/${feed.url}`
 				: feed.url;
@@ -363,6 +383,7 @@ export async function fetchAbsenceDaysByUser(
 			if (!res.ok) throw fromHttpResponse('Absence feed', res.status);
 			const text = await res.text();
 			return {
+				feedType,
 				label: feed.label,
 				absenceAttribution: getAbsenceAttributionMode(feed),
 				titleFilter: feed.titleFilter,
@@ -372,6 +393,9 @@ export async function fetchAbsenceDaysByUser(
 	);
 
 	const userAbsenceDays: UserAbsenceDays = new Map();
+	// Holidays are collected separately first so we can merge them onto every
+	// user's map after the per-user absence loop populates the known users.
+	const holidayDates = new Map<string, { reason: string }>();
 
 	for (const result of results) {
 		if (result.status !== 'fulfilled') {
@@ -381,7 +405,23 @@ export async function fetchAbsenceDaysByUser(
 			continue;
 		}
 
-		const { label, absenceAttribution, titleFilter, events } = result.value;
+		const { feedType, label, absenceAttribution, titleFilter, events } =
+			result.value;
+
+		if (feedType === 'holiday') {
+			for (const event of events) {
+				if (!matchesTitleFilter(event.summary, titleFilter)) continue;
+				const dates = expandAbsenceDates(event, rangeStart, rangeEnd);
+				for (const { date, summary } of dates) {
+					if (!holidayDates.has(date)) {
+						const reason = label ? `[${label}] ${summary}` : summary;
+						holidayDates.set(date, { reason });
+					}
+				}
+			}
+			continue;
+		}
+
 		for (const event of events) {
 			const matchedUsers =
 				absenceAttribution === 'shared'
@@ -407,12 +447,25 @@ export async function fetchAbsenceDaysByUser(
 		}
 	}
 
+	// Merge holiday dates into every known user, plus the current user (so a
+	// workspace configured with only a holiday feed still has the current
+	// user in the map).
+	if (holidayDates.size > 0) {
+		const recipients = new Set<string>(userAbsenceDays.keys());
+		if (normalizedCurrentUser) recipients.add(normalizedCurrentUser);
+		for (const [date, { reason }] of holidayDates) {
+			for (const userEmail of recipients) {
+				addAbsenceReason(userAbsenceDays, userEmail, date, reason, 'holiday');
+			}
+		}
+	}
+
 	if (signal?.aborted) {
 		return new Map();
 	}
 
 	logger.debug(
-		`[Absence] ${absenceFeeds.length} feeds → ${userAbsenceDays.size} users with absences in range ${rangeStart}..${rangeEnd}`,
+		`[Absence] ${absenceFeeds.length} absence + ${holidayFeeds.length} holiday feeds → ${userAbsenceDays.size} users with absences in range ${rangeStart}..${rangeEnd}`,
 	);
 
 	return userAbsenceDays;

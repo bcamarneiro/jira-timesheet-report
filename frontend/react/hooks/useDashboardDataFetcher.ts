@@ -127,7 +127,9 @@ export function useDashboardDataFetcher() {
 	const calendarMappings = useUserDataStore((s) => s.calendarMappings);
 	const queryClient = useQueryClient();
 	const hasAbsenceFeeds = (calendarFeeds ?? []).some(
-		(feed) => feed.type === 'absence' && feed.url.trim(),
+		(feed) =>
+			(feed.type === 'absence' || feed.type === 'holiday') &&
+			feed.url.trim(),
 	);
 	const { data: absenceDays } = useAbsenceDays(weekStart, weekEnd, {
 		enabled: hasAbsenceFeeds,

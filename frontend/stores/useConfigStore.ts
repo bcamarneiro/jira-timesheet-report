@@ -5,7 +5,15 @@ import { getPersistStorage } from './persistStorage';
 export interface CalendarFeed {
 	label: string;
 	url: string;
-	type: 'suggestion' | 'absence';
+	/**
+	 * - `suggestion`: feed surfaces upcoming events to seed worklog suggestions.
+	 * - `absence`: per-user time off (vacation / sick / off). Requires
+	 *   `absenceAttribution` to pick between self-only filtering or shared
+	 *   attribution via title patterns.
+	 * - `holiday`: public holidays — applies to every team member with no
+	 *   attribution needed.
+	 */
+	type: 'suggestion' | 'absence' | 'holiday';
 	absenceAttribution?: 'self' | 'shared';
 	titleFilter?: string;
 }
@@ -40,7 +48,7 @@ interface ConfigState {
 	setConfig: (newConfig: Config) => void;
 }
 
-export const CONFIG_STORAGE_VERSION = 4;
+export const CONFIG_STORAGE_VERSION = 5;
 
 function normalizeHost(value: unknown): string {
 	if (typeof value !== 'string') return '';
@@ -72,12 +80,19 @@ function normalizeCalendarFeed(
 	const url =
 		typeof feed?.url === 'string' ? feed.url.trim().replace(/\/+$/g, '') : '';
 	if (!url) return null;
-	const type = feed?.type === 'absence' ? 'absence' : 'suggestion';
+	const type: CalendarFeed['type'] =
+		feed?.type === 'absence'
+			? 'absence'
+			: feed?.type === 'holiday'
+				? 'holiday'
+				: 'suggestion';
 
 	return {
 		label: typeof feed?.label === 'string' ? feed.label.trim() : '',
 		url,
 		type,
+		// Attribution applies only to absence feeds; holiday feeds apply to
+		// every user and skip the attribution path entirely.
 		absenceAttribution:
 			type === 'absence'
 				? feed?.absenceAttribution === 'shared'
@@ -230,6 +245,8 @@ export function normalizeConfig(
  *   v2 → added gitlabHost, calendarFeeds[]
  *   v3 → added absenceAssignments[], complianceReminderEnabled
  *   v4 → added timeRounding tri-state, theme widening
+ *   v5 → added 'holiday' as a CalendarFeed.type (no shape change; existing
+ *        'absence' feeds remain valid)
  * Each "v0_to_vN" helper is a defensive normaliser that accepts whatever
  * legacy shape was on disk and produces a valid current Config. Today,
  * all branches collapse to `normalizeConfig` because every persisted
@@ -237,7 +254,7 @@ export function normalizeConfig(
  * Keep the explicit branching so future schema changes can be added
  * without re-introducing the no-op pattern.
  */
-function migrateLegacy_v0_to_v4(
+function migrateLegacy_v0_to_v5(
 	legacyConfig: Partial<Config> | undefined,
 ): Config {
 	return normalizeConfig(legacyConfig);
@@ -251,7 +268,7 @@ export function migratePersistedConfigState(
 	const legacyConfig = persistedState?.config;
 
 	if (version < CONFIG_STORAGE_VERSION) {
-		return { config: migrateLegacy_v0_to_v4(legacyConfig) };
+		return { config: migrateLegacy_v0_to_v5(legacyConfig) };
 	}
 
 	// Same-version path: still normalise to absorb hand-edited blobs and
