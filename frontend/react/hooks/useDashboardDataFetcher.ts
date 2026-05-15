@@ -380,7 +380,6 @@ export function useDashboardDataFetcher() {
 		timeRounding,
 		weekStart,
 		weekEnd,
-		hasAbsenceFeeds,
 		absenceDays,
 		setLoading,
 		setError,
