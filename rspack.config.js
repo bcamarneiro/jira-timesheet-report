@@ -14,6 +14,7 @@ const isOfflineMode =
 	process.env.NODE_ENV === 'development' && process.env.OFFLINE_MODE === 'true';
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const appBasePath = normalizeBasePath(process.env.APP_BASE_PATH || '/');
+const buildTier = normalizeBuildTier(process.env.BUILD_TIER);
 const usesRelativeAssetPaths =
 	process.env.APP_ROUTER_MODE === 'hash' && appBasePath !== '/';
 
@@ -24,6 +25,16 @@ function normalizeBasePath(basePath) {
 	}
 
 	return `/${trimmed.replace(/^\/+|\/+$/g, '')}/`;
+}
+
+function normalizeBuildTier(tier) {
+	const value = (tier || 'free').toLowerCase();
+	if (value !== 'free' && value !== 'premium') {
+		throw new Error(
+			`Invalid BUILD_TIER "${tier}". Expected "free" or "premium".`,
+		);
+	}
+	return value;
 }
 
 /** @type {import('@rspack/core').Configuration} */
@@ -68,6 +79,7 @@ module.exports = {
 			'process.env.APP_ROUTER_MODE': JSON.stringify(
 				process.env.APP_ROUTER_MODE || 'browser',
 			),
+			__BUILD_TIER__: JSON.stringify(buildTier),
 		}),
 		new NodeProtocolUrlPlugin(),
 		new ProvidePlugin({
