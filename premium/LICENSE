@@ -1,0 +1,21 @@
+PLACEHOLDER — Business Source License 1.1 to be added manually.
+
+The canonical BSL 1.1 text lives at:
+  https://mariadb.com/bsl11/
+
+Parameters to fill in when adding the full license text:
+
+  Licensor:             Bruno Camarneiro
+  Licensed Work:        The contents of the /premium/ directory of the
+                        jira-timesheet-report repository.
+  Additional Use Grant: You may make use of the Licensed Work for personal
+                        or internal-use purposes, including self-hosting,
+                        provided that you do not offer the Licensed Work
+                        to third parties as a hosted or managed commercial
+                        service.
+  Change Date:          2030-05-15  (4 years from initial commit)
+  Change License:       Apache License, Version 2.0
+
+See ADA-251 for tracking. The full BSL text is being added in a follow-up commit;
+the placeholder here is intentional so the licensing boundary is visible in the
+repo immediately while the canonical text is sourced and committed separately.

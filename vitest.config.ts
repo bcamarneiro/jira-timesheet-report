@@ -1,6 +1,13 @@
 import { defineConfig } from 'vitest/config';
 
+const buildTier = (process.env.BUILD_TIER || 'free').toLowerCase();
+
 export default defineConfig({
+	define: {
+		__BUILD_TIER__: JSON.stringify(
+			buildTier === 'premium' ? 'premium' : 'free',
+		),
+	},
 	test: {
 		globals: true,
 		environment: 'happy-dom',
