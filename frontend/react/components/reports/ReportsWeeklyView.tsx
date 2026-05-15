@@ -83,6 +83,7 @@ function TeamMemberRow({
 						className={styles.workedOnPtoBadge}
 						title={`Logged work on a PTO/holiday day: ${workedOnPto.join(', ')}`}
 						aria-label={`Worked on time off: ${workedOnPto.join(', ')}`}
+						role="img"
 					>
 						{' '}
 						⚠

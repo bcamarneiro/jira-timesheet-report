@@ -238,7 +238,7 @@ export const DashboardPage: React.FC = () => {
 			</div>
 
 			{absenceError && (
-				<div className={styles.absenceBanner} role="status" aria-live="polite">
+				<output className={styles.absenceBanner} aria-live="polite">
 					<strong>Time-off calendar unavailable.</strong> Your absence feed
 					couldn't be loaded — compliance targets won't be adjusted for
 					vacation/holidays until it's reachable again. Other dashboard data is
@@ -250,7 +250,7 @@ export const DashboardPage: React.FC = () => {
 							: 'unknown error'}
 						)
 					</span>
-				</div>
+				</output>
 			)}
 
 			{!isLoadingWorklogs && daySummaries.length === 0 && (

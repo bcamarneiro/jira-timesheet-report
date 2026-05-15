@@ -260,8 +260,10 @@ export const TeamAbsenceAssignmentsEditor: React.FC<Props> = ({
 					</label>
 					<div className={styles.field}>
 						<span id={`${emailsInputId}-label`}>Team member email(s)</span>
+						{/* biome-ignore lint/a11y/useSemanticElements: a <fieldset>/<legend> here would require CSS changes for default border/legend layout; tracked for follow-up */}
 						<div
 							className={styles.emailPicker}
+							role="group"
 							aria-labelledby={`${emailsInputId}-label`}
 						>
 							<div className={styles.chipRow}>

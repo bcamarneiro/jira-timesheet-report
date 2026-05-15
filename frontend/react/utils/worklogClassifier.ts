@@ -51,7 +51,7 @@ function parseCommentMarker(
 ): string | null {
 	for (const pattern of patterns) {
 		const match = commentText.match(pattern);
-		if (match && match[1] && match[2] && match[3]) {
+		if (match?.[1] && match[2] && match[3]) {
 			const iso = `${match[1]}-${match[2]}-${match[3]}`;
 			if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
 		}
