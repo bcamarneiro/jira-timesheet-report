@@ -12,11 +12,10 @@ const importRe = /from\s+['"][^'"]*\/?premium\//;
 
 let tracked = '';
 try {
-	tracked = execFileSync(
-		'git',
-		['ls-files', '--', 'frontend'],
-		{ cwd: repoRoot, encoding: 'utf8' },
-	);
+	tracked = execFileSync('git', ['ls-files', '--', 'frontend'], {
+		cwd: repoRoot,
+		encoding: 'utf8',
+	});
 } catch (err) {
 	console.error('check-premium-boundary: git ls-files failed', err.message);
 	process.exit(2);
