@@ -126,7 +126,9 @@ export const ConnectionSection: React.FC<Props> = ({
 							Hosted by Premium
 						</span>
 					) : proxyBadge.canOverride && proxyBadge.userOverride ? (
-						<span className={styles.badgeNeutral}>Self-hosted (overridden)</span>
+						<span className={styles.badgeNeutral}>
+							Self-hosted (overridden)
+						</span>
 					) : formData.corsProxy.trim() ? (
 						<span className={styles.badgeNeutral}>Self-hosted</span>
 					) : null}
@@ -135,7 +137,9 @@ export const ConnectionSection: React.FC<Props> = ({
 					type="text"
 					id={corsProxyId}
 					name="corsProxy"
-					value={hostedActive ? (proxyBadge.hostedUrl ?? '') : formData.corsProxy}
+					value={
+						hostedActive ? (proxyBadge.hostedUrl ?? '') : formData.corsProxy
+					}
 					onChange={handleChange}
 					placeholder="http://localhost:8081"
 					autoCapitalize="off"

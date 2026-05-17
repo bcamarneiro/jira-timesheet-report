@@ -67,7 +67,8 @@ export async function handleSubscription(
 		});
 	}
 
-	const verifyJwt = deps.verifyJwt ?? ((t: string) => admin.getUserIdFromToken(t));
+	const verifyJwt =
+		deps.verifyJwt ?? ((t: string) => admin.getUserIdFromToken(t));
 	const userId = await verifyJwt(token);
 	if (!userId) {
 		logEvent({ userId: null, status: 401, note: 'invalid_token' });

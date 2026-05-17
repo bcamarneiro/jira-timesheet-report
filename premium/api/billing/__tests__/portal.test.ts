@@ -8,10 +8,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SupabaseAdminClient } from '../../_lib/supabaseAdmin';
 import { handlePortal } from '../portal';
 
-function makeRequest(opts: {
-	method?: string;
-	headers?: Record<string, string>;
-} = {}): Request {
+function makeRequest(
+	opts: { method?: string; headers?: Record<string, string> } = {},
+): Request {
 	return new Request('https://hoursmith.io/api/billing/portal', {
 		method: opts.method ?? 'POST',
 		headers: opts.headers ?? {},
@@ -48,9 +47,10 @@ function makeSupabase(
 }
 
 function makeStripe(
-	createImpl: (
-		args: { customer: string; return_url: string },
-	) => Promise<{ url: string | null }> = async () => ({
+	createImpl: (args: {
+		customer: string;
+		return_url: string;
+	}) => Promise<{ url: string | null }> = async () => ({
 		url: 'https://billing.stripe.com/p/session/test',
 	}),
 ) {

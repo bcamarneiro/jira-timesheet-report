@@ -29,10 +29,7 @@
  * Linear: ADA-273.
  */
 
-import {
-	getProxyOverrideState,
-	resolveProxyUrl,
-} from './proxyUrlBridge';
+import { getProxyOverrideState, resolveProxyUrl } from './proxyUrlBridge';
 
 export type JiraGatewayMode = 'direct' | 'self-hosted' | 'hosted';
 
@@ -57,7 +54,9 @@ export interface RewriteOptions {
 }
 
 /** Compute the active gateway mode based on the bridge state. */
-export function getJiraGatewayMode(userConfiguredProxy: string): JiraGatewayMode {
+export function getJiraGatewayMode(
+	userConfiguredProxy: string,
+): JiraGatewayMode {
 	const { hostedProxyUrl, userOverride } = getProxyOverrideState();
 	if (hostedProxyUrl && !userOverride) return 'hosted';
 	const effective = resolveProxyUrl(userConfiguredProxy);
@@ -100,7 +99,8 @@ export function rewriteForHostedProxy(
 		headers.authorization = `Bearer ${supabaseAccessToken}`;
 	}
 	headers['x-jira-base'] = `https://${opts.jiraHost}`;
-	headers['x-jira-auth'] = `Basic ${encodeBasicAuth(opts.email, opts.apiToken)}`;
+	headers['x-jira-auth'] =
+		`Basic ${encodeBasicAuth(opts.email, opts.apiToken)}`;
 
 	return { url, headers };
 }
