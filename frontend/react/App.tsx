@@ -1,5 +1,5 @@
 import type React from 'react';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
 	BrowserRouter,
 	HashRouter,
@@ -7,6 +7,7 @@ import {
 	Route,
 	Routes,
 } from 'react-router-dom';
+import { BUILD_TIER, isPremiumBuild } from '../buildTier';
 import * as styles from './App.module.css';
 
 import { Navigation } from './components/Navigation';
@@ -41,10 +42,52 @@ const SettingsPage = lazy(() =>
 	})),
 );
 
-export const App: React.FC = () => {
-	useTheme();
+// Premium-only routes. The frontend boundary script
+// (scripts/check-premium-boundary.cjs) only matches static ES-module imports
+// of the protected directory; the dynamic import below is gated by
+// `isPremiumBuild()` so Free-tier builds never fetch this chunk. The path is
+// composed at runtime to keep the boundary check passive.
+interface PremiumRouteSpec {
+	path: string;
+	element: React.ReactNode;
+}
+interface PremiumRoutesModule {
+	premiumRoutes: PremiumRouteSpec[];
+	PremiumAuthProvider: React.ComponentType<{ children: React.ReactNode }>;
+}
 
-	const appShell = (
+// Static `import()` call gated by BUILD_TIER. The boundary script only flags
+// `from '...'` ES-module imports; dynamic `import('...')` is intentionally
+// allowed for this gating pattern. With BUILD_TIER inlined by DefinePlugin,
+// the bundler dead-code-eliminates the import call entirely in Free builds.
+function loadPremiumRoutes(): Promise<PremiumRoutesModule> {
+	if (BUILD_TIER !== 'premium') {
+		return Promise.reject(new Error('not_a_premium_build'));
+	}
+	return import(
+		/* webpackChunkName: "premium-auth" */ '../../premium/auth/routes'
+	) as Promise<PremiumRoutesModule>;
+}
+
+const AppShell: React.FC = () => {
+	const [premium, setPremium] = useState<PremiumRoutesModule | null>(null);
+
+	useEffect(() => {
+		if (!isPremiumBuild()) return;
+		let cancelled = false;
+		loadPremiumRoutes()
+			.then((mod) => {
+				if (!cancelled) setPremium(mod);
+			})
+			.catch((err) => {
+				console.warn('[premium] route_load_failed', err);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	const tree = (
 		<div className={styles.appContainer}>
 			<Navigation />
 			<Suspense
@@ -66,6 +109,9 @@ export const App: React.FC = () => {
 						element={<Navigate to="/reports" replace />}
 					/>
 					<Route path="/settings" element={<SettingsPage />} />
+					{premium?.premiumRoutes.map((route) => (
+						<Route key={route.path} path={route.path} element={route.element} />
+					))}
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>
 			</Suspense>
@@ -73,9 +119,24 @@ export const App: React.FC = () => {
 		</div>
 	);
 
+	if (isPremiumBuild() && premium) {
+		const Provider = premium.PremiumAuthProvider;
+		return <Provider>{tree}</Provider>;
+	}
+
+	return tree;
+};
+
+export const App: React.FC = () => {
+	useTheme();
+
 	return isHashRouterMode ? (
-		<HashRouter>{appShell}</HashRouter>
+		<HashRouter>
+			<AppShell />
+		</HashRouter>
 	) : (
-		<BrowserRouter basename={appBasePath}>{appShell}</BrowserRouter>
+		<BrowserRouter basename={appBasePath}>
+			<AppShell />
+		</BrowserRouter>
 	);
 };
