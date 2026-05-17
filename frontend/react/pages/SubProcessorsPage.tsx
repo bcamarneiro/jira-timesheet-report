@@ -27,7 +27,10 @@ const ACTIVE_SUB_PROCESSORS: SubProcessorRow[] = [
 		purpose:
 			'Application hosting and serverless functions. All compute is pinned to the fra1 region.',
 		region: 'EU (Frankfurt, Germany)',
-		dpa: { label: 'vercel.com/legal/dpa', href: 'https://vercel.com/legal/dpa' },
+		dpa: {
+			label: 'vercel.com/legal/dpa',
+			href: 'https://vercel.com/legal/dpa',
+		},
 	},
 	{
 		name: 'Supabase',
@@ -45,7 +48,10 @@ const ACTIVE_SUB_PROCESSORS: SubProcessorRow[] = [
 			'Payment processing for subscriptions and invoices, including Stripe Tax for EU VAT calculation and collection.',
 		region:
 			'United States, transferred under Standard Contractual Clauses and the EU-US Data Privacy Framework',
-		dpa: { label: 'stripe.com/legal/dpa', href: 'https://stripe.com/legal/dpa' },
+		dpa: {
+			label: 'stripe.com/legal/dpa',
+			href: 'https://stripe.com/legal/dpa',
+		},
 	},
 	{
 		name: 'Plausible Analytics',
@@ -81,9 +87,9 @@ export const SubProcessorsPage: React.FC = () => {
 				<p className={styles.lede}>
 					This list is kept current as our stack evolves. When the active
 					customer base warrants it, material changes to this list — for
-					example, a new sub-processor, a new processing region, or an
-					expansion of processing scope — will be communicated by email to
-					active subscribers in advance of the change taking effect.
+					example, a new sub-processor, a new processing region, or an expansion
+					of processing scope — will be communicated by email to active
+					subscribers in advance of the change taking effect.
 				</p>
 				<p className={styles.meta}>Last updated: {LAST_UPDATED}.</p>
 			</header>
@@ -140,17 +146,17 @@ export const SubProcessorsPage: React.FC = () => {
 				<p className={styles.body}>
 					Hoursmith is designed so that the data you care most about never
 					leaves your browser and is never sent to our servers. The hosted
-					service exists to handle authentication, billing, and a stateless
-					CORS proxy for Jira requests — nothing else.
+					service exists to handle authentication, billing, and a stateless CORS
+					proxy for Jira requests — nothing else.
 				</p>
 
 				<div className={styles.bodyList}>
 					<p className={styles.body}>
 						<strong>Jira API tokens.</strong> Your Jira API token is stored in
 						your browser's local storage and is attached to Jira requests
-						client-side. The hosted CORS proxy forwards the request to your
-						Jira instance and returns the response without inspecting, logging,
-						or persisting the token or the response body.
+						client-side. The hosted CORS proxy forwards the request to your Jira
+						instance and returns the response without inspecting, logging, or
+						persisting the token or the response body.
 					</p>
 					<p className={styles.body}>
 						<strong>Jira workspace data.</strong> Issues, worklogs, comments,
@@ -173,8 +179,8 @@ export const SubProcessorsPage: React.FC = () => {
 				</div>
 
 				<p className={styles.body}>
-					The only personal data we store server-side is the minimum required
-					to operate auth and billing: your email address and authentication
+					The only personal data we store server-side is the minimum required to
+					operate auth and billing: your email address and authentication
 					identifiers in Supabase, and the Stripe customer and subscription
 					identifiers needed to manage your plan.
 				</p>
@@ -184,11 +190,10 @@ export const SubProcessorsPage: React.FC = () => {
 				<h2 className={styles.heading}>Changes to this list</h2>
 				<p className={styles.body}>
 					Any addition or removal of a sub-processor will appear on this page
-					with the "Last updated" date below adjusted to match. Material
-					changes — a new sub-processor, a new processing region, or an
-					expansion of the categories of data processed — will additionally be
-					communicated by email to active subscribers in advance of taking
-					effect.
+					with the "Last updated" date below adjusted to match. Material changes
+					— a new sub-processor, a new processing region, or an expansion of the
+					categories of data processed — will additionally be communicated by
+					email to active subscribers in advance of taking effect.
 				</p>
 				<p className={styles.body}>
 					Historical changes can be reviewed in the git history of this page.
