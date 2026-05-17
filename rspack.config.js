@@ -79,6 +79,15 @@ module.exports = {
 			'process.env.APP_ROUTER_MODE': JSON.stringify(
 				process.env.APP_ROUTER_MODE || 'browser',
 			),
+			// Supabase Auth client env (ADA-254 supplies real values).
+			// Empty string fallbacks keep Free-tier builds compiling without leaking
+			// secrets; the premium auth client throws at runtime if these are blank.
+			'process.env.VITE_SUPABASE_URL': JSON.stringify(
+				process.env.VITE_SUPABASE_URL || '',
+			),
+			'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(
+				process.env.VITE_SUPABASE_ANON_KEY || '',
+			),
 			__BUILD_TIER__: JSON.stringify(buildTier),
 		}),
 		new NodeProtocolUrlPlugin(),
