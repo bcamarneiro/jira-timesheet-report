@@ -25,6 +25,11 @@ const DashboardPage = lazy(() =>
 		default: module.DashboardPage,
 	})),
 );
+const PricingPage = lazy(() =>
+	import('./pages/PricingPage').then((module) => ({
+		default: module.PricingPage,
+	})),
+);
 const TimesheetPage = lazy(() =>
 	import('./pages/TimesheetPage').then((module) => ({
 		default: module.TimesheetPage,
@@ -53,6 +58,7 @@ export const App: React.FC = () => {
 				<Routes>
 					<Route path="/" element={<HomePage />} />
 					<Route path="/dashboard" element={<DashboardPage />} />
+					<Route path="/pricing" element={<PricingPage />} />
 					<Route path="/reports" element={<TimesheetPage />} />
 					<Route path="/team" element={<Navigate to="/reports" replace />} />
 					<Route
