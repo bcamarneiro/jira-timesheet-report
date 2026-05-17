@@ -19,6 +19,7 @@ import {
 import { useUserDataStore } from '../../stores/useUserDataStore';
 import { classifyWorklog } from '../utils/worklogClassifier';
 import { useAbsenceDays } from './useAbsenceDays';
+import { useEffectiveProxyUrl } from './useEffectiveProxyUrl';
 import { monthWorklogsQueryKey } from './useMonthWorklogs';
 
 interface WorklogEntry {
@@ -108,7 +109,13 @@ export function useDashboardDataFetcher() {
 	const jiraHost = useConfigStore((s) => s.config.jiraHost);
 	const email = useConfigStore((s) => s.config.email);
 	const apiToken = useConfigStore((s) => s.config.apiToken);
-	const corsProxy = useConfigStore((s) => s.config.corsProxy);
+	// For Jira requests, use the effective proxy URL — auto-resolves to the
+	// hosted Premium endpoint when entitled (ADA-273). The `monthWorklogService`
+	// + friends additionally re-route URL/headers via `rewriteForHostedProxy`.
+	// For non-Jira proxied services (GitLab/calendar/RescueTime), the hosted
+	// proxy doesn't apply — those keep using the user-configured CORS proxy.
+	const corsProxy = useEffectiveProxyUrl();
+	const userConfiguredProxy = useConfigStore((s) => s.config.corsProxy);
 	const jqlFilterValue = useConfigStore((s) => s.config.jqlFilter);
 	const gitlabToken = useConfigStore((s) => s.config.gitlabToken);
 	const gitlabHost = useConfigStore((s) => s.config.gitlabHost);
@@ -286,7 +293,7 @@ export function useDashboardDataFetcher() {
 					? fetchGitlabSuggestions(
 							gitlabToken,
 							gitlabHost,
-							corsProxy,
+							userConfiguredProxy,
 							weekStart,
 							weekEnd,
 							signal,
@@ -301,7 +308,7 @@ export function useDashboardDataFetcher() {
 				hasCalendar
 					? fetchCalendarSuggestions(
 							suggestionFeeds,
-							corsProxy,
+							userConfiguredProxy,
 							weekStart,
 							weekEnd,
 							calendarMappings,
@@ -317,7 +324,7 @@ export function useDashboardDataFetcher() {
 				rescueTimeApiKey
 					? fetchRescueTimeData(
 							rescueTimeApiKey,
-							corsProxy,
+							userConfiguredProxy,
 							weekStart,
 							weekEnd,
 							signal,
@@ -372,6 +379,7 @@ export function useDashboardDataFetcher() {
 		email,
 		apiToken,
 		corsProxy,
+		userConfiguredProxy,
 		jqlFilterValue,
 		gitlabToken,
 		gitlabHost,

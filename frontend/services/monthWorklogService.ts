@@ -3,6 +3,7 @@ import type { WorklogFetchProgress } from '../../types/worklogLoading';
 import { logger } from '../react/utils/logger';
 import { classifyWorklog } from '../react/utils/worklogClassifier';
 import type { Config } from '../stores/useConfigStore';
+import { rewriteForHostedProxy } from './jiraGateway';
 import { fromHttpResponse } from './serviceErrors';
 
 export type WorklogAuthor = JiraUser;
@@ -114,7 +115,15 @@ export async function fetchMonthWorklogs(
 
 	while (true) {
 		const searchUrl = `${base}/rest/api/2/search?jql=${encodeURIComponent(jql)}&maxResults=${maxResults}&startAt=${startAt}&fields=${fields}`;
-		const res = await fetch(searchUrl, { headers, signal });
+		const rewritten = rewriteForHostedProxy(searchUrl, headers, {
+			jiraHost: config.jiraHost,
+			email: config.email,
+			apiToken: config.apiToken,
+		});
+		const res = await fetch(rewritten.url, {
+			headers: rewritten.headers,
+			signal,
+		});
 		if (!res.ok) throw fromHttpResponse('Jira search', res.status);
 		const data = (await res.json()) as {
 			issues: SearchIssue[];
@@ -209,7 +218,15 @@ export async function fetchMonthWorklogs(
 				batch.map(async (issue) => {
 					try {
 						const url = `${base}/rest/api/2/issue/${issue.key}/worklog?startedAfter=${startMillis}&startedBefore=${endMillis}`;
-						const res = await fetch(url, { headers, signal });
+						const rewritten = rewriteForHostedProxy(url, headers, {
+							jiraHost: config.jiraHost,
+							email: config.email,
+							apiToken: config.apiToken,
+						});
+						const res = await fetch(rewritten.url, {
+							headers: rewritten.headers,
+							signal,
+						});
 						if (!res.ok) return [];
 						const data = (await res.json()) as {
 							worklogs: EmbeddedWorklog[];

@@ -5,6 +5,7 @@ import { useConfigStore } from '../../stores/useConfigStore';
 import { addDaysToIsoDate, parseIsoDateLocal } from '../utils/date';
 import { buildManagerTrendModel } from '../utils/teamReports';
 import { useAbsenceDaysByUser } from './useAbsenceDays';
+import { useEffectiveProxyUrl } from './useEffectiveProxyUrl';
 import { monthWorklogsQueryKey } from './useMonthWorklogs';
 
 function getMonthsInRange(startDate: string, endDate: string) {
@@ -31,7 +32,13 @@ export function useReportsTrendData(
 	options?: { enabled?: boolean },
 ) {
 	const queryClient = useQueryClient();
-	const config = useConfigStore((state) => state.config);
+	const rawConfig = useConfigStore((state) => state.config);
+	// Auto-resolve to the hosted Premium proxy when entitled (ADA-273).
+	const effectiveProxy = useEffectiveProxyUrl();
+	const config = useMemo(
+		() => ({ ...rawConfig, corsProxy: effectiveProxy }),
+		[rawConfig, effectiveProxy],
+	);
 	const enabled =
 		(options?.enabled ?? true) && !!config.jiraHost && !!config.apiToken;
 	const firstWeekStart = addDaysToIsoDate(weekStart, -7 * (trendWeeks - 1));

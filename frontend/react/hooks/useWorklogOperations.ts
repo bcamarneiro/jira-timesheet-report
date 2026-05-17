@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { rewriteForHostedProxy } from '../../services/jiraGateway';
 import { useConfigStore } from '../../stores/useConfigStore';
 import type { EnrichedJiraWorklog } from '../../stores/useTimesheetStore';
 import { useTimesheetStore } from '../../stores/useTimesheetStore';
@@ -34,17 +35,24 @@ export function useWorklogOperations() {
 
 	// Helper to make authenticated requests
 	const makeRequest = async (url: string, options: RequestInit = {}) => {
-		const headers: HeadersInit = {
+		const headers: Record<string, string> = {
 			Authorization: `Bearer ${config.apiToken}`,
 			Accept: 'application/json',
 			'Content-Type': 'application/json',
 			'X-Atlassian-Token': 'no-check',
-			...options.headers,
+			...(options.headers as Record<string, string> | undefined),
 		};
 
-		const response = await fetch(url, {
+		// Route through the hosted Premium proxy when entitled (ADA-273).
+		const rewritten = rewriteForHostedProxy(url, headers, {
+			jiraHost: config.jiraHost,
+			email: config.email,
+			apiToken: config.apiToken,
+		});
+
+		const response = await fetch(rewritten.url, {
 			...options,
-			headers,
+			headers: rewritten.headers,
 		});
 
 		if (!response.ok) {

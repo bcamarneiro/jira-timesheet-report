@@ -155,6 +155,30 @@ export function AccountPage(): JSX.Element {
 		}
 	}, [session, signOut, navigate]);
 
+	const handlePortal = useCallback(async () => {
+		setActionPending('portal');
+		setActionError(null);
+		try {
+			const res = await postJson('/api/billing/portal', session?.access_token);
+			if (res.status === 404) {
+				throw new Error(
+					'No billing history yet. Upgrade to Premium to get a Customer Portal session.',
+				);
+			}
+			if (!res.ok) throw new Error('Customer Portal is unavailable right now.');
+			const body = (await res.json()) as { url?: string };
+			if (body.url) {
+				window.location.assign(body.url);
+				return;
+			}
+			throw new Error('Missing Customer Portal URL.');
+		} catch (err) {
+			setActionError((err as Error).message);
+		} finally {
+			setActionPending(null);
+		}
+	}, [session]);
+
 	const handleSignOut = useCallback(async () => {
 		await signOut();
 		navigate('/', { replace: true });
@@ -247,10 +271,16 @@ export function AccountPage(): JSX.Element {
 								<button
 									type="button"
 									className={styles.secondary}
-									disabled
-									title="Coming soon (ADA-262)"
+									onClick={handlePortal}
+									disabled={actionPending === 'portal'}
 								>
-									Manage billing
+									{actionPending === 'portal'
+										? 'Redirecting…'
+										: status === 'past_due'
+											? 'Update payment method'
+											: status === 'unpaid'
+												? 'Resolve unpaid invoice'
+												: 'Manage billing'}
 								</button>
 							)}
 						</div>

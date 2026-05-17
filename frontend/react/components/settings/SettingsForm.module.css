@@ -80,6 +80,41 @@
 	color: var(--color-text-tertiary);
 }
 
+/* ADA-273 — Proxy URL "Hosted by Premium" / "Self-hosted" pills */
+.badgePremium,
+.badgeNeutral {
+	font-size: var(--text-xs);
+	font-weight: var(--font-medium);
+	padding: 2px 8px;
+	border-radius: var(--radius-pill, 999px);
+	margin-left: var(--space-2);
+	cursor: help;
+}
+
+.badgePremium {
+	color: var(--color-primary-foreground, white);
+	background-color: var(--color-primary);
+}
+
+.badgeNeutral {
+	color: var(--color-text-secondary);
+	background-color: var(--color-surface-muted, rgba(0, 0, 0, 0.05));
+}
+
+.linkButton {
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	color: var(--color-primary);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.linkButton:hover {
+	color: var(--color-primary-hover, var(--color-primary));
+}
+
 .formGroup input,
 .formGroup select {
 	padding: var(--space-3);

@@ -19,6 +19,17 @@ import { AuthProvider } from './AuthProvider';
 import { RequireAuth } from './RequireAuth';
 import { SignInPage } from './SignInPage';
 import { SignUpPage } from './SignUpPage';
+import { useSubscription } from './useSubscription';
+
+/**
+ * Side-effect component: mounts `useSubscription()` so its hosted-proxy
+ * bridge writes happen for the lifetime of the authenticated app shell
+ * (ADA-273). Rendered as a hidden sibling under `<AuthProvider>`.
+ */
+function SubscriptionBridgeMount(): null {
+	useSubscription();
+	return null;
+}
 
 export interface PremiumRoute {
 	path: string;
@@ -44,5 +55,10 @@ export function PremiumAuthProvider({
 }: {
 	children: ReactNode;
 }): JSX.Element {
-	return <AuthProvider>{children}</AuthProvider>;
+	return (
+		<AuthProvider>
+			<SubscriptionBridgeMount />
+			{children}
+		</AuthProvider>
+	);
 }
