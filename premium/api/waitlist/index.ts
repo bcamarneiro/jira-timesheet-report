@@ -104,7 +104,8 @@ type ParsedBody =
 	| { ok: false; reason: 'missing_email' | 'invalid_email' | 'invalid_source' };
 
 function parseBody(body: unknown): ParsedBody {
-	if (!body || typeof body !== 'object') return { ok: false, reason: 'missing_email' };
+	if (!body || typeof body !== 'object')
+		return { ok: false, reason: 'missing_email' };
 	const obj = body as Record<string, unknown>;
 	const rawEmail = obj.email;
 	if (typeof rawEmail !== 'string' || rawEmail.trim().length === 0) {
@@ -174,9 +175,7 @@ class FetchWaitlistAdminClient implements WaitlistAdminClient {
 					'content-type': 'application/json',
 					prefer: 'resolution=ignore-duplicates,return=minimal',
 				},
-				body: JSON.stringify([
-					{ email: input.email, source: input.source },
-				]),
+				body: JSON.stringify([{ email: input.email, source: input.source }]),
 			});
 			if (res.ok) return { ok: true };
 			// PostgREST returns 404 when the table is missing.

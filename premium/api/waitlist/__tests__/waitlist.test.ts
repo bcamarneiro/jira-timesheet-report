@@ -9,10 +9,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import {
-	type WaitlistAdminClient,
-	waitlistHandler,
-} from '../index';
+import { type WaitlistAdminClient, waitlistHandler } from '../index';
 
 function makeRequest(body: unknown, method = 'POST'): Request {
 	return new Request('https://hoursmith.io/api/waitlist', {

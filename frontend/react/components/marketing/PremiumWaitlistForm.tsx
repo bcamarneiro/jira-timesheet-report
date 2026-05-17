@@ -112,11 +112,7 @@ export const PremiumWaitlistForm: React.FC<Props> = ({
 					spellCheck={false}
 					required
 				/>
-				<button
-					type="submit"
-					className={styles.button}
-					disabled={isSubmitting}
-				>
+				<button type="submit" className={styles.button} disabled={isSubmitting}>
 					{isSubmitting ? 'Sending…' : 'Notify me'}
 				</button>
 			</div>

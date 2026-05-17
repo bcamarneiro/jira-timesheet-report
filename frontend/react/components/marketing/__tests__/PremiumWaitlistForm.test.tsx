@@ -22,7 +22,9 @@ describe('PremiumWaitlistForm', () => {
 	it('renders an input and submit button', () => {
 		render(<PremiumWaitlistForm source="pricing" />);
 		expect(screen.getByPlaceholderText(/you@work\.com/i)).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: /notify me/i })).toBeInTheDocument();
+		expect(
+			screen.getByRole('button', { name: /notify me/i }),
+		).toBeInTheDocument();
 	});
 
 	it('shows a validation error for an obviously invalid email and does not POST', () => {
@@ -43,7 +45,9 @@ describe('PremiumWaitlistForm', () => {
 		fillEmail('a@b.co');
 		fireEvent.click(screen.getByRole('button', { name: /notify me/i }));
 		await waitFor(() => {
-			expect(screen.getByText(/thanks\. we'll let you know/i)).toBeInTheDocument();
+			expect(
+				screen.getByText(/thanks\. we'll let you know/i),
+			).toBeInTheDocument();
 		});
 		expect(fetchMock).toHaveBeenCalledWith(
 			'/api/waitlist',
