@@ -1,5 +1,6 @@
 import type React from 'react';
 import { SETTINGS_SECTION_IDS } from '../../../constants/settingsSections';
+import { PremiumWaitlistForm } from '../../marketing/PremiumWaitlistForm';
 import * as styles from '../SettingsForm.module.css';
 
 interface IntegrationTestResult {
@@ -139,6 +140,12 @@ export const ConnectionSection: React.FC<Props> = ({
 						browser access.
 					</small>
 				) : null}
+			</div>
+			<div className={styles.formGroup}>
+				<PremiumWaitlistForm
+					source="in-app-settings"
+					heading="Tired of running the local proxy? Premium hosted-proxy coming soon — leave your email."
+				/>
 			</div>
 		</fieldset>
 	);
