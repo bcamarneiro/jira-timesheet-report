@@ -1,215 +1,76 @@
-<p align="center">
-  <h1 align="center">Jira Timesheet Report</h1>
-  <p align="center">
-    A zero-backend Jira workspace for weekly worklog triage, monthly reporting,<br/>team visibility, and exports.
-  </p>
-</p>
+# Hoursmith
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white" alt="React 18" />
-  <img src="https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Rspack-1.5-ff7043?logo=webpack&logoColor=white" alt="Rspack" />
-  <img src="https://img.shields.io/badge/TanStack_Query-5-ff4154?logo=reactquery&logoColor=white" alt="TanStack Query 5" />
-  <img src="https://img.shields.io/badge/Zustand-5-433e38?logo=npm&logoColor=white" alt="Zustand 5" />
-</p>
+Hoursmith is a personal Jira worklog dashboard for developers, tech leads, and engineering managers who already live in Jira and just want their week to make sense. It gives you a heatmap of your logged time, focused week and day views, smart suggestions for the gaps, and one-click CSV exports — all running client-side against your own Jira instance, with no backend to operate and no third party in the middle.
 
----
+![Hoursmith dashboard](docs/screenshot.png)
 
-## What It Is
+## Free and Premium
 
-Jira Timesheet Report is a client-side app for working with Jira worklogs without a backend. It combines:
+Hoursmith is open source. The whole app is in this repository under MIT. There is also a hosted Premium tier for people who would rather not run a local proxy.
 
-- A **weekly dashboard** for finding gaps, copying previous work, and exporting summaries
-- A **reports workspace** with weekly team compliance and monthly calendar reporting
-- **Direct worklog CRUD** against Jira
-- **Offline mode** backed by MSW for development and demos
+| | Free (self-host) | Premium (hosted) |
+|---|---|---|
+| Full app, all features | Yes | Yes |
+| Worklog dashboard, heatmap, reports, CSV | Yes | Yes |
+| CORS proxy | You run `npm run cors-proxy` locally | We host it, you sign in |
+| Terminal required | Yes | No |
+| Price | Free, forever | ~€4 / month |
+| Status | Available now | Coming soon |
 
-Credentials stay in `localStorage`, and API requests go directly to Jira, optionally through the included local CORS proxy.
+Premium is a pure quality-of-life upgrade. The app code is identical. The only thing you pay for is not having to keep a proxy process running on your machine.
 
-## Current Product Areas
+Premium is not launched yet. You can register interest on the [pricing page](https://hoursmith.io/pricing) (placeholder — coming soon).
 
-- **Dashboard**: weekly gap-focused workflow with suggestions, templates, pinned items, heatmap, a weekly close assistant, reminders, and Markdown/CSV export
-- **Reports**: weekly team table plus monthly calendar reporting with local people filters, saved presets, shareable URLs, read-only HTML/Markdown snapshots, an in-app weekly-vs-monthly consistency check, and manager mode with multi-week trend signals
-- **Settings**: guided setup wizard, diagnostics for trust/readiness, normalized host/proxy config, permissions, JQL, theme, rounding, calendar feeds, auxiliary source credentials, full backups, and secret-safe share packs
-- **Installability**: PWA manifest plus install prompt support for static hosting and GitHub Pages
-- **Offline mode**: mock data via MSW on port `5174`
+## Self-host the Free tier
 
-## Tech Stack
-
-| Layer | Choice |
-|-------|--------|
-| UI | React 18 + TypeScript 5.9 |
-| State | Zustand 5 |
-| Server state | TanStack Query 5 |
-| Bundler | Rspack 1.5 |
-| Styling | CSS Modules + shared design tokens |
-| Testing | Vitest + Playwright |
-| Mocking | MSW 2.11 |
-| Jira access | Direct `fetch` calls to Jira REST API v2 |
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- A Jira Cloud account with API token access
-
-### Install
+Requirements: Node.js 18+ and a Jira Cloud account with an API token.
 
 ```bash
+git clone https://github.com/bcamarneiro/jira-timesheet-report.git
+cd jira-timesheet-report
 npm install
-```
-
-### Run
-
-```bash
 npm run dev
 ```
 
-Open `http://localhost:5173`.
-
-For offline development:
-
-```bash
-npm run dev:offline
-```
-
-Open `http://localhost:5174`.
-
-## Rollout And Onboarding Docs
-
-- Maintainer rollout guide: `docs/rollout-guide.md`
-- Teammate onboarding guide: `docs/teammate-onboarding.md`
-- Pilot feedback template: `docs/pilot-feedback-template.md`
-
-## Configure Jira
-
-1. Open `Settings`
-2. Use the setup wizard to fill in Jira host, email, and API token
-3. Leave `CORS Proxy` blank on the first attempt
-4. Run the built-in diagnostics and Jira connection test
-5. Only add a local proxy URL if the browser or network blocks direct Jira access
-6. Save once the setup is marked ready
-7. Use `Dashboard` for your weekly workflow and `Reports` for team/month views
-8. Use `Backup`, `Share Pack`, and `Import` in `Settings` to move between full local restores and teammate-friendly setup packs
-9. Use `Reports` presets and share links when you want to reuse or hand off the same reporting slice
-
-## CORS Proxy
-
-You usually do not need a proxy.
-
-Start with direct browser access first. Leave the `CORS Proxy` field empty and run the Jira check.
-
-Only if the browser blocks Jira requests with CORS or network-style errors, run the included local proxy:
+In a second terminal:
 
 ```bash
 npm run cors-proxy
 ```
 
-Then set `http://localhost:8081` in the `CORS Proxy` setting.
+Then open `http://localhost:5173` and finish setup in the in-app wizard.
 
-For SOCKS5 environments, keep the same local proxy URL in Settings and start the proxy with:
+### Why the CORS proxy?
 
-```bash
-npm run cors-proxy:socks
-```
+Jira Cloud's REST API does not send CORS headers for browser clients, so a pure SPA cannot call it directly from `localhost` without help. The bundled proxy (`cors-proxy.js`) is a small Node script that forwards requests from your browser to Jira on the same machine. Nothing leaves your computer.
 
-## Scripts
+For SOCKS5 environments, use `npm run cors-proxy:socks` instead.
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start the app against real Jira |
-| `npm run dev:offline` | Start the app with MSW mock data |
-| `npm run build` | Build production assets |
-| `npm run build:vercel` | Build the Vercel/static-hosting production variant |
-| `npm run build:pages` | Build the GitHub Pages variant with hash routing |
-| `npm run test` | Run Vitest in watch mode |
-| `npm run test:run` | Run Vitest once |
-| `npm run test:coverage` | Run tests with coverage |
-| `npm run test:e2e` | Run Playwright tests |
-| `npm run test:e2e:smoke` | Run the stable rollout smoke path |
-| `npm run lint` | Run Biome lint checks |
-| `npm run format` | Format the repo with Biome |
-| `npm run cors-proxy` | Start the local CORS proxy |
-| `npm run cors-proxy:socks` | Start the local CORS proxy through SOCKS5 |
+## Security
 
-GitHub Pages deployment is automated via `.github/workflows/deploy-pages.yml` and uses hash routing plus a repository base path so direct links remain reliable on static hosting.
+Hoursmith never sends your Jira credentials anywhere except Jira.
 
-The Pages build also ships a manifest and service worker so the app can be installed as a lightweight PWA on supported browsers.
+- Your Jira host, email, and API token live in your browser's `localStorage`.
+- The local CORS proxy is a transparent forwarder. It does not log, store, or persist tokens.
+- The eventual hosted Premium proxy will follow the same rule: tokens stay in your browser and are only used to sign the outbound request to your Jira instance for the duration of that request.
 
-Route-level lazy loading and chunk splitting are enabled so static deployments do not ship the full workspace on first paint.
-
-CI now runs stricter quality gates plus a small Playwright smoke suite against the offline app so core onboarding and reporting flows stay covered between releases.
-
-## Vercel Deployment
-
-Vercel is now the preferred hosted rollout target.
-
-The repo includes:
-
-- `vercel.json` with SPA rewrites to `index.html`
-- `.vercelignore` to avoid uploading local artifacts
-- `npm run build:vercel` as the default production build command
-
-Recommended Vercel project settings:
-
-- Framework preset: `Other`
-- Build command: `npm run build:vercel`
-- Output directory: `dist`
-- Install command: `npm ci`
-
-Once deployed, `Dashboard`, `Reports`, and `Settings` should work with normal browser routing, unlike the hash-routing fallback used for GitHub Pages.
-
-## Real-Data Validation
-
-For a quick product-level check, the `Reports` page can validate the current weekly table against the monthly source directly in the UI.
-
-For consistency checks against a real exported settings backup, use:
-
-```bash
-node scripts/validate-real-data-consistency.cjs ~/Downloads/jira-timesheet-settings.json
-```
-
-For SOCKS5 environments:
-
-```bash
-node scripts/validate-real-data-consistency.cjs \
-  ~/Downloads/jira-timesheet-settings.json \
-  socks5h://127.0.0.1:8080 \
-  2
-```
-
-The validator:
-
-- compares `Reports` weekly vs monthly totals for the requested period
-- compares per-user weekly totals, not just aggregates
-- treats only full weeks inside the requested window as part of the main conclusion
-- writes Markdown and CSV reports to `./tmp` by default
-
-## Architecture Snapshot
-
-```text
-frontend/
-  react/
-    components/    UI building blocks and page sections
-    hooks/         Data fetching and derived UI behavior
-    pages/         Home, Dashboard, Reports, Settings
-    utils/         Pure helpers for date, CSV, formatting, summaries
-    styles/        Global CSS and tokens
-  services/        Jira and external-source fetch logic
-  stores/          Zustand app state
-  mocks/           MSW handlers and sample data
-types/             Shared TS types
-e2e/               Playwright coverage
-```
-
-## Notes For Contributors
-
-- `npm run test:run` currently passes
-- `Settings` backups are plain JSON and currently include `config` plus `calendarMappings`
-- Generated artifacts such as `playwright-report/` and `test-results/` are ignored
-- The app has evolved beyond a simple timesheet viewer; keep docs and route names aligned with the current product areas
+If you stop using Hoursmith, clear site data in your browser and revoke the API token in Jira.
 
 ## License
 
-[ISC](LICENSE)
+The repository uses a split license:
+
+- Everything at the repository root is [MIT](LICENSE). This is the app you self-host.
+- Everything under [`/premium`](premium) is [BSL 1.1](premium/LICENSE). This is the code that powers the hosted Premium proxy. It is source-available so you can read and audit it, but it is not licensed for you to run a competing hosted service.
+
+The boundary is enforced in CI via `npm run check:premium-boundary`. If you only care about the open-source app, you can ignore `/premium` entirely.
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+
+A CLA will be required before non-trivial contributions can be merged (via cla-assistant.io). The CLA bot is not yet wired up — coming soon. Small fixes and documentation tweaks are fine to send in the meantime.
+
+## Status
+
+Hoursmith is under active development. The open-source app is usable today; Hoursmith Premium is not yet launched. The public direction lives in [ROADMAP.md](ROADMAP.md).
