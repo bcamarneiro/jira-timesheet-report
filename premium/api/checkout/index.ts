@@ -19,10 +19,10 @@
  */
 
 import type Stripe from 'stripe';
-import { createStripeClient } from '../_lib/stripeClient';
+import { defaultStripe } from '../_lib/stripeClient';
 import {
 	type SupabaseAdminClient,
-	createSupabaseAdmin,
+	defaultSupabaseAdmin,
 } from '../_lib/supabaseAdmin';
 
 // Pin to Frankfurt for GDPR residency. Mirrors vercel.json.
@@ -82,7 +82,7 @@ export async function handleCheckout(
 
 	let supabase: SupabaseAdminClient;
 	try {
-		supabase = createSupabaseAdmin({ client: deps.supabase });
+		supabase = deps.supabase ?? defaultSupabaseAdmin();
 	} catch {
 		logCheckout({
 			userId: null,
@@ -142,7 +142,7 @@ export async function handleCheckout(
 	// 4. Stripe client.
 	let stripe: Stripe;
 	try {
-		stripe = deps.stripe ?? createStripeClient();
+		stripe = deps.stripe ?? defaultStripe();
 	} catch {
 		logCheckout({
 			userId,
