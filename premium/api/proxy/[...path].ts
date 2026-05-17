@@ -96,10 +96,7 @@ function extractPath(requestUrl: string): string {
 	return pathname.slice(idx + marker.length);
 }
 
-function jsonResponse(
-	status: number,
-	body: Record<string, unknown>,
-): Response {
+function jsonResponse(status: number, body: Record<string, unknown>): Response {
 	return new Response(JSON.stringify(body), {
 		status,
 		headers: {
