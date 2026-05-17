@@ -14,7 +14,7 @@ Last updated: 2026-05-16.
 | Supabase | Authentication (email/password and GitHub OAuth) and Postgres database storing only the `profiles` and `subscriptions` tables. | EU (Frankfurt, Germany) | [supabase.com/legal/dpa](https://supabase.com/legal/dpa) |
 | Stripe | Payment processing for subscriptions and invoices, including Stripe Tax for EU VAT calculation and collection. | United States, transferred under Standard Contractual Clauses and the EU-US Data Privacy Framework | [stripe.com/legal/dpa](https://stripe.com/legal/dpa) |
 | Plausible Analytics | Cookieless, anonymous traffic analytics. No personal identifiers are collected and no consent banner is required. | EU (Germany) | [plausible.io/dpa](https://plausible.io/dpa) |
-| iubenda | Hosting of the Privacy Policy and Terms of Service documents linked from the application. | EU (Italy) | [iubenda.com/en/legal/dpa](https://www.iubenda.com/en/legal/dpa) |
+| iubenda | Hosting of the Privacy Policy and Terms of Service documents linked from the application. | EU (Italy) | [iubenda.com DPA](https://www.iubenda.com/en/help/6758-data-processing-agreement-between-iubenda-and-its-users/) |
 
 ### Not yet active
 
