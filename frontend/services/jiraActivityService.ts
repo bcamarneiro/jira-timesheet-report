@@ -1,5 +1,6 @@
 import type { WorklogSuggestion } from '../../types/Suggestion';
 import type { Config } from '../stores/useConfigStore';
+import { rewriteForHostedProxy } from './jiraGateway';
 import { fromHttpResponse } from './serviceErrors';
 
 const JIRA_KEY_RE = /([A-Z][A-Z0-9]+-\d+)/;
@@ -30,12 +31,19 @@ async function jiraFetch(
 	path: string,
 	signal?: AbortSignal,
 ): Promise<unknown> {
-	const res = await fetch(buildUrl(config, path), {
-		headers: {
-			Authorization: `Bearer ${config.apiToken}`,
-			Accept: 'application/json',
-			'X-Atlassian-Token': 'no-check',
-		},
+	const url = buildUrl(config, path);
+	const headers = {
+		Authorization: `Bearer ${config.apiToken}`,
+		Accept: 'application/json',
+		'X-Atlassian-Token': 'no-check',
+	};
+	const rewritten = rewriteForHostedProxy(url, headers, {
+		jiraHost: config.jiraHost,
+		email: config.email,
+		apiToken: config.apiToken,
+	});
+	const res = await fetch(rewritten.url, {
+		headers: rewritten.headers,
 		signal,
 	});
 	if (!res.ok) throw fromHttpResponse('Jira activity', res.status);

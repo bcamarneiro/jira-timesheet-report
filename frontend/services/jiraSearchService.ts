@@ -1,4 +1,5 @@
 import type { Config } from '../stores/useConfigStore';
+import { rewriteForHostedProxy } from './jiraGateway';
 import { fromHttpResponse } from './serviceErrors';
 
 export interface JiraSearchResult {
@@ -35,17 +36,21 @@ export async function searchJiraIssues(
 
 	const jql = encodeURIComponent(jqlParts.join(' OR '));
 
-	const res = await fetch(
-		`${base}/rest/api/2/search?jql=${jql}&maxResults=10&fields=key,summary`,
-		{
-			headers: {
-				Authorization: `Bearer ${config.apiToken}`,
-				Accept: 'application/json',
-				'X-Atlassian-Token': 'no-check',
-			},
-			signal,
-		},
-	);
+	const initialUrl = `${base}/rest/api/2/search?jql=${jql}&maxResults=10&fields=key,summary`;
+	const initialHeaders = {
+		Authorization: `Bearer ${config.apiToken}`,
+		Accept: 'application/json',
+		'X-Atlassian-Token': 'no-check',
+	};
+	const rewritten = rewriteForHostedProxy(initialUrl, initialHeaders, {
+		jiraHost: config.jiraHost,
+		email: config.email,
+		apiToken: config.apiToken,
+	});
+	const res = await fetch(rewritten.url, {
+		headers: rewritten.headers,
+		signal,
+	});
 
 	if (!res.ok) throw fromHttpResponse('Jira search', res.status);
 

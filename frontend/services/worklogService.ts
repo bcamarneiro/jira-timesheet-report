@@ -1,5 +1,6 @@
 import { logger } from '../react/utils/logger';
 import { classifyWorklog } from '../react/utils/worklogClassifier';
+import { rewriteForHostedProxy } from './jiraGateway';
 import { fromHttpResponse } from './serviceErrors';
 
 export interface WorklogEntry {
@@ -59,10 +60,16 @@ export async function fetchWeekWorklogs(
 		`worklogDate >= "${weekStart}" AND worklogDate <= "${weekEnd}" AND worklogAuthor = currentUser()`,
 	);
 
-	const res = await fetch(
-		`${base}/rest/api/2/search?jql=${jql}&maxResults=50&fields=key,summary,worklog`,
-		{ headers, signal },
-	);
+	const initialUrl = `${base}/rest/api/2/search?jql=${jql}&maxResults=50&fields=key,summary,worklog`;
+	const rewritten = rewriteForHostedProxy(initialUrl, headers, {
+		jiraHost: config.jiraHost,
+		email: config.email,
+		apiToken: config.apiToken,
+	});
+	const res = await fetch(rewritten.url, {
+		headers: rewritten.headers,
+		signal,
+	});
 
 	if (!res.ok) throw fromHttpResponse('Jira issue worklog', res.status);
 
@@ -89,6 +96,7 @@ export async function fetchWeekWorklogs(
 				issue.key,
 				startMillis,
 				endMillis,
+				config,
 				signal,
 			);
 		} else {
@@ -119,11 +127,20 @@ async function fetchAllIssueWorklogs(
 	issueKey: string,
 	startedAfter: number,
 	startedBefore: number,
+	config: WorklogFetchConfig,
 	signal?: AbortSignal,
 ): Promise<JiraWorklogItem[]> {
 	const url = `${base}/rest/api/2/issue/${issueKey}/worklog?startedAfter=${startedAfter}&startedBefore=${startedBefore}`;
 
-	const res = await fetch(url, { headers, signal });
+	const rewritten = rewriteForHostedProxy(url, headers, {
+		jiraHost: config.jiraHost,
+		email: config.email,
+		apiToken: config.apiToken,
+	});
+	const res = await fetch(rewritten.url, {
+		headers: rewritten.headers,
+		signal,
+	});
 	if (!res.ok) {
 		logger.error(
 			`[worklogService] Failed to fetch worklogs for ${issueKey}: ${res.status}`,
