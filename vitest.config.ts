@@ -13,7 +13,7 @@ export default defineConfig({
 		environment: 'happy-dom',
 		setupFiles: ['./vitest.setup.ts'],
 		include: ['**/*.test.{ts,tsx}', '**/__tests__/**/*.{ts,tsx}'],
-		exclude: ['node_modules', 'dist', 'build'],
+		exclude: ['node_modules', 'dist', 'build', '.claude/**', '**/node_modules/**'],
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'html', 'json', 'lcov'],
