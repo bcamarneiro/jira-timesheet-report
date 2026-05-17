@@ -12,9 +12,9 @@ I got tired of squinting at Jira's worklog reports trying to remember what I did
 
 The app is MIT-licensed and runs entirely in your browser. The only awkward part is that Atlassian doesn't send CORS headers on the worklog endpoints, so you need a tiny proxy in front. The repo ships one — `npm run cors-proxy` and you're done. Your Jira token never leaves the browser; the proxy is stateless and just forwards requests.
 
-For people who don't want to keep a terminal open, I'm also launching a paid version (Hoursmith Premium, ~€4/mo) where I host that proxy for you. That is the entire Premium feature set — same app, hosted proxy, no terminal. I wanted to be upfront about that rather than dress it up as "Pro."
+If you don't want to keep a terminal open, there's a hosted version at €4/mo where I run the proxy for you. Same app, same code, just on my Vercel instead of yours. That's the whole paid offering — I'm not gating features.
 
-Stack: React, Zustand, rspack, Supabase + Stripe for the paid side. Source-available under BSL 1.1 in `/premium/` so it's all readable.
+Stack: React, Zustand, rspack, Supabase + Stripe for the hosted side. Source-available under BSL 1.1 in `/premium/` so it's all readable.
 
 Curious what other Jira worklog pain points people have run into — happy to extend the free app if there's an obvious gap.
 

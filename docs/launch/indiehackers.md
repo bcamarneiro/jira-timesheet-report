@@ -14,7 +14,7 @@ One feature is paid: the hosted proxy. That's it. I considered building a "Team 
 
 ### Revenue target
 
-I'm aiming for "enough to keep the lights on" — call it €200/mo to cover the Vercel bill, the Supabase bill, Stripe fees, the domain, and an hour or two a week of support email. That's roughly 50 paying users. I am explicitly not trying to build a SaaS business here; I want a small product that pays for itself and stays alive.
+€200/mo is the number that makes this sustainable — Vercel, Supabase, Stripe fees, the domain, and an hour or two a week of support email all covered, with a little left over. That's 50 paying users. I'm not chasing a SaaS business; I want a small product that pays for itself, that I'll still be running in three years.
 
 ### Pricing rationale
 
@@ -33,12 +33,12 @@ I'm aiming for "enough to keep the lights on" — call it €200/mo to cover the
 - Picking one paid feature and refusing to add a second. The temptation to bolt on "cloud sync" or "team dashboards" was constant; saying no every time made the launch tractable.
 - Source-available BSL for the paid bit, instead of pretending the whole thing is open while gating features behind license keys. People can read the proxy code.
 
-### What I don't know yet
+### Open questions
 
-- Whether anyone will actually pay. I have ~80 people on the email list from a quiet beta and a handful of pilot users, but conversion at €4/mo is famously unpredictable.
-- Whether r/jira and HN will react well or badly to the OSS-plus-hosted split. I tried to be upfront about it in the posts.
-- GDPR: I'm in the EU, the product is sold in the EU, I have a sub-processor list and a basic DPA, but the first time a corporate customer asks for a SOC 2 I'm going to have to politely decline.
+- Conversion. ~80 people on the email list from a quiet beta, plus a handful of pilot users on the hosted proxy. €4/mo conversion is hard to predict from a list that size, so I'll have real numbers in 30 days rather than guess now.
+- Channel mix. I expect r/jira and HN to be the two posts that actually move the needle; everything else is supporting. The OSS-plus-hosted framing is the part I'm watching most closely.
+- Enterprise ceiling. I'm EU-based, selling in the EU, with a sub-processor list and a DPA. SOC 2 is a deliberate "not yet" — it's the wrong investment until there's enough revenue to justify it.
 
-Happy to answer numbers questions when they exist. Will report back in 30 days with real conversion data.
+Happy to dig into numbers. Reporting back in 30 days with real conversion data.
 
 Link: <DOMAIN>
