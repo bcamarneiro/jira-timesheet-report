@@ -1,4 +1,5 @@
 import type React from 'react';
+import { usePageTitle } from '../hooks/usePageTitle';
 import * as styles from './SubProcessorsPage.module.css';
 
 /**
@@ -73,6 +74,7 @@ const ACTIVE_SUB_PROCESSORS: SubProcessorRow[] = [
 ];
 
 export const SubProcessorsPage: React.FC = () => {
+	usePageTitle('Sub-processors');
 	return (
 		<div className={styles.page}>
 			<header className={styles.hero}>
@@ -202,7 +204,7 @@ export const SubProcessorsPage: React.FC = () => {
 
 			<hr className={styles.divider} />
 			<p className={styles.footer}>
-				Last updated: {LAST_UPDATED}. Contact: support email TBD.
+				Last updated: {LAST_UPDATED}. Questions: open an issue on the public repository, or contact us via the email listed in the privacy policy.
 			</p>
 		</div>
 	);

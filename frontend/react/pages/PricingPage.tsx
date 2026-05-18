@@ -2,6 +2,7 @@ import type React from 'react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PremiumWaitlistForm } from '../components/marketing/PremiumWaitlistForm';
+import { usePageTitle } from '../hooks/usePageTitle';
 import * as styles from './PricingPage.module.css';
 
 /**
@@ -54,6 +55,7 @@ function formatEur(cents: number): string {
 }
 
 export const PricingPage: React.FC = () => {
+	usePageTitle('Pricing');
 	const [selectedAnchor, setSelectedAnchor] = useState<AnchorId>('fair');
 	const [customEuros, setCustomEuros] = useState<string>('15');
 	const [showForm, setShowForm] = useState(false);

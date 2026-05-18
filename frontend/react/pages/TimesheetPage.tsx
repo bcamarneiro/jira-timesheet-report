@@ -25,6 +25,7 @@ import {
 } from '../hooks/useReportsURLState';
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { describeFreshness } from '../utils/dataFreshness';
 import { addDaysToIsoDate, monthLabel } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
@@ -105,6 +106,7 @@ function sumMonthlyHours(
 // --- Main component ---
 
 export const TimesheetPage: React.FC = () => {
+	usePageTitle('Reports');
 	const queryClient = useQueryClient();
 	// Seed selectedUser from ?user= synchronously on first mount so that
 	// deep-links like /reports?user=Sarah%20Johnson are reflected in the

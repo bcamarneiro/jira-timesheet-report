@@ -71,6 +71,13 @@ async function postJson(
 const DEFAULT_UPGRADE_AMOUNT_CENTS = 1000;
 
 export function AccountPage(): JSX.Element {
+	useEffect(() => {
+		const previous = document.title;
+		document.title = 'Account — Hoursmith';
+		return () => {
+			document.title = previous;
+		};
+	}, []);
 	const { user, session, signOut } = useAuth();
 	const navigate = useNavigate();
 	const [subscription, setSubscription] = useState<SubscriptionRow | null>(
