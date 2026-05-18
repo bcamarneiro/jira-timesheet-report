@@ -1,10 +1,17 @@
 /**
  * Stripe Checkout Session creator for Hoursmith Premium.
  *
- * `POST /api/checkout` with `{ priceId: 'monthly' | 'yearly' }` and a Supabase
- * JWT in the `Authorization: Bearer ...` header. Returns `{ url }` pointing at
+ * `POST /api/checkout` with `{ amount: number }` (cents) and a Supabase JWT in
+ * the `Authorization: Bearer ...` header. Returns `{ url }` pointing at
  * Stripe-hosted Checkout. The frontend (ADA-257) redirects there. Webhook
  * (ADA-261) is what actually flips the subscription to `active` later.
+ *
+ * Pricing model (name-your-price annual):
+ *   - Floor: €3 (300 cents) — below this the Stripe fee swallows the revenue.
+ *   - Sanity cap: €1,000 (100000 cents) — prevents fat-finger/abuse.
+ *   - One Stripe Product (env `STRIPE_PRODUCT_PREMIUM`); the Checkout Session
+ *     receives an inline `price_data` so the backend can validate the amount
+ *     instead of relying on Stripe's `custom_unit_amount` UI to enforce it.
  *
  * Idempotency: we look up `stripe_customer_id` on the user's `subscriptions`
  * row first. If present, reuse it. If absent, create a Stripe Customer with
@@ -31,7 +38,10 @@ export const config = {
 	regions: ['fra1'],
 };
 
-export type PriceTier = 'monthly' | 'yearly';
+/** Minimum chargeable amount in cents (€3/year). */
+export const AMOUNT_FLOOR_CENTS = 300;
+/** Sanity cap in cents (€1,000/year). */
+export const AMOUNT_CAP_CENTS = 100_000;
 
 export interface CheckoutDeps {
 	/** Inject Supabase admin client (tests). */
@@ -41,11 +51,6 @@ export interface CheckoutDeps {
 	/** Inject env reader (tests). Defaults to `process.env`. */
 	env?: Partial<Record<string, string | undefined>>;
 }
-
-const PRICE_ENV: Record<PriceTier, string> = {
-	monthly: 'STRIPE_PRICE_PREMIUM_MONTHLY',
-	yearly: 'STRIPE_PRICE_PREMIUM_YEARLY',
-};
 
 export default async function handler(request: Request): Promise<Response> {
 	return handleCheckout(request);
@@ -106,29 +111,50 @@ export async function handleCheckout(
 		return jsonResponse(401, { error: 'invalid_token' });
 	}
 
-	// 2. Parse body and validate priceId.
+	// 2. Parse body and validate amount.
 	let body: unknown;
 	try {
 		body = await request.json();
 	} catch {
 		body = null;
 	}
-	const priceTier = parsePriceTier(body);
-	if (!priceTier) {
+	const amountParse = parseAmount(body);
+	if (amountParse.kind === 'invalid') {
 		logCheckout({
 			userId,
 			customerId: null,
-			code: 'invalid_price_id',
+			code: 'invalid_amount',
 			status: 400,
 			durationMs: Date.now() - start,
 		});
-		return jsonResponse(400, { error: 'invalid_price_id' });
+		return jsonResponse(400, { error: 'invalid_amount' });
 	}
+	if (amountParse.kind === 'below_floor') {
+		logCheckout({
+			userId,
+			customerId: null,
+			code: 'amount_below_floor',
+			status: 400,
+			durationMs: Date.now() - start,
+		});
+		return jsonResponse(400, { error: 'amount_below_floor' });
+	}
+	if (amountParse.kind === 'too_high') {
+		logCheckout({
+			userId,
+			customerId: null,
+			code: 'amount_too_high',
+			status: 400,
+			durationMs: Date.now() - start,
+		});
+		return jsonResponse(400, { error: 'amount_too_high' });
+	}
+	const amount = amountParse.value;
 
 	// 3. Resolve env-driven config.
-	const stripePriceId = env[PRICE_ENV[priceTier]];
+	const stripeProductId = env.STRIPE_PRODUCT_PREMIUM;
 	const appUrl = env.APP_URL;
-	if (!stripePriceId || !appUrl) {
+	if (!stripeProductId || !appUrl) {
 		logCheckout({
 			userId,
 			customerId: null,
@@ -185,14 +211,28 @@ export async function handleCheckout(
 		return jsonResponse(502, { error: 'customer_provisioning_failed' });
 	}
 
-	// 6. Create the Checkout Session.
+	// 6. Create the Checkout Session with inline price_data so we control the
+	//    annual amount on the backend (rather than relying on Stripe's
+	//    custom_unit_amount UI to enforce floor/cap).
 	let session: Stripe.Checkout.Session;
 	try {
 		session = await stripe.checkout.sessions.create({
 			mode: 'subscription',
 			customer: customerId,
-			line_items: [{ price: stripePriceId, quantity: 1 }],
-			subscription_data: { metadata: { user_id: userId } },
+			line_items: [
+				{
+					price_data: {
+						currency: 'eur',
+						product: stripeProductId,
+						unit_amount: amount,
+						recurring: { interval: 'year' },
+					},
+					quantity: 1,
+				},
+			],
+			subscription_data: {
+				metadata: { user_id: userId, chosen_amount_cents: String(amount) },
+			},
 			success_url: `${appUrl.replace(/\/+$/, '')}/account?upgrade=success`,
 			cancel_url: `${appUrl.replace(/\/+$/, '')}/account?upgrade=cancel`,
 			automatic_tax: { enabled: true },
@@ -231,10 +271,25 @@ export async function handleCheckout(
 	return jsonResponse(200, { url: session.url });
 }
 
-function parsePriceTier(body: unknown): PriceTier | null {
-	if (!body || typeof body !== 'object') return null;
-	const raw = (body as { priceId?: unknown }).priceId;
-	return raw === 'monthly' || raw === 'yearly' ? raw : null;
+type AmountParse =
+	| { kind: 'ok'; value: number }
+	| { kind: 'invalid' }
+	| { kind: 'below_floor' }
+	| { kind: 'too_high' };
+
+function parseAmount(body: unknown): AmountParse {
+	if (!body || typeof body !== 'object') return { kind: 'invalid' };
+	const raw = (body as { amount?: unknown }).amount;
+	if (
+		typeof raw !== 'number' ||
+		!Number.isFinite(raw) ||
+		!Number.isInteger(raw)
+	) {
+		return { kind: 'invalid' };
+	}
+	if (raw < AMOUNT_FLOOR_CENTS) return { kind: 'below_floor' };
+	if (raw > AMOUNT_CAP_CENTS) return { kind: 'too_high' };
+	return { kind: 'ok', value: raw };
 }
 
 function extractBearer(header: string | null): string | null {

@@ -26,7 +26,7 @@ Happy to take feature requests if you've got worklog pain points it doesn't solv
 
 ### Re: "Is there a hosted version? I don't want to run a proxy locally."
 
-Yeah — I host the proxy myself for €4/mo at <DOMAIN> if you'd rather not keep a terminal open. Exact same app, the only difference is I run the CORS proxy for you. Token still stays in your browser, proxy is stateless and never sees it persistently. Self-hosting stays free forever; the paid version is purely "I don't want to deal with the proxy."
+Yeah — I host the proxy myself at <DOMAIN> if you'd rather not keep a terminal open. Name your price, minimum €3/year, suggested €10. Exact same app, the only difference is I run the CORS proxy for you. Token still stays in your browser, proxy is stateless and never sees it persistently. Self-hosting stays free forever; the paid version is purely "I don't want to deal with the proxy."
 
 ### Re: "Does it work with Jira Server / Data Center, or just Cloud?"
 

@@ -66,8 +66,7 @@ function makeStripe(overrides: Partial<FakeStripe> = {}): FakeStripe {
 }
 
 const ENV = {
-	STRIPE_PRICE_PREMIUM_MONTHLY: 'price_monthly',
-	STRIPE_PRICE_PREMIUM_YEARLY: 'price_yearly',
+	STRIPE_PRODUCT_PREMIUM: 'prod_premium_123',
 	APP_URL: 'https://hoursmith.io',
 };
 
@@ -87,15 +86,12 @@ describe('handleCheckout', () => {
 	});
 
 	it('returns 401 when Authorization header is missing', async () => {
-		const res = await handleCheckout(
-			makeRequest({ body: { priceId: 'monthly' } }),
-			{
-				supabase: makeSupabase(),
-				// biome-ignore lint/suspicious/noExplicitAny: fake stripe shape
-				stripe: makeStripe() as any,
-				env: ENV,
-			},
-		);
+		const res = await handleCheckout(makeRequest({ body: { amount: 1000 } }), {
+			supabase: makeSupabase(),
+			// biome-ignore lint/suspicious/noExplicitAny: fake stripe shape
+			stripe: makeStripe() as any,
+			env: ENV,
+		});
 		expect(res.status).toBe(401);
 		expect(await res.json()).toEqual({ error: 'missing_token' });
 	});
@@ -107,7 +103,7 @@ describe('handleCheckout', () => {
 		const res = await handleCheckout(
 			makeRequest({
 				headers: { authorization: 'Bearer bad' },
-				body: { priceId: 'monthly' },
+				body: { amount: 1000 },
 			}),
 			{
 				supabase,
@@ -120,8 +116,8 @@ describe('handleCheckout', () => {
 		expect(await res.json()).toEqual({ error: 'invalid_token' });
 	});
 
-	it('returns 400 when priceId is missing or invalid', async () => {
-		for (const body of [{}, { priceId: 'lifetime' }, { priceId: 42 }, null]) {
+	it('returns 400 when amount is missing or non-numeric', async () => {
+		for (const body of [{}, { amount: 'ten' }, { amount: 10.5 }, null]) {
 			const res = await handleCheckout(
 				makeRequest({
 					headers: { authorization: 'Bearer good' },
@@ -135,21 +131,87 @@ describe('handleCheckout', () => {
 				},
 			);
 			expect(res.status).toBe(400);
-			expect(await res.json()).toEqual({ error: 'invalid_price_id' });
+			expect(await res.json()).toEqual({ error: 'invalid_amount' });
 		}
 	});
 
-	it('returns 500 when required env vars are missing', async () => {
+	it('returns 400 amount_below_floor when amount is 299 cents (just under €3)', async () => {
 		const res = await handleCheckout(
 			makeRequest({
 				headers: { authorization: 'Bearer good' },
-				body: { priceId: 'monthly' },
+				body: { amount: 299 },
 			}),
 			{
 				supabase: makeSupabase(),
 				// biome-ignore lint/suspicious/noExplicitAny: fake stripe shape
 				stripe: makeStripe() as any,
-				env: { APP_URL: 'https://hoursmith.io' }, // no price ids
+				env: ENV,
+			},
+		);
+		expect(res.status).toBe(400);
+		expect(await res.json()).toEqual({ error: 'amount_below_floor' });
+	});
+
+	it('accepts the floor edge case (300 cents = €3)', async () => {
+		const stripe = makeStripe();
+		const res = await handleCheckout(
+			makeRequest({
+				headers: { authorization: 'Bearer good' },
+				body: { amount: 300 },
+			}),
+			{
+				supabase: makeSupabase(),
+				// biome-ignore lint/suspicious/noExplicitAny: fake stripe shape
+				stripe: stripe as any,
+				env: ENV,
+			},
+		);
+		expect(res.status).toBe(200);
+		expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+			expect.objectContaining({
+				line_items: [
+					{
+						price_data: {
+							currency: 'eur',
+							product: 'prod_premium_123',
+							unit_amount: 300,
+							recurring: { interval: 'year' },
+						},
+						quantity: 1,
+					},
+				],
+			}),
+		);
+	});
+
+	it('returns 400 amount_too_high when amount exceeds €1,000 cap', async () => {
+		const res = await handleCheckout(
+			makeRequest({
+				headers: { authorization: 'Bearer good' },
+				body: { amount: 100_001 },
+			}),
+			{
+				supabase: makeSupabase(),
+				// biome-ignore lint/suspicious/noExplicitAny: fake stripe shape
+				stripe: makeStripe() as any,
+				env: ENV,
+			},
+		);
+		expect(res.status).toBe(400);
+		expect(await res.json()).toEqual({ error: 'amount_too_high' });
+	});
+
+	it('returns 500 when STRIPE_PRODUCT_PREMIUM is missing', async () => {
+		const res = await handleCheckout(
+			makeRequest({
+				headers: { authorization: 'Bearer good' },
+				body: { amount: 1000 },
+			}),
+			{
+				supabase: makeSupabase(),
+				// biome-ignore lint/suspicious/noExplicitAny: fake stripe shape
+				stripe: makeStripe() as any,
+				env: { APP_URL: 'https://hoursmith.io' },
 			},
 		);
 		expect(res.status).toBe(500);
@@ -160,7 +222,7 @@ describe('handleCheckout', () => {
 		const res = await handleCheckout(
 			makeRequest({
 				headers: { authorization: 'Bearer good' },
-				body: { priceId: 'monthly' },
+				body: { amount: 1000 },
 			}),
 			{
 				supabase: makeSupabase(),
@@ -172,7 +234,7 @@ describe('handleCheckout', () => {
 		expect(res.status).toBe(500);
 	});
 
-	it('creates a Stripe customer and stub subscriptions row on first-time checkout', async () => {
+	it('creates a Stripe customer and stub subscriptions row on first-time checkout at €10', async () => {
 		const supabase = makeSupabase({
 			getSubscriptionByUserId: vi.fn().mockResolvedValue(null),
 			getProfileEmail: vi.fn().mockResolvedValue('user@example.com'),
@@ -181,7 +243,7 @@ describe('handleCheckout', () => {
 		const res = await handleCheckout(
 			makeRequest({
 				headers: { authorization: 'Bearer good' },
-				body: { priceId: 'monthly' },
+				body: { amount: 1000 },
 			}),
 			{
 				supabase,
@@ -206,8 +268,20 @@ describe('handleCheckout', () => {
 			expect.objectContaining({
 				mode: 'subscription',
 				customer: 'cus_new_123',
-				line_items: [{ price: 'price_monthly', quantity: 1 }],
-				subscription_data: { metadata: { user_id: 'user-123' } },
+				line_items: [
+					{
+						price_data: {
+							currency: 'eur',
+							product: 'prod_premium_123',
+							unit_amount: 1000,
+							recurring: { interval: 'year' },
+						},
+						quantity: 1,
+					},
+				],
+				subscription_data: {
+					metadata: { user_id: 'user-123', chosen_amount_cents: '1000' },
+				},
 				success_url: 'https://hoursmith.io/account?upgrade=success',
 				cancel_url: 'https://hoursmith.io/account?upgrade=cancel',
 				automatic_tax: { enabled: true },
@@ -228,7 +302,7 @@ describe('handleCheckout', () => {
 		const res = await handleCheckout(
 			makeRequest({
 				headers: { authorization: 'Bearer good' },
-				body: { priceId: 'yearly' },
+				body: { amount: 3000 },
 			}),
 			{
 				supabase,
@@ -244,7 +318,17 @@ describe('handleCheckout', () => {
 		expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
 			expect.objectContaining({
 				customer: 'cus_existing_999',
-				line_items: [{ price: 'price_yearly', quantity: 1 }],
+				line_items: [
+					{
+						price_data: {
+							currency: 'eur',
+							product: 'prod_premium_123',
+							unit_amount: 3000,
+							recurring: { interval: 'year' },
+						},
+						quantity: 1,
+					},
+				],
 			}),
 		);
 	});
@@ -260,7 +344,7 @@ describe('handleCheckout', () => {
 		const res = await handleCheckout(
 			makeRequest({
 				headers: { authorization: 'Bearer good' },
-				body: { priceId: 'monthly' },
+				body: { amount: 1000 },
 			}),
 			{
 				supabase: makeSupabase({
@@ -289,7 +373,7 @@ describe('handleCheckout', () => {
 		const res = await handleCheckout(
 			makeRequest({
 				headers: { authorization: 'Bearer good' },
-				body: { priceId: 'monthly' },
+				body: { amount: 1000 },
 			}),
 			{
 				supabase,
