@@ -13,10 +13,12 @@ import { DiagnosticsPanel } from '../components/settings/DiagnosticsPanel';
 import { SettingsForm } from '../components/settings/SettingsForm';
 import { SetupWizard } from '../components/settings/SetupWizard';
 import { toast } from '../components/ui/Toast';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { buildSettingsSetupModel } from '../utils/settingsSetup';
 import * as styles from './SettingsPage.module.css';
 
 export const SettingsPage: React.FC = () => {
+	usePageTitle('Settings');
 	const formData = useSettingsFormStore((state) => state.formData);
 	const integrationTests = useSettingsFormStore(
 		(state) => state.integrationTests,

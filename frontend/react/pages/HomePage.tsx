@@ -2,9 +2,11 @@ import type React from 'react';
 import { Link } from 'react-router-dom';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { PWAInstallCard } from '../components/home/PWAInstallCard';
+import { usePageTitle } from '../hooks/usePageTitle';
 import * as styles from './HomePage.module.css';
 
 export const HomePage: React.FC = () => {
+	usePageTitle('Home');
 	const jiraHost = useConfigStore((state) => state.config.jiraHost);
 	const isConfigured = !!jiraHost;
 	const primaryAction = isConfigured

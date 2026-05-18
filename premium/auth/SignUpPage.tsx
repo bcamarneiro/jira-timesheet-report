@@ -7,12 +7,19 @@
  * Linear: ADA-256.
  */
 
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as styles from './SignUpPage.module.css';
 import { useAuth } from './useAuth';
 
 export function SignUpPage(): JSX.Element {
+	useEffect(() => {
+		const previous = document.title;
+		document.title = 'Sign up — Hoursmith';
+		return () => {
+			document.title = previous;
+		};
+	}, []);
 	const { signUp, signInWithGitHub } = useAuth();
 	const navigate = useNavigate();
 

@@ -23,6 +23,7 @@ import { useCopyPreviousWeek } from '../hooks/useCopyPreviousWeek';
 import { useDashboardDataFetcher } from '../hooks/useDashboardDataFetcher';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useMonthHeatmapData } from '../hooks/useMonthHeatmapData';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { addDaysToIsoDate } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';
 import { generateWeeklyCsv } from '../utils/weekCsvExport';
@@ -33,6 +34,7 @@ import * as styles from './DashboardPage.module.css';
 const GAP_DAYS_SECTION_ID = 'dashboard-gap-days';
 
 export const DashboardPage: React.FC = () => {
+	usePageTitle('Dashboard');
 	useDashboardDataFetcher();
 
 	const jiraHost = useConfigStore((s) => s.config.jiraHost);
