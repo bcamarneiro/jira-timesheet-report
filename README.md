@@ -14,10 +14,10 @@ Hoursmith is open source. The whole app is in this repository under MIT. There i
 | Worklog dashboard, heatmap, reports, CSV | Yes | Yes |
 | CORS proxy | You run `npm run cors-proxy` locally | We host it, you sign in |
 | Terminal required | Yes | No |
-| Price | Free, forever | ~€4 / month |
+| Price | Free, forever | €10/year, name your price, minimum €3 |
 | Status | Available now | Coming soon |
 
-Premium is a pure quality-of-life upgrade. The app code is identical. The only thing you pay for is not having to keep a proxy process running on your machine.
+Premium hosts the CORS proxy for you. €10/year, name your price, minimum €3. The app code is identical to Free — the only thing you pay for is not having to keep a proxy process running on your machine.
 
 Premium is not launched yet. You can register interest on the [pricing page](https://hoursmith.io/pricing) (placeholder — coming soon).
 

@@ -50,14 +50,25 @@ function formatDate(value: string | null | undefined): string {
 	}
 }
 
-async function postJson(path: string, token?: string): Promise<Response> {
+async function postJson(
+	path: string,
+	token?: string,
+	body?: unknown,
+): Promise<Response> {
 	return fetch(path, {
 		method: 'POST',
 		headers: token
 			? { authorization: `Bearer ${token}`, 'content-type': 'application/json' }
 			: { 'content-type': 'application/json' },
+		body: body === undefined ? undefined : JSON.stringify(body),
 	});
 }
+
+/**
+ * Default anchor amount (€10/year, in cents) for the simple upgrade button on
+ * the Account page. The Pricing page is where the user picks a custom amount.
+ */
+const DEFAULT_UPGRADE_AMOUNT_CENTS = 1000;
 
 export function AccountPage(): JSX.Element {
 	const { user, session, signOut } = useAuth();
@@ -97,7 +108,9 @@ export function AccountPage(): JSX.Element {
 		setActionPending('checkout');
 		setActionError(null);
 		try {
-			const res = await postJson('/api/checkout', session?.access_token);
+			const res = await postJson('/api/checkout', session?.access_token, {
+				amount: DEFAULT_UPGRADE_AMOUNT_CENTS,
+			});
 			if (!res.ok) throw new Error('Checkout unavailable');
 			const body = (await res.json()) as { url?: string };
 			if (body.url) {

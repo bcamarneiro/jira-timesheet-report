@@ -12,7 +12,7 @@ I got tired of squinting at Jira's worklog reports trying to remember what I did
 
 The app is MIT-licensed and runs entirely in your browser. The only awkward part is that Atlassian doesn't send CORS headers on the worklog endpoints, so you need a tiny proxy in front. The repo ships one — `npm run cors-proxy` and you're done. Your Jira token never leaves the browser; the proxy is stateless and just forwards requests.
 
-If you don't want to keep a terminal open, there's a hosted version at €4/mo where I run the proxy for you. Same app, same code, just on my Vercel instead of yours. That's the whole paid offering — I'm not gating features.
+If you don't want to keep a terminal open, there's a hosted version where I run the proxy for you. Name your price — minimum €3/year, suggested €10. Same app, same code, just on my Vercel instead of yours. That's the whole paid offering — I'm not gating features.
 
 Stack: React, Zustand, rspack, Supabase + Stripe for the hosted side. Source-available under BSL 1.1 in `/premium/` so it's all readable.
 
@@ -32,6 +32,6 @@ Atlassian Cloud's REST API doesn't send `Access-Control-Allow-Origin`, so browse
 
 It doesn't compete with them. Tempo and Toggl are time-tracking tools — you start a timer, they log time. Hoursmith doesn't track anything; it reads worklogs you've already logged in Jira and visualizes them. If you don't log worklogs in Jira at all, this tool has nothing to show you. If you log them religiously and want a better view than Jira's native one, this is for you.
 
-### Re: "Why €4? Why not free?"
+### Re: "Why name-your-price? Why a floor?"
 
-Honest answer: payment processor fees have a floor (~€0.30 + 3% on €4 is already ~13% gone), and below €4 the unit economics stop covering even the hosted proxy's Vercel bill plus the occasional support email about expired tokens. I'd rather price it at the actual cost-to-serve than do the "free tier that's deliberately broken" thing. The full app stays MIT — if €4 is a blocker, self-hosting the proxy is a five-minute setup.
+Honest answer: payment processor fees have a floor (~€0.30 + 3% on €3 is already ~13% gone), so below €3 the unit economics stop covering even the hosted proxy's Vercel bill plus the occasional support email about expired tokens. €10/year is the suggested default — that's roughly the per-user cost-to-serve. Above that is up to you; some people want to give more, that's fine. The full app stays MIT — if even €3 is a blocker, self-hosting the proxy is a five-minute setup.

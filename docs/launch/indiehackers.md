@@ -2,11 +2,11 @@
 
 **Title:**
 
-`Shipped Hoursmith: open-source app + paid hosted proxy ($4/mo)`
+`Shipped Hoursmith: open-source app + name-your-price hosted proxy (€3 floor, €10 default)`
 
 ## Body
 
-After about eight months of evenings-and-weekends work, I shipped Hoursmith today. It's a Jira worklog dashboard — heatmap, week view, day breakdown, manager rollups, CSV export. The free version is MIT-licensed and runs locally. The paid version (€4/mo or €40/yr) is exactly the same app, except I host the CORS proxy so you don't need to run one yourself.
+After about eight months of evenings-and-weekends work, I shipped Hoursmith today. It's a Jira worklog dashboard — heatmap, week view, day breakdown, manager rollups, CSV export. The free version is MIT-licensed and runs locally. The paid version is exactly the same app, except I host the CORS proxy so you don't need to run one yourself — €10/year (name your price, minimum €3).
 
 ### What it is, honestly
 
@@ -14,11 +14,11 @@ One feature is paid: the hosted proxy. That's it. I considered building a "Team 
 
 ### Revenue target
 
-€200/mo is the number that makes this sustainable — Vercel, Supabase, Stripe fees, the domain, and an hour or two a week of support email all covered, with a little left over. That's 50 paying users. I'm not chasing a SaaS business; I want a small product that pays for itself, that I'll still be running in three years.
+~€2,000/year is the number that makes this sustainable — Vercel, Supabase, Stripe fees, the domain, and an hour or two a week of support email all covered, with a little left over. At the €10 default that's 200 paying users; with the long tail of people who pay €30 to be kind, it's fewer. I'm not chasing a SaaS business; I want a small product that pays for itself, that I'll still be running in three years.
 
 ### Pricing rationale
 
-€4 is the floor. Below that, Stripe's €0.30 + 3% per transaction eats double-digit percentages of the revenue and the math stops working. I looked at €3 and €5 and €4 felt like the honest number — high enough that I can afford to support it, low enough that it's a no-brainer if you log Jira time daily.
+I price it name-your-price with a €3 floor and a €10 default. €3 is the lowest where Stripe fees still make sense (€0.30 + 3% on €3 is already ~13% gone). €10 is roughly what one paying user costs me to host for a year — high enough to cover the lights, low enough to be a no-brainer if you log Jira time daily. €30 is the "thanks" tier for people who want to be generous. 100 paying users at €10 covers the lights; everything above that is runway.
 
 ### Stack
 
@@ -35,7 +35,7 @@ One feature is paid: the hosted proxy. That's it. I considered building a "Team 
 
 ### Open questions
 
-- Conversion. ~80 people on the email list from a quiet beta, plus a handful of pilot users on the hosted proxy. €4/mo conversion is hard to predict from a list that size, so I'll have real numbers in 30 days rather than guess now.
+- Conversion. ~80 people on the email list from a quiet beta, plus a handful of pilot users on the hosted proxy. Name-your-price conversion is hard to predict from a list that size, so I'll have real numbers in 30 days rather than guess now.
 - Channel mix. I expect r/jira and HN to be the two posts that actually move the needle; everything else is supporting. The OSS-plus-hosted framing is the part I'm watching most closely.
 - Enterprise ceiling. I'm EU-based, selling in the EU, with a sub-processor list and a DPA. SOC 2 is a deliberate "not yet" — it's the wrong investment until there's enough revenue to justify it.
 
