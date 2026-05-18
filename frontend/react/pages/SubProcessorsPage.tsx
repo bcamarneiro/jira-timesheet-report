@@ -204,7 +204,8 @@ export const SubProcessorsPage: React.FC = () => {
 
 			<hr className={styles.divider} />
 			<p className={styles.footer}>
-				Last updated: {LAST_UPDATED}. Questions: open an issue on the public repository, or contact us via the email listed in the privacy policy.
+				Last updated: {LAST_UPDATED}. Questions: open an issue on the public
+				repository, or contact us via the email listed in the privacy policy.
 			</p>
 		</div>
 	);
