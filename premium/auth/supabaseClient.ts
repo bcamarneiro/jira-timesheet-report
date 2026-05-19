@@ -30,6 +30,15 @@ function assertEnv(): void {
 	}
 }
 
+/**
+ * Returns true if the Supabase public env vars are set at build time. Callers
+ * use this to gracefully degrade (treat the user as logged-out) instead of
+ * crashing the whole app when the deploy is misconfigured.
+ */
+export function hasSupabaseEnv(): boolean {
+	return Boolean(supabaseUrl && supabaseAnonKey);
+}
+
 let cached: SupabaseClient | null = null;
 
 export function getSupabase(): SupabaseClient {

@@ -20,7 +20,23 @@ import {
 	useMemo,
 	useState,
 } from 'react';
-import { getSupabase } from './supabaseClient';
+import { getSupabase, hasSupabaseEnv } from './supabaseClient';
+
+const MISSING_ENV_ERROR =
+	'Sign-in is temporarily unavailable. Please try again later.';
+
+function buildMisconfiguredContext(): AuthContextValue {
+	const fail = async () => ({ error: MISSING_ENV_ERROR });
+	return {
+		user: null,
+		session: null,
+		isLoading: false,
+		signIn: fail,
+		signUp: fail,
+		signInWithGitHub: fail,
+		signOut: async () => {},
+	};
+}
 
 export interface AuthContextValue {
 	user: User | null;
@@ -54,7 +70,23 @@ function logEvent(name: string): void {
 	}
 }
 
-export function AuthProvider({
+export function AuthProvider(props: AuthProviderProps): JSX.Element {
+	if (!props.client && !hasSupabaseEnv()) {
+		if (typeof console !== 'undefined') {
+			console.warn(
+				'[auth] supabase_env_missing — running in logged-out fallback mode',
+			);
+		}
+		return (
+			<AuthContext.Provider value={buildMisconfiguredContext()}>
+				{props.children}
+			</AuthContext.Provider>
+		);
+	}
+	return <ConfiguredAuthProvider {...props} />;
+}
+
+function ConfiguredAuthProvider({
 	children,
 	client,
 }: AuthProviderProps): JSX.Element {
