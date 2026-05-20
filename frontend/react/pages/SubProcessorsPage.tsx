@@ -13,7 +13,7 @@ import * as styles from './SubProcessorsPage.module.css';
  * sub-processor list changes (expected cadence: quarterly at most).
  */
 
-const LAST_UPDATED = '2026-05-16';
+const LAST_UPDATED = '2026-05-20';
 
 interface SubProcessorRow {
 	name: string;
@@ -60,16 +60,6 @@ const ACTIVE_SUB_PROCESSORS: SubProcessorRow[] = [
 			'Cookieless, anonymous traffic analytics. No personal identifiers are collected and no consent banner is required.',
 		region: 'EU (Germany)',
 		dpa: { label: 'plausible.io/dpa', href: 'https://plausible.io/dpa' },
-	},
-	{
-		name: 'iubenda',
-		purpose:
-			'Hosting of the Privacy Policy and Terms of Service documents linked from the application.',
-		region: 'EU (Italy)',
-		dpa: {
-			label: 'iubenda.com DPA',
-			href: 'https://www.iubenda.com/en/help/6758-data-processing-agreement-between-iubenda-and-its-users/',
-		},
 	},
 ];
 

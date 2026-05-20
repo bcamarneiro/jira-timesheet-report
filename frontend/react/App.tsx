@@ -46,6 +46,16 @@ const SubProcessorsPage = lazy(() =>
 		default: module.SubProcessorsPage,
 	})),
 );
+const PrivacyPage = lazy(() =>
+	import('./pages/PrivacyPage').then((module) => ({
+		default: module.PrivacyPage,
+	})),
+);
+const TermsPage = lazy(() =>
+	import('./pages/TermsPage').then((module) => ({
+		default: module.TermsPage,
+	})),
+);
 
 // Premium-only routes. The frontend boundary script
 // (scripts/check-premium-boundary.cjs) only matches static ES-module imports
@@ -115,6 +125,8 @@ const AppShell: React.FC = () => {
 					/>
 					<Route path="/settings" element={<SettingsPage />} />
 					<Route path="/sub-processors" element={<SubProcessorsPage />} />
+					<Route path="/privacy" element={<PrivacyPage />} />
+					<Route path="/terms" element={<TermsPage />} />
 					{premium?.premiumRoutes.map((route) => (
 						<Route key={route.path} path={route.path} element={route.element} />
 					))}
