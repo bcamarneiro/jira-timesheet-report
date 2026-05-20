@@ -14,11 +14,11 @@
  * Linear: ADA-264.
  */
 
-import { logAuditEvent } from '../_lib/auditLog';
+import { logAuditEvent } from '../_lib/auditLog.js';
 import {
 	defaultSupabaseAdmin,
 	type SupabaseAdminClient,
-} from '../_lib/supabaseAdmin';
+} from '../_lib/supabaseAdmin.js';
 
 export const config = {
 	runtime: 'edge',

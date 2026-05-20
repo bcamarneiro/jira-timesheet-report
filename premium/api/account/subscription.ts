@@ -18,10 +18,11 @@ import {
 	defaultSupabaseAdmin,
 	type SubscriptionRow,
 	type SupabaseAdminClient,
-} from '../_lib/supabaseAdmin';
+} from '../_lib/supabaseAdmin.js';
 
+// Edge runtime: Supabase REST + JWT verify are fetch-only and edge-compatible.
 export const config = {
-	runtime: 'nodejs',
+	runtime: 'edge',
 	regions: ['fra1'],
 };
 

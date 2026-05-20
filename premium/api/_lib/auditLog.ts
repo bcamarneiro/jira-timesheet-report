@@ -13,7 +13,7 @@
 import {
 	defaultSupabaseAdmin,
 	type SupabaseAdminClient,
-} from './supabaseAdmin';
+} from './supabaseAdmin.js';
 
 export async function logAuditEvent(
 	eventType: string,

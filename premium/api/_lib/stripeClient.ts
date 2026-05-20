@@ -24,7 +24,13 @@ import Stripe from 'stripe';
 
 let cached: Stripe | null = null;
 
-/** Full Stripe SDK instance, memoised. Throws if `STRIPE_SECRET_KEY` is unset. */
+/**
+ * Full Stripe SDK instance, memoised. Throws if `STRIPE_SECRET_KEY` is unset.
+ *
+ * Configured with the fetch-based HTTP client so the SDK works on the Edge
+ * runtime (`runtime: 'edge'` in handler config). The fetch client is also
+ * fine on Node runtimes, so this is a safe single configuration.
+ */
 export function getStripe(): Stripe {
 	if (cached) return cached;
 	const key = process.env.STRIPE_SECRET_KEY;
@@ -33,6 +39,7 @@ export function getStripe(): Stripe {
 	}
 	cached = new Stripe(key, {
 		apiVersion: '2024-06-20' as Stripe.LatestApiVersion,
+		httpClient: Stripe.createFetchHttpClient(),
 	});
 	return cached;
 }
@@ -51,27 +58,36 @@ export function defaultStripe(): StripeLikeClient {
 	return getStripe() as unknown as StripeLikeClient;
 }
 
-/** Injectable Stripe webhook signature verifier. */
+/**
+ * Injectable Stripe webhook signature verifier.
+ *
+ * May return a value or a Promise — production uses async because the Edge
+ * runtime's Web Crypto API is async, while unit tests typically pass a sync
+ * stub returning a fixture event.
+ */
 export type StripeEventVerifier = (
 	rawBody: string,
 	signature: string,
 	secret: string,
-) => Stripe.Event;
+) => Stripe.Event | Promise<Stripe.Event>;
 
 const defaultVerifier: StripeEventVerifier = (rawBody, signature, secret) =>
-	getStripe().webhooks.constructEvent(rawBody, signature, secret);
+	getStripe().webhooks.constructEventAsync(rawBody, signature, secret);
 
 /**
  * Verify a Stripe webhook signature and return the parsed event. Throws on
  * bad signature — callers MUST translate that into a 400 response.
+ *
+ * Async to support the Edge runtime's Web Crypto API. Sync verifier stubs
+ * passed by tests are awaited transparently.
  */
-export function constructStripeEvent(
+export async function constructStripeEvent(
 	rawBody: string,
 	signature: string,
 	secret: string,
 	verifier: StripeEventVerifier = defaultVerifier,
-): Stripe.Event {
-	return verifier(rawBody, signature, secret);
+): Promise<Stripe.Event> {
+	return await verifier(rawBody, signature, secret);
 }
 
 /** Reset the memoised client. Test-only. */

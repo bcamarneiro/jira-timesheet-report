@@ -24,15 +24,16 @@
  */
 
 import type Stripe from 'stripe';
-import { defaultStripe } from '../_lib/stripeClient';
+import { defaultStripe } from '../_lib/stripeClient.js';
 import {
 	defaultSupabaseAdmin,
 	type SupabaseAdminClient,
-} from '../_lib/supabaseAdmin';
+} from '../_lib/supabaseAdmin.js';
 
-// Stripe SDK is a Node-only package; portal sessions must run on the Node runtime.
+// Stripe SDK + Supabase REST are both fetch-compatible (Stripe via
+// createFetchHttpClient in stripeClient.ts), so this handler runs on edge.
 export const config = {
-	runtime: 'nodejs',
+	runtime: 'edge',
 	regions: ['fra1'],
 };
 

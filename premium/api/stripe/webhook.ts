@@ -32,18 +32,22 @@
 
 import type Stripe from 'stripe';
 import {
-	type StripeEventVerifier,
 	constructStripeEvent,
-} from '../_lib/stripeClient';
+	type StripeEventVerifier,
+} from '../_lib/stripeClient.js';
 import {
+	defaultSupabaseAdmin,
 	type SubscriptionUpsert,
 	type SupabaseAdminClient,
-	defaultSupabaseAdmin,
-} from '../_lib/supabaseAdmin';
+} from '../_lib/supabaseAdmin.js';
 
 // Pin to Frankfurt for GDPR residency. Mirrors vercel.json.
+//
+// Edge runtime: Stripe SDK is configured with `createFetchHttpClient()` and
+// signatures are verified with `constructEventAsync` (Web Crypto), so the
+// webhook is fully edge-compatible. Raw body access uses `request.text()`.
 export const config = {
-	runtime: 'nodejs',
+	runtime: 'edge',
 	regions: ['fra1'],
 };
 
@@ -111,7 +115,12 @@ export async function handleWebhook(
 
 	let event: Stripe.Event;
 	try {
-		event = constructStripeEvent(rawBody, signature, secret, deps.verifier);
+		event = await constructStripeEvent(
+			rawBody,
+			signature,
+			secret,
+			deps.verifier,
+		);
 	} catch (_err) {
 		logWebhook({
 			eventId: null,

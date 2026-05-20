@@ -19,8 +19,8 @@
  *               Authorization header.
  */
 
-import { getEntitlement } from '../_lib/entitlement';
-import { corsHeaders, forwardToJira } from '../_lib/jiraForward';
+import { getEntitlement } from '../_lib/entitlement.js';
+import { corsHeaders, forwardToJira } from '../_lib/jiraForward.js';
 
 // Pin to Frankfurt for GDPR residency. Mirrors vercel.json.
 export const config = {
