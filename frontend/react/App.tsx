@@ -130,7 +130,24 @@ const AppShell: React.FC = () => {
 					{premium?.premiumRoutes.map((route) => (
 						<Route key={route.path} path={route.path} element={route.element} />
 					))}
-					<Route path="*" element={<Navigate to="/" replace />} />
+					{/*
+					 * In premium builds the route table is split: known routes are
+					 * registered above, premium routes load asynchronously into
+					 * `premium`. If we render the catch-all redirect before the
+					 * dynamic chunk has resolved, a deep-link to /auth/sign-up
+					 * (which is a premium route) gets redirected to "/" before
+					 * SignUpPage ever mounts — and the URL change means SignUpPage
+					 * never renders even after the chunk finishes loading.
+					 *
+					 * In dev this is masked because the in-memory bundle resolves
+					 * synchronously; in production the network fetch opens the race.
+					 *
+					 * Fix: in premium builds, hold the catch-all until the chunk
+					 * resolves. Free builds keep the immediate catch-all.
+					 */}
+					{(!isPremiumBuild() || premium) && (
+						<Route path="*" element={<Navigate to="/" replace />} />
+					)}
 				</Routes>
 			</Suspense>
 			<ToastContainer />
