@@ -28,13 +28,17 @@
 import type Stripe from 'stripe';
 import { defaultStripe } from '../_lib/stripeClient.js';
 import {
-	type SupabaseAdminClient,
 	defaultSupabaseAdmin,
+	type SupabaseAdminClient,
 } from '../_lib/supabaseAdmin.js';
 
 // Pin to Frankfurt for GDPR residency. Mirrors vercel.json.
+//
+// Edge runtime: Stripe SDK is configured with `createFetchHttpClient()` in
+// stripeClient.ts, and Supabase REST is fetch-only, so this handler is fully
+// edge-compatible.
 export const config = {
-	runtime: 'nodejs',
+	runtime: 'edge',
 	regions: ['fra1'],
 };
 
