@@ -34,12 +34,12 @@ import type Stripe from 'stripe';
 import {
 	type StripeEventVerifier,
 	constructStripeEvent,
-} from '../_lib/stripeClient';
+} from '../_lib/stripeClient.js';
 import {
 	type SubscriptionUpsert,
 	type SupabaseAdminClient,
 	defaultSupabaseAdmin,
-} from '../_lib/supabaseAdmin';
+} from '../_lib/supabaseAdmin.js';
 
 // Pin to Frankfurt for GDPR residency. Mirrors vercel.json.
 export const config = {

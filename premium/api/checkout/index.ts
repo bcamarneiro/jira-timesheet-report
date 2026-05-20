@@ -26,11 +26,11 @@
  */
 
 import type Stripe from 'stripe';
-import { defaultStripe } from '../_lib/stripeClient';
+import { defaultStripe } from '../_lib/stripeClient.js';
 import {
 	type SupabaseAdminClient,
 	defaultSupabaseAdmin,
-} from '../_lib/supabaseAdmin';
+} from '../_lib/supabaseAdmin.js';
 
 // Pin to Frankfurt for GDPR residency. Mirrors vercel.json.
 export const config = {

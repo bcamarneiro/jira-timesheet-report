@@ -18,7 +18,7 @@ import {
 	defaultSupabaseAdmin,
 	type SubscriptionRow,
 	type SupabaseAdminClient,
-} from '../_lib/supabaseAdmin';
+} from '../_lib/supabaseAdmin.js';
 
 export const config = {
 	runtime: 'nodejs',

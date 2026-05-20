@@ -22,12 +22,12 @@
  * Linear: ADA-263.
  */
 
-import { logAuditEvent } from '../_lib/auditLog';
-import { defaultStripe, type StripeLikeClient } from '../_lib/stripeClient';
+import { logAuditEvent } from '../_lib/auditLog.js';
+import { defaultStripe, type StripeLikeClient } from '../_lib/stripeClient.js';
 import {
 	defaultSupabaseAdmin,
 	type SupabaseAdminClient,
-} from '../_lib/supabaseAdmin';
+} from '../_lib/supabaseAdmin.js';
 
 export const config = {
 	runtime: 'edge',
