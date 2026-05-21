@@ -188,11 +188,12 @@ export async function handleCheckout(
 	//    create a new Stripe Customer + stub subscriptions row.
 	let customerId: string;
 	try {
-		const existing = await supabase.getSubscriptionByUserId(userId);
+		const existing = await supabase.getSubscription(userId);
 		if (existing?.stripe_customer_id) {
 			customerId = existing.stripe_customer_id;
 		} else {
-			const email = (await supabase.getProfileEmail(userId)) ?? undefined;
+			const profile = await supabase.getProfile(userId);
+			const email = profile?.email ?? undefined;
 			const customer = await stripe.customers.create({
 				email,
 				metadata: { user_id: userId },
