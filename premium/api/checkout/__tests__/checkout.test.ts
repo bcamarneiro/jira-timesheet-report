@@ -35,8 +35,12 @@ function makeSupabase(
 ): SupabaseAdminClient {
 	return {
 		getUserIdFromToken: vi.fn().mockResolvedValue('user-123'),
-		getProfileEmail: vi.fn().mockResolvedValue('user@example.com'),
-		getSubscriptionByUserId: vi.fn().mockResolvedValue(null),
+		getProfile: vi.fn().mockResolvedValue({
+			id: 'u1',
+			email: 'user@example.com',
+			created_at: '2026-01-01',
+		}),
+		getSubscription: vi.fn().mockResolvedValue(null),
 		insertIncompleteSubscription: vi.fn().mockResolvedValue(undefined),
 		...overrides,
 	};
@@ -236,8 +240,12 @@ describe('handleCheckout', () => {
 
 	it('creates a Stripe customer and stub subscriptions row on first-time checkout at €10', async () => {
 		const supabase = makeSupabase({
-			getSubscriptionByUserId: vi.fn().mockResolvedValue(null),
-			getProfileEmail: vi.fn().mockResolvedValue('user@example.com'),
+			getSubscription: vi.fn().mockResolvedValue(null),
+			getProfile: vi.fn().mockResolvedValue({
+				id: 'u1',
+				email: 'user@example.com',
+				created_at: '2026-01-01',
+			}),
 		});
 		const stripe = makeStripe();
 		const res = await handleCheckout(
@@ -292,7 +300,7 @@ describe('handleCheckout', () => {
 
 	it('reuses the existing Stripe customer and does not duplicate the subscriptions row', async () => {
 		const supabase = makeSupabase({
-			getSubscriptionByUserId: vi.fn().mockResolvedValue({
+			getSubscription: vi.fn().mockResolvedValue({
 				user_id: 'user-123',
 				stripe_customer_id: 'cus_existing_999',
 				stripe_subscription_id: null,
@@ -314,7 +322,7 @@ describe('handleCheckout', () => {
 		expect(res.status).toBe(200);
 		expect(stripe.customers.create).not.toHaveBeenCalled();
 		expect(supabase.insertIncompleteSubscription).not.toHaveBeenCalled();
-		expect(supabase.getProfileEmail).not.toHaveBeenCalled();
+		expect(supabase.getProfile).not.toHaveBeenCalled();
 		expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
 			expect.objectContaining({
 				customer: 'cus_existing_999',
@@ -348,7 +356,7 @@ describe('handleCheckout', () => {
 			}),
 			{
 				supabase: makeSupabase({
-					getSubscriptionByUserId: vi.fn().mockResolvedValue({
+					getSubscription: vi.fn().mockResolvedValue({
 						user_id: 'user-123',
 						stripe_customer_id: 'cus_existing_999',
 						stripe_subscription_id: null,
@@ -365,7 +373,7 @@ describe('handleCheckout', () => {
 
 	it('returns 502 when customer provisioning fails', async () => {
 		const supabase = makeSupabase({
-			getSubscriptionByUserId: vi.fn().mockResolvedValue(null),
+			getSubscription: vi.fn().mockResolvedValue(null),
 			insertIncompleteSubscription: vi
 				.fn()
 				.mockRejectedValue(new Error('db down')),
