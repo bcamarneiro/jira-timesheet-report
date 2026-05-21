@@ -102,7 +102,7 @@ class FetchSupabaseAdminClient implements SupabaseAdminClient {
 		const params = new URLSearchParams({
 			user_id: `eq.${userId}`,
 			select:
-				'user_id,stripe_customer_id,stripe_subscription_id,tier,status,current_period_end',
+				'user_id,stripe_customer_id,stripe_subscription_id,tier,status,current_period_end,updated_at',
 		});
 		const res = await fetch(
 			`${this.url}/rest/v1/subscriptions?${params.toString()}`,
@@ -153,7 +153,7 @@ class FetchSupabaseAdminClient implements SupabaseAdminClient {
 		const params = new URLSearchParams({
 			stripe_customer_id: `eq.${stripeCustomerId}`,
 			select:
-				'user_id,stripe_customer_id,stripe_subscription_id,tier,status,current_period_end',
+				'user_id,stripe_customer_id,stripe_subscription_id,tier,status,current_period_end,updated_at',
 		});
 		const res = await fetch(
 			`${this.url}/rest/v1/subscriptions?${params.toString()}`,

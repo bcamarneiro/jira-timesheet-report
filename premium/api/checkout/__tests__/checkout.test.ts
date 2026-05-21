@@ -35,13 +35,11 @@ function makeSupabase(
 ): SupabaseAdminClient {
 	return {
 		getUserIdFromToken: vi.fn().mockResolvedValue('user-123'),
-		getProfile: vi
-			.fn()
-			.mockResolvedValue({
-				id: 'u1',
-				email: 'user@example.com',
-				created_at: '2026-01-01',
-			}),
+		getProfile: vi.fn().mockResolvedValue({
+			id: 'u1',
+			email: 'user@example.com',
+			created_at: '2026-01-01',
+		}),
 		getSubscription: vi.fn().mockResolvedValue(null),
 		insertIncompleteSubscription: vi.fn().mockResolvedValue(undefined),
 		...overrides,
@@ -243,13 +241,11 @@ describe('handleCheckout', () => {
 	it('creates a Stripe customer and stub subscriptions row on first-time checkout at €10', async () => {
 		const supabase = makeSupabase({
 			getSubscription: vi.fn().mockResolvedValue(null),
-			getProfile: vi
-				.fn()
-				.mockResolvedValue({
-					id: 'u1',
-					email: 'user@example.com',
-					created_at: '2026-01-01',
-				}),
+			getProfile: vi.fn().mockResolvedValue({
+				id: 'u1',
+				email: 'user@example.com',
+				created_at: '2026-01-01',
+			}),
 		});
 		const stripe = makeStripe();
 		const res = await handleCheckout(

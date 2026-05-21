@@ -38,7 +38,7 @@ export function getStripe(): Stripe {
 		throw new Error('STRIPE_SECRET_KEY must be set in the Vercel environment.');
 	}
 	cached = new Stripe(key, {
-		apiVersion: '2024-06-20' as Stripe.LatestApiVersion,
+		apiVersion: '2024-06-20',
 		httpClient: Stripe.createFetchHttpClient(),
 	});
 	return cached;
