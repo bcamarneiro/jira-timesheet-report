@@ -242,6 +242,11 @@ export async function handleCheckout(
 			cancel_url: `${appUrl.replace(/\/+$/, '')}/account?upgrade=cancel`,
 			automatic_tax: { enabled: true },
 			tax_id_collection: { enabled: true },
+			// Save the billing address entered in Checkout back to the Customer.
+			// Required when `automatic_tax` is enabled on a Customer without an
+			// existing address — without this, the first Checkout for a new
+			// Customer 400s with "Add a valid address to the Customer".
+			customer_update: { address: 'auto', name: 'auto' },
 		});
 	} catch (err) {
 		logCheckout({
