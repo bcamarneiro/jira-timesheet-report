@@ -1,4 +1,4 @@
-# Jira Timesheet Report Roadmap
+# Hoursmith Roadmap
 
 This roadmap reflects the current product direction as of March 25, 2026.
 
@@ -6,7 +6,7 @@ The next step is not "more screens". It is making the app easier to adopt, easie
 
 ## Product Direction
 
-Jira Timesheet Report should be treated as a **zero-backend Jira worklog companion** with two clear surfaces:
+Hoursmith should be treated as a **zero-backend Jira worklog companion** with two clear surfaces:
 
 - **Dashboard** for personal weekly close and worklog triage
 - **Reports** for team visibility and monthly reporting

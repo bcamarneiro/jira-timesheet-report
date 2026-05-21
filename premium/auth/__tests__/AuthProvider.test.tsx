@@ -6,8 +6,8 @@
  * Linear: ADA-256.
  */
 
-import { act, render, screen, waitFor } from '@testing-library/react';
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../AuthProvider';
 import { useAuth } from '../useAuth';

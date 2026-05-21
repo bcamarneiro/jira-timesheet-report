@@ -24,9 +24,9 @@ export const HomePage: React.FC = () => {
 						Close the week faster. Keep reports trustworthy.
 					</h1>
 					<p className={styles.description}>
-						Jira Timesheet Report gives people a weekly dashboard for gap triage
-						and a reports area for monthly and team-wide visibility, without
-						introducing a backend or moving credentials off-device.
+						Hoursmith gives you a weekly dashboard for gap triage and a reports
+						area for monthly and team-wide visibility, without introducing a
+						backend or moving credentials off-device.
 					</p>
 					<div className={styles.badgeRow}>
 						<span className={styles.badge}>Dashboard-first workflow</span>

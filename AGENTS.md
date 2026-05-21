@@ -4,7 +4,7 @@ This file provides context for AI coding agents working on this codebase.
 
 ## Project Overview
 
-Jira Timesheet Report is a zero-backend, browser-based Jira workspace with two main surfaces:
+Hoursmith is a zero-backend, browser-based Jira workspace with two main surfaces:
 
 - **Dashboard** for weekly gap triage, suggestions, reminders, and quick exports
 - **Reports** for weekly team compliance, manager-mode trend review, read-only snapshots, and monthly calendar-based reporting

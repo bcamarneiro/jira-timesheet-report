@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * CORS Proxy Server for Jira Timesheet Report
+ * CORS Proxy Server for Hoursmith
  *
  * Simple CORS proxy that forwards requests to Jira's API with proper
  * CORS headers. Optionally routes through a SOCKS5 proxy for internal hosts.

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to Jira Timesheet Report! This guide will get you up and running.
+Thanks for your interest in contributing to Hoursmith! This guide will get you up and running.
 
 ## Quick Start
 

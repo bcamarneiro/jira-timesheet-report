@@ -1,6 +1,6 @@
 # Product Plan
 
-This document captures the next step for Jira Timesheet Report: move from "powerful internal tool" to "easy-to-adopt product".
+This document captures the next step for Hoursmith: move from "powerful internal tool" to "easy-to-adopt product".
 
 ## Product Direction
 

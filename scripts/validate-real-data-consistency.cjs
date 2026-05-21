@@ -423,7 +423,7 @@ function writeReports(result, reportDir) {
 	);
 
 	const markdownLines = [
-		'# Jira Timesheet Consistency Report',
+		'# Hoursmith Consistency Report',
 		'',
 		`- Period: ${result.context.periodStart} to ${result.context.periodEnd}`,
 		`- Months back: ${result.context.monthsBack}`,

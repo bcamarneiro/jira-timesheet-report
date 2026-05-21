@@ -16,3 +16,11 @@ frontend/public/mockServiceWorker.js
 # Test artifacts
 test-output.log
 test-screenshots/
+.playwright-mcp/
+*.png
+
+# Local AI tooling caches (per-tool plugin caches; not project state)
+.agents/
+.continue/
+.junie/
+skills-lock.json

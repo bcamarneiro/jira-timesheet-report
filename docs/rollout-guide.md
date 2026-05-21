@@ -1,6 +1,6 @@
 # Rollout Guide
 
-This guide is for the person rolling Jira Timesheet Report out to a team, not the end user opening it for the first time.
+This guide is for the person rolling Hoursmith out to a team, not the end user opening it for the first time.
 
 The goal is simple:
 
@@ -202,7 +202,7 @@ A rollout can be considered healthy when:
 
 Use or adapt this:
 
-> We are starting to use Jira Timesheet Report as a lightweight Jira companion for weekly close and reporting.  
+> We are starting to use Hoursmith as a lightweight Jira companion for weekly close and reporting.  
 > Use `Dashboard` for your own weekly gap review and `Reports` for team/monthly reporting.  
 > Start here: `<hosted-url>`  
 > If you have a shared setup pack, import it from `Settings`.  
