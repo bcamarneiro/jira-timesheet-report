@@ -501,12 +501,7 @@ test.describe('Aggressive interaction sweep', () => {
 		await page.waitForLoadState('networkidle');
 		const nav = page.getByRole('navigation');
 
-		for (const linkName of [
-			'Dashboard',
-			'Reports',
-			'Settings',
-			'Jira Timesheet',
-		]) {
+		for (const linkName of ['Dashboard', 'Reports', 'Settings', 'Hoursmith']) {
 			await nav.getByRole('link', { name: linkName }).click();
 			await page.waitForTimeout(200);
 		}

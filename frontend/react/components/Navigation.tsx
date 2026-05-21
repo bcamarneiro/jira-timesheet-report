@@ -13,7 +13,7 @@ export const Navigation: React.FC = () => {
 		<nav className={styles.nav}>
 			<div className={styles.navContent}>
 				<Link to="/" className={styles.brandLink}>
-					<span className={styles.brand}>Jira Timesheet</span>
+					<span className={styles.brand}>Hoursmith</span>
 				</Link>
 				<div className={styles.navLinks}>
 					<Link to="/dashboard" className={getLinkStyle('/dashboard')}>

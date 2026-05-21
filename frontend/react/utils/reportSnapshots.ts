@@ -150,7 +150,7 @@ function buildDailyBreakdown(
 }
 
 function buildHeaderSummary(input: ReportsSnapshotInput): string[] {
-	const lines = ['# Jira Timesheet Report Snapshot', ''];
+	const lines = ['# Hoursmith Report Snapshot', ''];
 	lines.push(`Source: ${input.jiraHost || 'Unconfigured Jira host'}`);
 
 	if (input.viewMode === 'weekly') {
@@ -450,7 +450,7 @@ export function buildReportsSnapshotHtml(input: ReportsSnapshotInput): string {
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>Jira Timesheet Report Snapshot</title>
+	<title>Hoursmith Report Snapshot</title>
 	<style>
 		body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 32px; background: #f5f7fb; color: #101828; }
 		main { max-width: 1080px; margin: 0 auto; display: grid; gap: 24px; }
@@ -471,7 +471,7 @@ export function buildReportsSnapshotHtml(input: ReportsSnapshotInput): string {
 <body>
 	<main>
 		<header>
-			<h1>Jira Timesheet Report Snapshot</h1>
+			<h1>Hoursmith Report Snapshot</h1>
 			<p>Read-only export generated from the current Reports view.</p>
 			<ul class="meta-list">
 				<li><strong>Source:</strong> ${escapeHtml(input.jiraHost || 'Unconfigured Jira host')}</li>

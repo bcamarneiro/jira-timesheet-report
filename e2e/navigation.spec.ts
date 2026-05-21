@@ -36,7 +36,7 @@ test.describe('Navigation', () => {
 		await page.goto('/reports');
 
 		// Click on brand link to go home
-		await page.getByRole('link', { name: 'Jira Timesheet' }).click();
+		await page.getByRole('link', { name: 'Hoursmith' }).click();
 
 		// Verify URL changed back to home
 		await expect(page).toHaveURL('/');

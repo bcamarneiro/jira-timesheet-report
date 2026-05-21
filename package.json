@@ -1,7 +1,7 @@
 {
-	"name": "jira-timesheet-report",
+	"name": "hoursmith",
 	"version": "1.0.0",
-	"description": "Zero-backend Jira dashboard for personal worklog triage, team reporting, and exports.",
+	"description": "Hoursmith — a zero-backend Jira worklog dashboard for personal triage, team reporting, and exports.",
 	"main": "frontend/main.ts",
 	"scripts": {
 		"start": "rspack dev",

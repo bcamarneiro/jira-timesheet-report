@@ -5,7 +5,7 @@ This document is structured so the items can be copied into Linear with minimal 
 ## Project
 
 - **Name**: Productization and Adoption Push
-- **Goal**: make Jira Timesheet Report easy to discover, configure, trust, and use weekly
+- **Goal**: make Hoursmith easy to discover, configure, trust, and use weekly
 - **Success metric**: a teammate can open the hosted app, complete setup, and use Dashboard or Reports without pairing
 
 ## Suggested Milestones

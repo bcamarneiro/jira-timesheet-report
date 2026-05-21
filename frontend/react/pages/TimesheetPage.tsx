@@ -18,6 +18,7 @@ import { toast } from '../components/ui/Toast';
 import { useAbsenceDaysByUser } from '../hooks/useAbsenceDays';
 import { useDownload } from '../hooks/useDownload';
 import { monthWorklogsQueryKey } from '../hooks/useMonthWorklogs';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { useReportsTrendData } from '../hooks/useReportsTrendData';
 import {
 	getInitialSelectedUserFromURL,
@@ -25,7 +26,6 @@ import {
 } from '../hooks/useReportsURLState';
 import { useTeamData } from '../hooks/useTeamData';
 import { useTimesheetDataFetcher } from '../hooks/useTimesheetDataFetcher';
-import { usePageTitle } from '../hooks/usePageTitle';
 import { describeFreshness } from '../utils/dataFreshness';
 import { addDaysToIsoDate, monthLabel } from '../utils/date';
 import { downloadAsFile } from '../utils/downloadFile';

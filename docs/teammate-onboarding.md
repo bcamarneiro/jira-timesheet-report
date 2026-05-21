@@ -1,6 +1,6 @@
 # Teammate Onboarding
 
-This guide is for a teammate opening Jira Timesheet Report for the first time.
+This guide is for a teammate opening Hoursmith for the first time.
 
 If everything is configured well, the first run should take only a few minutes.
 

@@ -1,7 +1,7 @@
 {
-	"name": "Jira Timesheet Report",
-	"short_name": "Jira Report",
-	"description": "Zero-backend Jira workspace for weekly dashboard triage, reports, and exports.",
+	"name": "Hoursmith",
+	"short_name": "Hoursmith",
+	"description": "Hoursmith — a Jira worklog dashboard for weekly triage, reports, and exports. Zero-backend.",
 	"start_url": "./",
 	"scope": "./",
 	"display": "standalone",

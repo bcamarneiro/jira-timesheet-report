@@ -92,7 +92,7 @@ describe('buildReportsSnapshotMarkdown', () => {
 			},
 		});
 
-		expect(output).toContain('# Jira Timesheet Report Snapshot');
+		expect(output).toContain('# Hoursmith Report Snapshot');
 		expect(output).toContain('## 4-Week Trend');
 		expect(output).toContain('Recurring Gap Watchlist');
 		expect(output).toContain('| Alice | alice@example.com | 32h | 8h |');
@@ -181,7 +181,7 @@ describe('buildReportsSnapshotHtml', () => {
 			},
 		});
 
-		expect(output).toContain('<title>Jira Timesheet Report Snapshot</title>');
+		expect(output).toContain('<title>Hoursmith Report Snapshot</title>');
 		expect(output).toContain('<h2>Visible Team Table</h2>');
 		expect(output).toContain('<td>Alice</td>');
 		expect(output).toContain('<td>40h</td>');
