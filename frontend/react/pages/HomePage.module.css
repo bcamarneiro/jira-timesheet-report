@@ -305,6 +305,130 @@
 	font-weight: var(--font-medium);
 }
 
+.priceAnchor {
+	margin-top: var(--space-5);
+	font-size: var(--text-sm);
+	font-weight: var(--font-medium);
+	color: var(--color-text-secondary);
+}
+
+.tertiaryLinks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-4);
+	margin-top: var(--space-4);
+}
+
+.tertiaryLink {
+	font-size: var(--text-sm);
+	font-weight: var(--font-medium);
+	color: var(--color-text-link);
+	text-decoration: none;
+}
+
+.tertiaryLink:hover {
+	text-decoration: underline;
+}
+
+/* Inline team-rollup preview (replaces the old "first run" panel). */
+.heroVisual {
+	margin: 0;
+	padding: var(--space-6);
+	border-radius: var(--radius-2xl);
+	border: 1px solid var(--color-border);
+	background-color: var(--color-surface);
+	box-shadow: var(--shadow-md);
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-4);
+	overflow-x: auto;
+}
+
+.rollupCaption {
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	color: var(--color-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.rollupTable {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--text-sm);
+}
+
+.rollupCorner,
+.rollupDayHead {
+	padding: var(--space-2);
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	color: var(--color-text-secondary);
+	text-align: center;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.rollupCorner {
+	text-align: left;
+}
+
+.rollupName {
+	padding: var(--space-2);
+	font-weight: var(--font-medium);
+	color: var(--color-text);
+	white-space: nowrap;
+}
+
+.rollupCell,
+.rollupCellMissed {
+	padding: var(--space-2);
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+	border-top: 1px solid var(--color-border);
+}
+
+.rollupCell {
+	color: var(--color-text);
+}
+
+.rollupCellMissed {
+	color: var(--color-danger, #dc2626);
+	font-weight: var(--font-bold);
+	background-color: var(--color-day-incomplete-bg);
+}
+
+.whyBlock {
+	padding: var(--space-8);
+	border-radius: var(--radius-2xl);
+	border: 1px solid var(--color-border);
+	background: var(--color-day-complete-bg);
+	box-shadow: var(--shadow-sm);
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	max-width: 720px;
+}
+
+.whyLabel {
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	color: var(--color-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.whyText {
+	font-size: var(--text-lg);
+	color: var(--color-text);
+	line-height: var(--leading-relaxed);
+}
+
+.whySignature {
+	font-size: var(--text-sm);
+	font-weight: var(--font-medium);
+	color: var(--color-text-secondary);
+}
+
 @media (max-width: 960px) {
 	.hero,
 	.featureGrid,
