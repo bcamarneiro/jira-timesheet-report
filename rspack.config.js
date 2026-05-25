@@ -124,7 +124,12 @@ module.exports = {
 		hot: true,
 		liveReload: true,
 		client: {
-			overlay: true,
+			// Errors only. CSS Modules emit benign "Conflicting order" warnings
+			// when the same stylesheet is imported into more than one chunk
+			// (order is irrelevant for hashed/scoped class names). A warning
+			// overlay renders an iframe that intercepts pointer events, which
+			// silently breaks click-driven e2e smoke tests against the dev server.
+			overlay: { errors: true, warnings: false, runtimeErrors: true },
 			progress: true,
 			reconnect: 5,
 		},
