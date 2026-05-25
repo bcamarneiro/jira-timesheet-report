@@ -8,18 +8,19 @@ Hoursmith is a personal Jira worklog dashboard for developers, tech leads, and e
 
 Hoursmith is open source. The whole app is in this repository under MIT. There is also a hosted Premium tier for people who would rather not run a local proxy.
 
-| | Free (self-host) | Premium (hosted) |
-|---|---|---|
-| Full app, all features | Yes | Yes |
-| Worklog dashboard, heatmap, reports, CSV | Yes | Yes |
-| CORS proxy | You run `npm run cors-proxy` locally | We host it, you sign in |
-| Terminal required | Yes | No |
-| Price | Free, forever | €10/year, name your price, minimum €3 |
-| Status | Available now | Coming soon |
+| | Free (self-host) | Hosted | Lead |
+|---|---|---|---|
+| Full app, all features | Yes | Yes | Yes |
+| Worklog dashboard, heatmap, reports, CSV | Yes | Yes | Yes |
+| CORS proxy | You run `npm run cors-proxy` locally | We host it, you sign in | We host it, you sign in |
+| Terminal required | Yes | No | No |
+| Multi-client config, per-client CSV, holidays/PTO | — | — | Yes |
+| Price | Free, forever | €29/year | €60/year (founding) → €120/year |
+| Status | Available now | Coming soon | Coming soon |
 
-Premium hosts the CORS proxy for you. €10/year, name your price, minimum €3. The app code is identical to Free — the only thing you pay for is not having to keep a proxy process running on your machine.
+Hosted runs the CORS proxy for you for €29/year, so you never have to keep a proxy process running on your machine. Lead adds multi-client tooling for team leads who report to more than one client — €60/year founding rate, rising to €120 as more Lead features ship, with founding subscribers locked at €60 for as long as they stay subscribed. Early Hosted subscribers get a founding rate of €19/year on the same lock. The app code is identical across tiers — you pay for hosting and the Lead conveniences, never to unlock the core app.
 
-Premium is not launched yet. You can register interest on the [pricing page](https://hoursmith.io/pricing) (placeholder — coming soon).
+The paid tiers are not launched yet. You can register interest on the [pricing page](https://hoursmith.io/pricing) (placeholder — coming soon).
 
 ## Self-host the Free tier
 
