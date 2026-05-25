@@ -56,6 +56,11 @@ const TermsPage = lazy(() =>
 		default: module.TermsPage,
 	})),
 );
+const DemoPage = lazy(() =>
+	import('./pages/DemoPage').then((module) => ({
+		default: module.DemoPage,
+	})),
+);
 
 // Premium-only routes. The frontend boundary script
 // (scripts/check-premium-boundary.cjs) only matches static ES-module imports
@@ -117,6 +122,7 @@ const AppShell: React.FC = () => {
 					<Route path="/" element={<HomePage />} />
 					<Route path="/dashboard" element={<DashboardPage />} />
 					<Route path="/pricing" element={<PricingPage />} />
+					<Route path="/demo" element={<DemoPage />} />
 					<Route path="/reports" element={<TimesheetPage />} />
 					<Route path="/team" element={<Navigate to="/reports" replace />} />
 					<Route
