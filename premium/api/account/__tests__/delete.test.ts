@@ -1,13 +1,12 @@
 /**
  * Unit tests for `POST /api/account/delete` (GDPR Article 17).
  *
- * Mocks Stripe + Supabase admin via the injected-deps surface. No network.
+ * Mocks the Polar canceller + Supabase admin via the injected-deps surface.
  *
- * Linear: ADA-263.
+ * Linear: ADA-294 (migrated from Stripe ADA-263).
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import type { StripeLikeClient } from '../../_lib/stripeClient';
 import type { SupabaseAdminClient } from '../../_lib/supabaseAdmin';
 import { handleDelete } from '../delete';
 
@@ -34,33 +33,24 @@ function makeAdmin(
 			tier: 'premium',
 			status: 'active',
 			current_period_end: '2026-12-01T00:00:00Z',
+			updated_at: '2026-05-01T00:00:00Z',
 		}),
 		deleteSubscription: vi.fn().mockResolvedValue(undefined),
 		deleteProfile: vi.fn().mockResolvedValue(undefined),
 		deleteAuthUser: vi.fn().mockResolvedValue(undefined),
 		insertAuditLog: vi.fn().mockResolvedValue(undefined),
 		...overrides,
-	};
+	} as unknown as SupabaseAdminClient;
 }
 
-function makeStripe(
-	overrides: Partial<StripeLikeClient['subscriptions']> = {},
-): StripeLikeClient {
-	return {
-		subscriptions: {
-			cancel: vi.fn().mockResolvedValue({ id: 'sub_abc', status: 'canceled' }),
-			...overrides,
-		},
-	};
-}
+const okCancel = () => vi.fn().mockResolvedValue(undefined);
 
 describe('POST /api/account/delete', () => {
 	it('returns 401 when the Authorization header is missing', async () => {
 		const admin = makeAdmin();
-		const stripe = makeStripe();
 		const res = await handleDelete(makeRequest(), {
 			admin,
-			stripe,
+			cancelSubscription: okCancel(),
 			verifyJwt: vi.fn(),
 		});
 		expect(res.status).toBe(401);
@@ -69,10 +59,9 @@ describe('POST /api/account/delete', () => {
 
 	it('returns 401 when the JWT is invalid', async () => {
 		const admin = makeAdmin();
-		const stripe = makeStripe();
 		const res = await handleDelete(makeRequest({ authorization: 'Bearer x' }), {
 			admin,
-			stripe,
+			cancelSubscription: okCancel(),
 			verifyJwt: vi.fn().mockResolvedValue(null),
 		});
 		expect(res.status).toBe(401);
@@ -83,17 +72,17 @@ describe('POST /api/account/delete', () => {
 		const admin = makeAdmin({
 			getSubscription: vi.fn().mockResolvedValue(null),
 		});
-		const stripe = makeStripe();
+		const cancelSubscription = okCancel();
 		const res = await handleDelete(
 			makeRequest({ authorization: 'Bearer ok' }),
 			{
 				admin,
-				stripe,
+				cancelSubscription,
 				verifyJwt: vi.fn().mockResolvedValue('user-123'),
 			},
 		);
 		expect(res.status).toBe(204);
-		expect(stripe.subscriptions.cancel).not.toHaveBeenCalled();
+		expect(cancelSubscription).not.toHaveBeenCalled();
 		expect(admin.deleteSubscription).toHaveBeenCalledWith('user-123');
 		expect(admin.deleteProfile).toHaveBeenCalledWith('user-123');
 		expect(admin.deleteAuthUser).toHaveBeenCalledWith('user-123');
@@ -105,44 +94,39 @@ describe('POST /api/account/delete', () => {
 		);
 	});
 
-	it('cancels Stripe + deletes + logs when subscription is active', async () => {
+	it('cancels the Polar subscription + deletes + logs when active', async () => {
 		const admin = makeAdmin();
-		const stripe = makeStripe();
+		const cancelSubscription = okCancel();
 		const res = await handleDelete(
 			makeRequest({ authorization: 'Bearer ok' }),
 			{
 				admin,
-				stripe,
+				cancelSubscription,
 				verifyJwt: vi.fn().mockResolvedValue('user-123'),
 			},
 		);
 		expect(res.status).toBe(204);
-		expect(stripe.subscriptions.cancel).toHaveBeenCalledWith('sub_abc', {
-			invoice_now: false,
-			prorate: false,
-		});
+		expect(cancelSubscription).toHaveBeenCalledWith('sub_abc');
 		expect(admin.deleteAuthUser).toHaveBeenCalledWith('user-123');
 		expect(admin.insertAuditLog).toHaveBeenCalledWith(
 			expect.objectContaining({
 				event_type: 'account_deleted',
 				stripe_customer_id: 'cus_abc',
-				metadata: expect.objectContaining({ stripe_cancel: 'ok' }),
+				metadata: expect.objectContaining({ polar_cancel: 'ok' }),
 			}),
 		);
 	});
 
-	it('still deletes the user when Stripe cancel throws; audit captures the error', async () => {
+	it('still deletes the user when Polar cancel throws; audit captures the error', async () => {
 		const admin = makeAdmin();
-		const stripe: StripeLikeClient = {
-			subscriptions: {
-				cancel: vi.fn().mockRejectedValue(new Error('stripe down')),
-			},
-		};
+		const cancelSubscription = vi
+			.fn()
+			.mockRejectedValue(new Error('polar down'));
 		const res = await handleDelete(
 			makeRequest({ authorization: 'Bearer ok' }),
 			{
 				admin,
-				stripe,
+				cancelSubscription,
 				verifyJwt: vi.fn().mockResolvedValue('user-123'),
 			},
 		);
@@ -153,8 +137,8 @@ describe('POST /api/account/delete', () => {
 				event_type: 'account_deleted',
 				stripe_customer_id: 'cus_abc',
 				metadata: expect.objectContaining({
-					stripe_cancel: 'error',
-					stripe_error: 'stripe down',
+					polar_cancel: 'error',
+					polar_error: 'polar down',
 				}),
 			}),
 		);
@@ -164,12 +148,11 @@ describe('POST /api/account/delete', () => {
 		const admin = makeAdmin({
 			deleteAuthUser: vi.fn().mockRejectedValue(new Error('rls error')),
 		});
-		const stripe = makeStripe();
 		const res = await handleDelete(
 			makeRequest({ authorization: 'Bearer ok' }),
 			{
 				admin,
-				stripe,
+				cancelSubscription: okCancel(),
 				verifyJwt: vi.fn().mockResolvedValue('user-123'),
 			},
 		);
@@ -182,7 +165,7 @@ describe('POST /api/account/delete', () => {
 			new Request('https://hoursmith.io/api/account/delete', { method: 'GET' }),
 			{
 				admin: makeAdmin(),
-				stripe: makeStripe(),
+				cancelSubscription: okCancel(),
 				verifyJwt: vi.fn(),
 			},
 		);

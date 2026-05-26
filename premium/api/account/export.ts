@@ -3,8 +3,8 @@
  *
  * `GET /api/account/export` returns a JSON file containing everything
  * Hoursmith stores about the requesting user. There is intentionally very
- * little: a profile row, a subscription row, and a link to the Stripe
- * Customer Portal for invoice history. Jira data lives entirely client-side
+ * little: a profile row, a subscription row, and a link to the Polar
+ * customer portal for invoice history. Jira data lives entirely client-side
  * and is therefore not in scope.
  *
  * Logging discipline:
@@ -28,7 +28,7 @@ export const config = {
 export interface ExportDeps {
 	admin?: SupabaseAdminClient;
 	verifyJwt?: (token: string) => Promise<string | null>;
-	stripePortalUrl?: string;
+	portalUrl?: string;
 }
 
 export default async function handler(request: Request): Promise<Response> {
@@ -93,10 +93,10 @@ export async function handleExport(
 		return jsonResponse(404, { error: 'profile_not_found' });
 	}
 
-	const stripePortalUrl =
-		deps.stripePortalUrl ??
-		process.env.STRIPE_CUSTOMER_PORTAL_URL ??
-		'https://billing.stripe.com/p/login';
+	const portalUrl =
+		deps.portalUrl ??
+		process.env.POLAR_CUSTOMER_PORTAL_URL ??
+		'https://polar.sh';
 
 	const body = {
 		exported_at: new Date().toISOString(),
@@ -110,12 +110,12 @@ export async function handleExport(
 					tier: subscription.tier,
 					status: subscription.status,
 					current_period_end: subscription.current_period_end,
-					stripe_customer_id: subscription.stripe_customer_id,
+					customer_id: subscription.stripe_customer_id,
 				}
 			: null,
-		stripe_invoices_url: stripePortalUrl,
+		invoices_url: portalUrl,
 		notes:
-			'Jira data is not exported because it is never stored server-side. Invoices live in the linked Stripe Customer Portal.',
+			'Jira data is not exported because it is never stored server-side. Invoices live in the linked Polar customer portal.',
 	};
 
 	try {

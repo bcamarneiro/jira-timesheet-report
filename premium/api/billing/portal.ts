@@ -1,37 +1,30 @@
 /**
- * Stripe Customer Portal link for Hoursmith Premium.
+ * Polar customer-portal link for Hoursmith Premium.
  *
- * `POST /api/billing/portal` returns `{ url }` pointing at a fresh Stripe
- * Customer Portal session for the calling user. The frontend redirects there
- * (ADA-257 wires the /account button).
+ * `POST /api/billing/portal` returns `{ url }` pointing at the Polar customer
+ * portal for the calling user, where they can update a card, cancel, or
+ * download invoices. The frontend redirects there (the /account button).
  *
- * Auth model:
- *   We only require a valid Supabase JWT — NOT an active subscription. Users
- *   with `past_due` / `canceled` rows still need to manage billing (update a
- *   card, resubscribe, download a final invoice).
+ * Auth model: a valid Supabase JWT — NOT an active subscription. Past-due /
+ * canceled users still need to manage billing.
  *
  * Failure modes:
- *   - missing/invalid JWT      → 401
- *   - no `subscriptions` row   → 404 `no_billing_history`
- *   - Stripe call fails        → 502 `stripe_portal_failed`
- *   - missing env              → 500 `server_misconfigured`
+ *   - missing/invalid JWT    → 401
+ *   - no `subscriptions` row → 404 `no_billing_history`
+ *   - Polar call fails       → 502 `polar_portal_failed`
+ *   - missing env            → 500 `server_misconfigured`
  *
- * Logging discipline:
- *   DO log:    timestamp, user_id, stripe customer_id (not PII), outcome.
- *   DO NOT log: the session URL, tokens, Authorization headers.
+ * Logging: log user_id + Polar customer id (not PII). NEVER log the URL.
  *
- * Linear: ADA-262.
+ * Linear: ADA-294 (migrated from Stripe ADA-262).
  */
 
-import type Stripe from 'stripe';
-import { defaultStripe } from '../_lib/stripeClient.js';
+import { createPolarCustomerSession } from '../_lib/polarClient.js';
 import {
 	defaultSupabaseAdmin,
 	type SupabaseAdminClient,
 } from '../_lib/supabaseAdmin.js';
 
-// Stripe SDK + Supabase REST are both fetch-compatible (Stripe via
-// createFetchHttpClient in stripeClient.ts), so this handler runs on edge.
 export const config = {
 	runtime: 'edge',
 	regions: ['fra1'],
@@ -39,8 +32,8 @@ export const config = {
 
 export interface PortalDeps {
 	supabase?: SupabaseAdminClient;
-	stripe?: Pick<Stripe, 'billingPortal'>;
-	env?: Partial<Record<string, string | undefined>>;
+	/** Inject the Polar customer-session creator (tests). */
+	createCustomerSession?: (externalId: string) => Promise<{ url: string }>;
 }
 
 export default async function handler(request: Request): Promise<Response> {
@@ -52,7 +45,6 @@ export async function handlePortal(
 	deps: PortalDeps = {},
 ): Promise<Response> {
 	const start = Date.now();
-	const env = deps.env ?? process.env;
 
 	if (request.method !== 'POST') {
 		return jsonResponse(405, { error: 'method_not_allowed' });
@@ -97,18 +89,6 @@ export async function handlePortal(
 		return jsonResponse(401, { error: 'invalid_token' });
 	}
 
-	const appUrl = env.APP_URL;
-	if (!appUrl) {
-		logPortal({
-			userId,
-			customerId: null,
-			code: 'server_misconfigured',
-			status: 500,
-			durationMs: Date.now() - start,
-		});
-		return jsonResponse(500, { error: 'server_misconfigured' });
-	}
-
 	let subscription: Awaited<ReturnType<SupabaseAdminClient['getSubscription']>>;
 	try {
 		subscription = await supabase.getSubscription(userId);
@@ -124,8 +104,7 @@ export async function handlePortal(
 		return jsonResponse(500, { error: 'subscription_read_failed' });
 	}
 
-	const customerId = subscription?.stripe_customer_id;
-	if (!customerId) {
+	if (!subscription) {
 		logPortal({
 			userId,
 			customerId: null,
@@ -136,58 +115,32 @@ export async function handlePortal(
 		return jsonResponse(404, { error: 'no_billing_history' });
 	}
 
-	let stripe: Pick<Stripe, 'billingPortal'>;
+	const createCustomerSession =
+		deps.createCustomerSession ?? createPolarCustomerSession;
+	let url: string;
 	try {
-		stripe = deps.stripe ?? (defaultStripe() as unknown as Stripe);
+		const result = await createCustomerSession(userId);
+		url = result.url;
 	} catch (err) {
 		logPortal({
 			userId,
-			customerId,
-			code: 'server_misconfigured',
-			status: 500,
-			durationMs: Date.now() - start,
-			detail: (err as Error).message,
-		});
-		return jsonResponse(500, { error: 'server_misconfigured' });
-	}
-
-	let session: { url: string | null };
-	try {
-		session = await stripe.billingPortal.sessions.create({
-			customer: customerId,
-			return_url: `${appUrl.replace(/\/+$/, '')}/account`,
-		});
-	} catch (err) {
-		logPortal({
-			userId,
-			customerId,
-			code: 'stripe_portal_failed',
+			customerId: subscription.stripe_customer_id,
+			code: 'polar_portal_failed',
 			status: 502,
 			durationMs: Date.now() - start,
 			detail: (err as Error).message,
 		});
-		return jsonResponse(502, { error: 'stripe_portal_failed' });
-	}
-
-	if (!session.url) {
-		logPortal({
-			userId,
-			customerId,
-			code: 'stripe_portal_missing_url',
-			status: 502,
-			durationMs: Date.now() - start,
-		});
-		return jsonResponse(502, { error: 'stripe_portal_failed' });
+		return jsonResponse(502, { error: 'polar_portal_failed' });
 	}
 
 	logPortal({
 		userId,
-		customerId,
+		customerId: subscription.stripe_customer_id,
 		code: 'ok',
 		status: 200,
 		durationMs: Date.now() - start,
 	});
-	return jsonResponse(200, { url: session.url });
+	return jsonResponse(200, { url });
 }
 
 function extractBearer(header: string | null): string | null {
@@ -214,20 +167,18 @@ interface PortalLogFields {
 	detail?: string;
 }
 
-/**
- * Structured log line. Explicitly scrubbed: no headers, no body, no session URL.
- * `stripe_customer_id` is intentionally logged per Stripe's own guidance (not PII).
- */
+/** Structured log line. Scrubbed: no headers, no body, no portal URL. */
 function logPortal(fields: PortalLogFields): void {
-	const line = {
-		ts: new Date().toISOString(),
-		svc: 'hoursmith-billing-portal',
-		user_id: fields.userId,
-		stripe_customer_id: fields.customerId,
-		code: fields.code,
-		status: fields.status,
-		duration_ms: fields.durationMs,
-		...(fields.detail ? { detail: fields.detail } : {}),
-	};
-	console.log(JSON.stringify(line));
+	console.log(
+		JSON.stringify({
+			ts: new Date().toISOString(),
+			svc: 'hoursmith-billing-portal',
+			user_id: fields.userId,
+			polar_customer_id: fields.customerId,
+			code: fields.code,
+			status: fields.status,
+			duration_ms: fields.durationMs,
+			...(fields.detail ? { detail: fields.detail } : {}),
+		}),
+	);
 }

@@ -65,10 +65,10 @@ async function postJson(
 }
 
 /**
- * Default anchor amount (€10/year, in cents) for the simple upgrade button on
- * the Account page. The Pricing page is where the user picks a custom amount.
+ * The Account-page upgrade button subscribes to the Hosted tier. The Pricing
+ * page is where the full Free / Hosted / Lead comparison lives.
  */
-const DEFAULT_UPGRADE_AMOUNT_CENTS = 1000;
+const DEFAULT_UPGRADE_TIER = 'hosted';
 
 export function AccountPage(): JSX.Element {
 	useEffect(() => {
@@ -116,7 +116,7 @@ export function AccountPage(): JSX.Element {
 		setActionError(null);
 		try {
 			const res = await postJson('/api/checkout', session?.access_token, {
-				amount: DEFAULT_UPGRADE_AMOUNT_CENTS,
+				tier: DEFAULT_UPGRADE_TIER,
 			});
 			if (!res.ok) throw new Error('Checkout unavailable');
 			const body = (await res.json()) as { url?: string };
