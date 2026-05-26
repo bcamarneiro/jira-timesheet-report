@@ -23,7 +23,7 @@
  */
 
 import { logAuditEvent } from '../_lib/auditLog.js';
-import { defaultStripe, type StripeLikeClient } from '../_lib/stripeClient.js';
+import { cancelPolarSubscription } from '../_lib/polarClient.js';
 import {
 	defaultSupabaseAdmin,
 	type SupabaseAdminClient,
@@ -36,7 +36,8 @@ export const config = {
 
 export interface DeleteDeps {
 	admin?: SupabaseAdminClient;
-	stripe?: StripeLikeClient;
+	/** Inject the Polar subscription canceller (tests). */
+	cancelSubscription?: (subscriptionId: string) => Promise<void>;
 	verifyJwt?: (token: string) => Promise<string | null>;
 }
 
@@ -59,10 +60,8 @@ export async function handleDelete(
 	}
 
 	let admin: SupabaseAdminClient;
-	let stripe: StripeLikeClient;
 	try {
 		admin = deps.admin ?? defaultSupabaseAdmin();
-		stripe = deps.stripe ?? defaultStripe();
 	} catch (err) {
 		logEvent({
 			event: 'account_delete',
@@ -87,28 +86,26 @@ export async function handleDelete(
 	const subscription = await admin.getSubscription(userId).catch(() => null);
 	const stripeCustomerId = subscription?.stripe_customer_id ?? null;
 
-	// Cancel Stripe subscription if there is an active one. We deliberately
-	// do not block account deletion on Stripe — if Stripe is down or the
+	// Cancel the Polar subscription if there is an active one. We deliberately
+	// do not block account deletion on Polar — if Polar is down or the
 	// subscription is in a weird state, the user still gets erased. The audit
 	// log captures the failure so finance can reconcile manually.
-	const stripeMeta: Record<string, unknown> = {};
+	const cancelSubscription = deps.cancelSubscription ?? cancelPolarSubscription;
+	const cancelMeta: Record<string, unknown> = {};
 	if (
 		subscription?.stripe_subscription_id &&
 		subscription.status === 'active'
 	) {
 		try {
-			await stripe.subscriptions.cancel(subscription.stripe_subscription_id, {
-				invoice_now: false,
-				prorate: false,
-			});
-			stripeMeta.stripe_cancel = 'ok';
+			await cancelSubscription(subscription.stripe_subscription_id);
+			cancelMeta.polar_cancel = 'ok';
 		} catch (err) {
-			stripeMeta.stripe_cancel = 'error';
-			stripeMeta.stripe_error = (err as Error).message;
+			cancelMeta.polar_cancel = 'error';
+			cancelMeta.polar_error = (err as Error).message;
 			logEvent({
 				event: 'account_delete',
 				status: 0,
-				note: 'stripe_cancel_failed',
+				note: 'polar_cancel_failed',
 			});
 		}
 	}
@@ -138,7 +135,7 @@ export async function handleDelete(
 	}
 
 	try {
-		await logAuditEvent('account_deleted', stripeCustomerId, stripeMeta, admin);
+		await logAuditEvent('account_deleted', stripeCustomerId, cancelMeta, admin);
 	} catch (err) {
 		// Audit log failure is non-fatal: the user is already deleted. Surface
 		// it to function logs so ops can backfill.

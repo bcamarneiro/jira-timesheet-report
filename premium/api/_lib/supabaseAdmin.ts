@@ -18,11 +18,15 @@ export interface ProfileRow {
 
 export interface SubscriptionRow {
 	user_id: string;
+	// NOTE: despite the `stripe_` prefix these columns now hold Polar IDs after
+	// the ADA-294 migration. Kept as-is to avoid a production DB rename; a
+	// cosmetic rename to provider_* is optional future work.
 	stripe_customer_id: string;
 	stripe_subscription_id: string | null;
 	tier: string;
 	status: string;
 	current_period_end: string | null;
+	updated_at: string;
 }
 
 export interface SubscriptionUpsert {

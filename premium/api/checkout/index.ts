@@ -1,57 +1,59 @@
 /**
- * Stripe Checkout Session creator for Hoursmith Premium.
+ * Polar Checkout Session creator for Hoursmith Premium.
  *
- * `POST /api/checkout` with `{ amount: number }` (cents) and a Supabase JWT in
+ * `POST /api/checkout` with `{ tier: 'hosted' | 'lead' }` and a Supabase JWT in
  * the `Authorization: Bearer ...` header. Returns `{ url }` pointing at
- * Stripe-hosted Checkout. The frontend (ADA-257) redirects there. Webhook
- * (ADA-261) is what actually flips the subscription to `active` later.
+ * Polar-hosted Checkout. The frontend redirects there; the Polar webhook
+ * (polar/webhook.ts) flips the subscription to `active` once payment clears.
  *
- * Pricing model (name-your-price annual):
- *   - Floor: €3 (300 cents) — below this the Stripe fee swallows the revenue.
- *   - Sanity cap: €1,000 (100000 cents) — prevents fat-finger/abuse.
- *   - One Stripe Product (env `STRIPE_PRODUCT_PREMIUM`); the Checkout Session
- *     receives an inline `price_data` so the backend can validate the amount
- *     instead of relying on Stripe's `custom_unit_amount` UI to enforce it.
+ * Pricing model (fixed annual, ADA-304): the amount lives on the Polar product,
+ * not in the request — the caller only picks a tier. Each tier maps to a Polar
+ * product id via env:
+ *   - hosted → POLAR_PRODUCT_HOSTED  (€29/yr)
+ *   - lead   → POLAR_PRODUCT_LEAD    (€60/yr)
  *
- * Idempotency: we look up `stripe_customer_id` on the user's `subscriptions`
- * row first. If present, reuse it. If absent, create a Stripe Customer with
- * `metadata.user_id`, then pre-insert a `subscriptions` row in `incomplete`
- * status so the webhook has somewhere to land.
+ * Customer linkage: we pass `customer_external_id = <supabase user id>`, so
+ * Polar creates/links the customer for us — no pre-provisioning, no stub row.
+ * The webhook is what writes the `subscriptions` row.
  *
  * Logging discipline (compliance-critical):
- *   DO log:    timestamp, user_id, stripe customer_id, success/error code.
- *   DO NOT log: full Stripe Session, request body, Authorization header.
+ *   DO log:    timestamp, user_id, tier, success/error code.
+ *   DO NOT log: the checkout URL, request body, Authorization header.
  *
- * Linear: ADA-260.
+ * Linear: ADA-294 (migrated from Stripe ADA-260).
  */
 
-import type Stripe from 'stripe';
-import { defaultStripe } from '../_lib/stripeClient.js';
+import {
+	type CreateCheckoutInput,
+	createPolarCheckout,
+} from '../_lib/polarClient.js';
 import {
 	defaultSupabaseAdmin,
 	type SupabaseAdminClient,
 } from '../_lib/supabaseAdmin.js';
 
 // Pin to Frankfurt for GDPR residency. Mirrors vercel.json.
-//
-// Edge runtime: Stripe SDK is configured with `createFetchHttpClient()` in
-// stripeClient.ts, and Supabase REST is fetch-only, so this handler is fully
-// edge-compatible.
+// Edge-compatible: Polar client is fetch-only, Supabase REST is fetch-only.
 export const config = {
 	runtime: 'edge',
 	regions: ['fra1'],
 };
 
-/** Minimum chargeable amount in cents (€3/year). */
-export const AMOUNT_FLOOR_CENTS = 300;
-/** Sanity cap in cents (€1,000/year). */
-export const AMOUNT_CAP_CENTS = 100_000;
+export type CheckoutTier = 'hosted' | 'lead';
+
+/** Maps the chosen tier to the env var holding its Polar product id. */
+const TIER_PRODUCT_ENV: Record<CheckoutTier, string> = {
+	hosted: 'POLAR_PRODUCT_HOSTED',
+	lead: 'POLAR_PRODUCT_LEAD',
+};
 
 export interface CheckoutDeps {
 	/** Inject Supabase admin client (tests). */
 	supabase?: SupabaseAdminClient;
-	/** Inject Stripe client (tests). */
-	stripe?: Stripe;
+	/** Inject the Polar checkout creator (tests). */
+	createCheckout?: (
+		input: CreateCheckoutInput,
+	) => Promise<{ url: string; id: string }>;
 	/** Inject env reader (tests). Defaults to `process.env`. */
 	env?: Partial<Record<string, string | undefined>>;
 }
@@ -60,10 +62,6 @@ export default async function handler(request: Request): Promise<Response> {
 	return handleCheckout(request);
 }
 
-/**
- * Exported for unit tests so they can inject mocked Stripe/Supabase clients
- * without re-implementing the Vercel handler signature.
- */
 export async function handleCheckout(
 	request: Request,
 	deps: CheckoutDeps = {},
@@ -81,7 +79,7 @@ export async function handleCheckout(
 	if (!token) {
 		logCheckout({
 			userId: null,
-			customerId: null,
+			tier: null,
 			code: 'missing_token',
 			status: 401,
 			durationMs: Date.now() - start,
@@ -95,7 +93,7 @@ export async function handleCheckout(
 	} catch {
 		logCheckout({
 			userId: null,
-			customerId: null,
+			tier: null,
 			code: 'server_misconfigured',
 			status: 500,
 			durationMs: Date.now() - start,
@@ -107,7 +105,7 @@ export async function handleCheckout(
 	if (!userId) {
 		logCheckout({
 			userId: null,
-			customerId: null,
+			tier: null,
 			code: 'invalid_token',
 			status: 401,
 			durationMs: Date.now() - start,
@@ -115,53 +113,32 @@ export async function handleCheckout(
 		return jsonResponse(401, { error: 'invalid_token' });
 	}
 
-	// 2. Parse body and validate amount.
+	// 2. Parse body and validate the tier.
 	let body: unknown;
 	try {
 		body = await request.json();
 	} catch {
 		body = null;
 	}
-	const amountParse = parseAmount(body);
-	if (amountParse.kind === 'invalid') {
+	const tier = parseTier(body);
+	if (!tier) {
 		logCheckout({
 			userId,
-			customerId: null,
-			code: 'invalid_amount',
+			tier: null,
+			code: 'invalid_tier',
 			status: 400,
 			durationMs: Date.now() - start,
 		});
-		return jsonResponse(400, { error: 'invalid_amount' });
+		return jsonResponse(400, { error: 'invalid_tier' });
 	}
-	if (amountParse.kind === 'below_floor') {
-		logCheckout({
-			userId,
-			customerId: null,
-			code: 'amount_below_floor',
-			status: 400,
-			durationMs: Date.now() - start,
-		});
-		return jsonResponse(400, { error: 'amount_below_floor' });
-	}
-	if (amountParse.kind === 'too_high') {
-		logCheckout({
-			userId,
-			customerId: null,
-			code: 'amount_too_high',
-			status: 400,
-			durationMs: Date.now() - start,
-		});
-		return jsonResponse(400, { error: 'amount_too_high' });
-	}
-	const amount = amountParse.value;
 
-	// 3. Resolve env-driven config.
-	const stripeProductId = env.STRIPE_PRODUCT_PREMIUM;
+	// 3. Resolve env-driven config: the Polar product for this tier + app URL.
+	const productId = env[TIER_PRODUCT_ENV[tier]];
 	const appUrl = env.APP_URL;
-	if (!stripeProductId || !appUrl) {
+	if (!productId || !appUrl) {
 		logCheckout({
 			userId,
-			customerId: null,
+			tier,
 			code: 'server_misconfigured',
 			status: 500,
 			durationMs: Date.now() - start,
@@ -169,137 +146,43 @@ export async function handleCheckout(
 		return jsonResponse(500, { error: 'server_misconfigured' });
 	}
 
-	// 4. Stripe client.
-	let stripe: Stripe;
+	// 4. Create the Polar Checkout Session. Polar links/creates the customer
+	//    from `customer_external_id`, so there's no Stripe-style pre-provisioning.
+	const createCheckout = deps.createCheckout ?? createPolarCheckout;
+	let url: string;
 	try {
-		stripe = deps.stripe ?? defaultStripe();
-	} catch {
-		logCheckout({
-			userId,
-			customerId: null,
-			code: 'server_misconfigured',
-			status: 500,
-			durationMs: Date.now() - start,
+		const result = await createCheckout({
+			productId,
+			customerExternalId: userId,
+			successUrl: `${appUrl.replace(/\/+$/, '')}/account?upgrade=success`,
 		});
-		return jsonResponse(500, { error: 'server_misconfigured' });
-	}
-
-	// 5. Idempotent customer lookup. Either reuse the existing customer id or
-	//    create a new Stripe Customer + stub subscriptions row.
-	let customerId: string;
-	try {
-		const existing = await supabase.getSubscription(userId);
-		if (existing?.stripe_customer_id) {
-			customerId = existing.stripe_customer_id;
-		} else {
-			const profile = await supabase.getProfile(userId);
-			const email = profile?.email ?? undefined;
-			const customer = await stripe.customers.create({
-				email,
-				metadata: { user_id: userId },
-			});
-			customerId = customer.id;
-			await supabase.insertIncompleteSubscription({
-				userId,
-				stripeCustomerId: customerId,
-			});
-		}
+		url = result.url;
 	} catch (err) {
 		logCheckout({
 			userId,
-			customerId: null,
-			code: 'customer_provisioning_failed',
+			tier,
+			code: 'polar_session_failed',
 			status: 502,
 			durationMs: Date.now() - start,
 			detail: (err as Error).message,
 		});
-		return jsonResponse(502, { error: 'customer_provisioning_failed' });
-	}
-
-	// 6. Create the Checkout Session with inline price_data so we control the
-	//    annual amount on the backend (rather than relying on Stripe's
-	//    custom_unit_amount UI to enforce floor/cap).
-	let session: Stripe.Checkout.Session;
-	try {
-		session = await stripe.checkout.sessions.create({
-			mode: 'subscription',
-			customer: customerId,
-			line_items: [
-				{
-					price_data: {
-						currency: 'eur',
-						product: stripeProductId,
-						unit_amount: amount,
-						recurring: { interval: 'year' },
-					},
-					quantity: 1,
-				},
-			],
-			subscription_data: {
-				metadata: { user_id: userId, chosen_amount_cents: String(amount) },
-			},
-			success_url: `${appUrl.replace(/\/+$/, '')}/account?upgrade=success`,
-			cancel_url: `${appUrl.replace(/\/+$/, '')}/account?upgrade=cancel`,
-			automatic_tax: { enabled: true },
-			tax_id_collection: { enabled: true },
-			// Save the billing address entered in Checkout back to the Customer.
-			// Required when `automatic_tax` is enabled on a Customer without an
-			// existing address — without this, the first Checkout for a new
-			// Customer 400s with "Add a valid address to the Customer".
-			customer_update: { address: 'auto', name: 'auto' },
-		});
-	} catch (err) {
-		logCheckout({
-			userId,
-			customerId,
-			code: 'stripe_session_failed',
-			status: 502,
-			durationMs: Date.now() - start,
-			detail: (err as Error).message,
-		});
-		return jsonResponse(502, { error: 'stripe_session_failed' });
-	}
-
-	if (!session.url) {
-		logCheckout({
-			userId,
-			customerId,
-			code: 'stripe_session_missing_url',
-			status: 502,
-			durationMs: Date.now() - start,
-		});
-		return jsonResponse(502, { error: 'stripe_session_failed' });
+		return jsonResponse(502, { error: 'polar_session_failed' });
 	}
 
 	logCheckout({
 		userId,
-		customerId,
+		tier,
 		code: 'ok',
 		status: 200,
 		durationMs: Date.now() - start,
 	});
-	return jsonResponse(200, { url: session.url });
+	return jsonResponse(200, { url });
 }
 
-type AmountParse =
-	| { kind: 'ok'; value: number }
-	| { kind: 'invalid' }
-	| { kind: 'below_floor' }
-	| { kind: 'too_high' };
-
-function parseAmount(body: unknown): AmountParse {
-	if (!body || typeof body !== 'object') return { kind: 'invalid' };
-	const raw = (body as { amount?: unknown }).amount;
-	if (
-		typeof raw !== 'number' ||
-		!Number.isFinite(raw) ||
-		!Number.isInteger(raw)
-	) {
-		return { kind: 'invalid' };
-	}
-	if (raw < AMOUNT_FLOOR_CENTS) return { kind: 'below_floor' };
-	if (raw > AMOUNT_CAP_CENTS) return { kind: 'too_high' };
-	return { kind: 'ok', value: raw };
+function parseTier(body: unknown): CheckoutTier | null {
+	if (!body || typeof body !== 'object') return null;
+	const raw = (body as { tier?: unknown }).tier;
+	return raw === 'hosted' || raw === 'lead' ? raw : null;
 }
 
 function extractBearer(header: string | null): string | null {
@@ -319,28 +202,25 @@ function jsonResponse(status: number, body: Record<string, unknown>): Response {
 
 interface CheckoutLogFields {
 	userId: string | null;
-	customerId: string | null;
+	tier: CheckoutTier | null;
 	code: string;
 	status: number;
 	durationMs: number;
 	detail?: string;
 }
 
-/**
- * Structured log line. Explicitly scrubbed: no headers, no request body, no
- * Stripe session object. `customer_id` is intentionally logged — per Stripe's
- * own guidance it is not PII and is essential for cross-system debugging.
- */
+/** Structured log line. Scrubbed: no headers, no body, no checkout URL. */
 function logCheckout(fields: CheckoutLogFields): void {
-	const line = {
-		ts: new Date().toISOString(),
-		svc: 'hoursmith-checkout',
-		user_id: fields.userId,
-		stripe_customer_id: fields.customerId,
-		code: fields.code,
-		status: fields.status,
-		duration_ms: fields.durationMs,
-		...(fields.detail ? { detail: fields.detail } : {}),
-	};
-	console.log(JSON.stringify(line));
+	console.log(
+		JSON.stringify({
+			ts: new Date().toISOString(),
+			svc: 'hoursmith-checkout',
+			user_id: fields.userId,
+			tier: fields.tier,
+			code: fields.code,
+			status: fields.status,
+			duration_ms: fields.durationMs,
+			...(fields.detail ? { detail: fields.detail } : {}),
+		}),
+	);
 }

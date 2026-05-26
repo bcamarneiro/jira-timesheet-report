@@ -81,7 +81,7 @@ describe('GET /api/account/export', () => {
 		expect(body.profile).toEqual(PROFILE);
 		expect(body.subscription).toBeNull();
 		expect(body.exported_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-		expect(body.stripe_invoices_url).toMatch(/^https:\/\//);
+		expect(body.invoices_url).toMatch(/^https:\/\//);
 		expect(body.notes).toContain('Jira data is not exported');
 		expect(admin.insertAuditLog).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -98,7 +98,7 @@ describe('GET /api/account/export', () => {
 			{
 				admin,
 				verifyJwt: vi.fn().mockResolvedValue('user-123'),
-				stripePortalUrl: 'https://billing.stripe.com/p/login/test',
+				portalUrl: 'https://polar.sh/portal/test',
 			},
 		);
 		expect(res.status).toBe(200);
@@ -108,11 +108,9 @@ describe('GET /api/account/export', () => {
 			tier: 'premium',
 			status: 'active',
 			current_period_end: '2026-12-01T00:00:00Z',
-			stripe_customer_id: 'cus_abc',
+			customer_id: 'cus_abc',
 		});
-		expect(body.stripe_invoices_url).toBe(
-			'https://billing.stripe.com/p/login/test',
-		);
+		expect(body.invoices_url).toBe('https://polar.sh/portal/test');
 		// No payment-method / token leakage.
 		expect(JSON.stringify(body)).not.toMatch(/sub_abc/);
 		expect(JSON.stringify(body)).not.toMatch(/password|token|secret/i);
