@@ -86,6 +86,43 @@
 	border-radius: var(--radius-sm);
 }
 
+/* "✓ Closed" chip on a complete (collapsed) day — mirrors .timeOff, green. */
+.closedChip {
+	font-size: var(--text-xs);
+	font-weight: var(--font-semibold);
+	color: var(--color-success, #16a34a);
+	border: 1px solid var(--color-success-border, #bbf7d0);
+	background: var(--color-success-bg, #f0fdf4);
+	padding: 1px var(--space-2);
+	border-radius: var(--radius-sm);
+}
+
+/* Chevron toggle that expands/collapses a closed day. */
+.collapseToggle {
+	background: none;
+	border: none;
+	color: var(--color-text-secondary);
+	font-size: var(--text-sm);
+	line-height: 1;
+	cursor: pointer;
+	padding: 2px var(--space-1);
+	border-radius: var(--radius-sm);
+}
+
+.collapseToggle:hover {
+	color: var(--color-text);
+	background: var(--color-surface-sunken);
+}
+
+/* A collapsed (complete) day sits visually lighter than days that need work. */
+.closed {
+	opacity: 0.78;
+}
+
+.closed:hover {
+	opacity: 1;
+}
+
 .rescueTime {
 	font-size: var(--text-xs);
 	color: var(--color-text-tertiary);
