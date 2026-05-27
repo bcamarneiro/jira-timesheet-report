@@ -96,11 +96,12 @@ export const TermsPage: React.FC = () => {
 					configuration (which lives in your browser) is unaffected.
 				</p>
 				<p className={styles.body}>
-					<strong>Taxes:</strong> As Merchant of Record, Polar is the seller of
-					record and is responsible for calculating, collecting, and remitting
-					VAT for EU customers based on your billing address. If you supply a
-					valid VAT ID at checkout the reverse-charge mechanism applies where
-					eligible.
+					<strong>Taxes:</strong> Prices are shown exclusive of VAT; applicable
+					VAT is added at checkout. As Merchant of Record, Polar is the seller
+					of record and is responsible for calculating, collecting, and
+					remitting VAT for EU customers based on your billing address. If you
+					supply a valid VAT ID at checkout the reverse-charge mechanism applies
+					where eligible.
 				</p>
 			</section>
 

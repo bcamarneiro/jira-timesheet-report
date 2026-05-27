@@ -37,7 +37,7 @@ We rely on the following lawful bases under Article 6 GDPR:
 
 - **Contract (Article 6(1)(b)):** to provide the service you signed up for, including authentication, billing, and the hosted CORS proxy.
 - **Legitimate interest (Article 6(1)(f)):** to detect abuse, protect the service from misuse, and improve product quality through aggregated analytics. You can object to this processing at any time.
-- **Legal obligation (Article 6(1)(c)):** to retain billing records as required by Portuguese and EU tax law.
+- **Legal obligation (Article 6(1)(c)):** to comply with our own accounting and tax record-keeping obligations. Invoicing to you and the associated VAT records are handled by Polar as Merchant of Record.
 
 We do not rely on consent for any processing other than optional marketing communications (which we do not currently send).
 

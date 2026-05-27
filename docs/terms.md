@@ -28,7 +28,7 @@ Premium is sold through **Polar** (Polar Software Inc.), which acts as the **Mer
 
 **Failed payments:** If a renewal payment fails we will attempt to charge again over the following days. If the payment ultimately fails the subscription will be downgraded to Free and the hosted CORS proxy will stop working for your account. Your saved configuration (which lives in your browser) is unaffected.
 
-**Taxes:** As Merchant of Record, Polar is the seller of record and is responsible for calculating, collecting, and remitting VAT for EU customers based on your billing address. If you supply a valid VAT ID at checkout the reverse-charge mechanism applies where eligible.
+**Taxes:** Prices are shown exclusive of VAT; applicable VAT is added at checkout. As Merchant of Record, Polar is the seller of record and is responsible for calculating, collecting, and remitting VAT for EU customers based on your billing address. If you supply a valid VAT ID at checkout the reverse-charge mechanism applies where eligible.
 
 ## Acceptable use
 

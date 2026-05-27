@@ -133,8 +133,10 @@ export const PrivacyPage: React.FC = () => {
 						any time.
 					</li>
 					<li>
-						<strong>Legal obligation (Article 6(1)(c)):</strong> to retain
-						billing records as required by Portuguese and EU tax law.
+						<strong>Legal obligation (Article 6(1)(c)):</strong> to comply with
+						our own accounting and tax record-keeping obligations. Invoicing to
+						you and the associated VAT records are handled by Polar as Merchant
+						of Record.
 					</li>
 				</ul>
 				<p className={styles.body}>
