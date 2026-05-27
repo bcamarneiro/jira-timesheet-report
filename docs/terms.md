@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Effective date:** 2026-05-20.
+**Effective date:** 2026-05-27.
 
 These Terms of Service govern your use of the hosted Hoursmith service at hoursmith.io ("Hoursmith", "the service"). The open-source code that powers Hoursmith is separately governed by the MIT License (for the Free tier) and the BSL 1.1 License (for the Premium tier) in the project repository.
 
@@ -20,15 +20,15 @@ You are responsible for the Jira credentials you provide to the application. You
 
 ## Subscriptions and billing
 
-Premium is sold as a **name-your-price annual subscription** with a floor of €3 per year. You choose the amount at checkout. The subscription renews automatically each year at the amount you chose, unless you cancel.
+Premium is sold through **Polar** (Polar Software Inc.), which acts as the **Merchant of Record** and seller of record for your subscription. Premium is a **fixed-price annual subscription**: the Hosted tier is **€29/year** (with a founding rate of **€19/year** for early subscribers, kept for as long as the subscription stays active), and the Lead tier is **€60/year**, rising to **€120/year** as further Lead features ship. The subscription renews automatically each year at your subscription's price, unless you cancel.
 
 **14-day right of withdrawal (EU):** Under the EU Consumer Rights Directive you have 14 days from the date of subscription to withdraw and receive a full refund. Email us to exercise this right. After 14 days, payments are non-refundable except where required by law.
 
-**Cancellation:** You can cancel at any time from the Stripe Customer Portal linked from `/account`. Cancellation takes effect at the end of the current billing period; the service remains available until then. You will not be charged again.
+**Cancellation:** You can cancel at any time from the Polar customer portal linked from `/account`. Cancellation takes effect at the end of the current billing period; the service remains available until then. You will not be charged again.
 
 **Failed payments:** If a renewal payment fails we will attempt to charge again over the following days. If the payment ultimately fails the subscription will be downgraded to Free and the hosted CORS proxy will stop working for your account. Your saved configuration (which lives in your browser) is unaffected.
 
-**Taxes:** Prices are exclusive of any applicable taxes. Stripe Tax calculates and collects VAT for EU customers based on your billing address. If you supply a valid VAT ID at checkout the reverse-charge mechanism applies where eligible.
+**Taxes:** As Merchant of Record, Polar is the seller of record and is responsible for calculating, collecting, and remitting VAT for EU customers based on your billing address. If you supply a valid VAT ID at checkout the reverse-charge mechanism applies where eligible.
 
 ## Acceptable use
 
@@ -91,4 +91,4 @@ Email `privacy@hoursmith.io`. <!-- TODO(ADA-283): replace placeholder once suppo
 
 ---
 
-**Effective date:** 2026-05-20.
+**Effective date:** 2026-05-27.

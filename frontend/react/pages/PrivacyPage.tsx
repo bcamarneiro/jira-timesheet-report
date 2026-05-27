@@ -13,7 +13,7 @@ import * as styles from './LegalPage.module.css';
  * changes (expected cadence: when material processing changes ship).
  */
 
-const EFFECTIVE_DATE = '2026-05-20';
+const EFFECTIVE_DATE = '2026-05-27';
 // TODO(ADA-283): replace once support@hoursmith.io is provisioned.
 const CONTACT_EMAIL = 'privacy@hoursmith.io';
 
@@ -55,12 +55,15 @@ export const PrivacyPage: React.FC = () => {
 					store your GitHub user ID. No password is ever stored in plaintext.
 				</p>
 				<p className={styles.body}>
-					<strong>Billing data.</strong> If you upgrade to Premium we create a
-					customer record with Stripe. Stripe stores your name, billing address,
+					<strong>Billing data.</strong> Premium is sold through{' '}
+					<strong>Polar</strong> (Polar Software Inc.), which acts as our{' '}
+					<strong>Merchant of Record</strong>. When you upgrade, Polar — as the
+					seller of record — collects and stores your name, billing address,
 					payment instrument and tax identifier (if you provide one) on its own
-					systems. We store only the Stripe customer ID, subscription ID,
-					current period end, and subscription status. We never see or store
-					your card number.
+					systems, issues your invoice, and handles VAT. Polar is an independent
+					controller for that payment and tax data. From Polar we receive and
+					store only a customer ID, subscription ID, current period end, and
+					subscription status. We never see or store your card number.
 				</p>
 				<p className={styles.body}>
 					<strong>Operational logs.</strong> Vercel produces standard server
@@ -150,9 +153,10 @@ export const PrivacyPage: React.FC = () => {
 				<p className={styles.body}>
 					We do not sell personal data. We do not share personal data with
 					advertisers. We do not transfer personal data outside the EU except
-					where a sub-processor (currently only Stripe) requires it; that
-					transfer relies on Standard Contractual Clauses and the EU-US Data
-					Privacy Framework.
+					where a sub-processor or our Merchant of Record (Polar, in the United
+					States) requires it; that transfer relies on the Standard Contractual
+					Clauses adopted by the European Commission, with additional
+					safeguards.
 				</p>
 			</section>
 
@@ -171,8 +175,10 @@ export const PrivacyPage: React.FC = () => {
 						<code>eu-central-1</code> (Frankfurt, Germany).
 					</li>
 					<li>
-						Stripe operates from the United States under the Data Privacy
-						Framework. Tax data is processed within the EU.
+						Polar (Polar Software Inc.) operates from the United States;
+						transfers of your billing data rely on the Standard Contractual
+						Clauses. As Merchant of Record, Polar collects and remits EU VAT
+						under the One-Stop-Shop (OSS) scheme.
 					</li>
 				</ul>
 			</section>
@@ -186,9 +192,10 @@ export const PrivacyPage: React.FC = () => {
 						and Supabase auth record are removed within 30 days.
 					</li>
 					<li>
-						<strong>Billing records</strong> are retained by Stripe for at least
-						ten years after the last transaction, as required by Portuguese tax
-						law. We cannot delete invoices from Stripe.
+						<strong>Billing records</strong> and invoices are issued and
+						retained by Polar, as Merchant of Record, in line with its own legal
+						and tax record-keeping obligations. We cannot delete invoices held
+						by Polar.
 					</li>
 					<li>
 						<strong>Operational logs</strong> (Vercel) are retained for the
@@ -218,7 +225,7 @@ export const PrivacyPage: React.FC = () => {
 					<li>
 						<strong>Erase</strong> your data by clicking "Delete my account" on
 						the <code>/account</code> page. This is immediate, irreversible, and
-						cascades through Stripe (cancelling any active subscription) and
+						cascades through Polar (cancelling any active subscription) and
 						Supabase (removing your auth identity).
 					</li>
 					<li>
