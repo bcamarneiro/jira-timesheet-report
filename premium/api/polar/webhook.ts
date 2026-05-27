@@ -107,7 +107,12 @@ export async function handlePolarWebhook(
 	const rawBody = await request.text();
 
 	const verify = deps.verify ?? verifyPolarWebhook;
-	const valid = await verify(rawBody, request.headers, secret);
+	let valid = false;
+	try {
+		valid = await verify(rawBody, request.headers, secret);
+	} catch {
+		valid = false;
+	}
 	if (!valid) {
 		logWebhook({
 			eventType: null,

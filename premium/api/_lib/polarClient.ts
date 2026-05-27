@@ -165,6 +165,28 @@ function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
 	return bytes;
 }
 
+/**
+ * Lenient base64/base64url → bytes: normalise url chars, drop anything outside
+ * the alphabet, pad, then decode. Mirrors the tolerant decode the Standard
+ * Webhooks libraries use, so a `polar_whs_…` secret decodes the same way Polar
+ * signs (strict `atob` would throw on the url chars).
+ */
+function lenientBase64ToBytes(s: string): Uint8Array<ArrayBuffer> {
+	let t = s
+		.replace(/-/g, '+')
+		.replace(/_/g, '/')
+		.replace(/[^A-Za-z0-9+/]/g, '');
+	while (t.length % 4 !== 0) t += '=';
+	return base64ToBytes(t);
+}
+
+function utf8ToBytes(s: string): Uint8Array<ArrayBuffer> {
+	const enc = new TextEncoder().encode(s);
+	const out = new Uint8Array(enc.length);
+	out.set(enc);
+	return out;
+}
+
 function bytesToBase64(bytes: Uint8Array): string {
 	let binary = '';
 	for (const b of bytes) binary += String.fromCharCode(b);
@@ -180,49 +202,70 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /**
+ * Candidate HMAC keys for a Standard-Webhooks-style secret. Polar's secret is
+ * `polar_whs_…` (not the canonical `whsec_<base64>`), and providers differ on
+ * whether the HMAC key is the base64-decoded secret, the de-prefixed part, or
+ * the raw UTF-8 bytes. We try all plausible derivations and accept if any
+ * matches — an attacker still can't forge a signature without the secret.
+ */
+function candidateKeyBytes(secret: string): Uint8Array<ArrayBuffer>[] {
+	const deprefixed = secret.replace(/^(whsec_|polar_whs_)/, '');
+	const out: Uint8Array<ArrayBuffer>[] = [];
+	const add = (fn: () => Uint8Array<ArrayBuffer>) => {
+		try {
+			const b = fn();
+			if (b.length > 0) out.push(b);
+		} catch {
+			/* skip derivations that fail to decode */
+		}
+	};
+	add(() => lenientBase64ToBytes(secret));
+	add(() => lenientBase64ToBytes(deprefixed));
+	add(() => utf8ToBytes(secret));
+	add(() => utf8ToBytes(deprefixed));
+	return out;
+}
+
+/**
  * Verify a Polar webhook using the Standard Webhooks scheme.
  *
- * - Headers: `webhook-id`, `webhook-timestamp`, `webhook-signature`.
- * - The secret is base64-encoded (optionally `whsec_`-prefixed); the bytes are
- *   the HMAC key.
- * - Signed content is `${id}.${timestamp}.${rawBody}`, HMAC-SHA256, base64.
- * - `webhook-signature` is a space-separated list of `v1,<base64sig>`; the
- *   delivery is valid if any entry matches.
- *
- * Returns `false` on any missing header or mismatch — never throws on bad
- * input, so the caller maps `false` → 400.
+ * Headers: `webhook-id`, `webhook-timestamp`, `webhook-signature`. Signed
+ * content is `${id}.${timestamp}.${rawBody}`, HMAC-SHA256, base64, compared
+ * against each `v1,<sig>` entry in the header. Tries every plausible key
+ * derivation for the secret. NEVER throws — returns `false` on any missing
+ * header, decode error, or mismatch, so the caller maps `false` → 400.
  */
 export async function verifyPolarWebhook(
 	rawBody: string,
 	headers: Headers,
 	secret: string,
 ): Promise<boolean> {
-	const id = headers.get('webhook-id');
-	const timestamp = headers.get('webhook-timestamp');
-	const signatureHeader = headers.get('webhook-signature');
-	if (!id || !timestamp || !signatureHeader) return false;
+	try {
+		const id = headers.get('webhook-id');
+		const timestamp = headers.get('webhook-timestamp');
+		const signatureHeader = headers.get('webhook-signature');
+		if (!id || !timestamp || !signatureHeader) return false;
 
-	const secretBytes = base64ToBytes(secret.replace(/^whsec_/, ''));
-	const key = await crypto.subtle.importKey(
-		'raw',
-		secretBytes,
-		{ name: 'HMAC', hash: 'SHA-256' },
-		false,
-		['sign'],
-	);
-	const signedContent = `${id}.${timestamp}.${rawBody}`;
-	const sigBuffer = await crypto.subtle.sign(
-		'HMAC',
-		key,
-		new TextEncoder().encode(signedContent),
-	);
-	const expected = bytesToBase64(new Uint8Array(sigBuffer));
+		const signedContent = utf8ToBytes(`${id}.${timestamp}.${rawBody}`);
+		const provided = signatureHeader.split(' ').map((entry) => {
+			const comma = entry.indexOf(',');
+			return comma === -1 ? entry : entry.slice(comma + 1);
+		});
 
-	// Each space-separated entry is `<version>,<base64sig>`; compare the v1 sigs.
-	for (const entry of signatureHeader.split(' ')) {
-		const comma = entry.indexOf(',');
-		const sig = comma === -1 ? entry : entry.slice(comma + 1);
-		if (safeEqual(sig, expected)) return true;
+		for (const keyBytes of candidateKeyBytes(secret)) {
+			const key = await crypto.subtle.importKey(
+				'raw',
+				keyBytes,
+				{ name: 'HMAC', hash: 'SHA-256' },
+				false,
+				['sign'],
+			);
+			const sigBuffer = await crypto.subtle.sign('HMAC', key, signedContent);
+			const expected = bytesToBase64(new Uint8Array(sigBuffer));
+			if (provided.some((sig) => safeEqual(sig, expected))) return true;
+		}
+		return false;
+	} catch {
+		return false;
 	}
-	return false;
 }
