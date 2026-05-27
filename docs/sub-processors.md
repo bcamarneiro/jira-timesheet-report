@@ -4,7 +4,7 @@ Hoursmith uses a small number of third-party sub-processors to deliver the hoste
 
 This list is kept current as our stack evolves. When the active customer base warrants it, material changes to this list — for example, a new sub-processor, a new processing region, or an expansion of processing scope — will be communicated by email to active subscribers in advance of the change taking effect.
 
-Last updated: 2026-05-20.
+Last updated: 2026-05-27.
 
 ## Active sub-processors
 
@@ -12,7 +12,7 @@ Last updated: 2026-05-20.
 | --- | --- | --- | --- |
 | Vercel | Application hosting and serverless functions. All compute is pinned to the `fra1` region. | EU (Frankfurt, Germany) | [vercel.com/legal/dpa](https://vercel.com/legal/dpa) |
 | Supabase | Authentication (email/password and GitHub OAuth) and Postgres database storing only the `profiles` and `subscriptions` tables. | EU (Frankfurt, Germany) | [supabase.com/legal/dpa](https://supabase.com/legal/dpa) |
-| Stripe | Payment processing for subscriptions and invoices, including Stripe Tax for EU VAT calculation and collection. | United States, transferred under Standard Contractual Clauses and the EU-US Data Privacy Framework | [stripe.com/legal/dpa](https://stripe.com/legal/dpa) |
+| Polar | Merchant of Record for Premium subscriptions: checkout, payment processing, invoicing, and EU VAT calculation, collection, and remittance. | United States (Polar Software Inc.), transferred under Standard Contractual Clauses | [polar.sh/legal/data-processing-addendum](https://polar.sh/legal/data-processing-addendum) |
 | Plausible Analytics | Cookieless, anonymous traffic analytics. No personal identifiers are collected and no consent banner is required. | EU (Germany) | [plausible.io/dpa](https://plausible.io/dpa) |
 
 ### Not yet active
@@ -31,7 +31,7 @@ Hoursmith is designed so that the data you care most about never leaves your bro
 
 **Calendar feeds.** ICS feeds for absences, holidays, and shared availability are fetched and parsed in the browser. The hosted proxy may relay the fetch when CORS requires it but does not retain feed contents.
 
-The only personal data we store server-side is the minimum required to operate auth and billing: your email address and authentication identifiers in Supabase, and the Stripe customer and subscription identifiers needed to manage your plan.
+The only personal data we store server-side is the minimum required to operate auth and billing: your email address and authentication identifiers in Supabase, and the Polar customer and subscription identifiers needed to manage your plan.
 
 ## Changes to this list
 
@@ -41,4 +41,4 @@ Historical changes can be reviewed in the git history of this page.
 
 ---
 
-Last updated: 2026-05-20. Contact: see the [Privacy Policy](/privacy).
+Last updated: 2026-05-27. Contact: see the [Privacy Policy](/privacy).

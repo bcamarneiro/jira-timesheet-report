@@ -13,7 +13,7 @@ import * as styles from './SubProcessorsPage.module.css';
  * sub-processor list changes (expected cadence: quarterly at most).
  */
 
-const LAST_UPDATED = '2026-05-20';
+const LAST_UPDATED = '2026-05-27';
 
 interface SubProcessorRow {
 	name: string;
@@ -44,14 +44,14 @@ const ACTIVE_SUB_PROCESSORS: SubProcessorRow[] = [
 		},
 	},
 	{
-		name: 'Stripe',
+		name: 'Polar',
 		purpose:
-			'Payment processing for subscriptions and invoices, including Stripe Tax for EU VAT calculation and collection.',
+			'Merchant of Record for Premium subscriptions: checkout, payment processing, invoicing, and EU VAT calculation, collection, and remittance.',
 		region:
-			'United States, transferred under Standard Contractual Clauses and the EU-US Data Privacy Framework',
+			'United States (Polar Software Inc.), transferred under Standard Contractual Clauses',
 		dpa: {
-			label: 'stripe.com/legal/dpa',
-			href: 'https://stripe.com/legal/dpa',
+			label: 'polar.sh/legal/data-processing-addendum',
+			href: 'https://polar.sh/legal/data-processing-addendum',
 		},
 	},
 	{
@@ -173,7 +173,7 @@ export const SubProcessorsPage: React.FC = () => {
 				<p className={styles.body}>
 					The only personal data we store server-side is the minimum required to
 					operate auth and billing: your email address and authentication
-					identifiers in Supabase, and the Stripe customer and subscription
+					identifiers in Supabase, and the Polar customer and subscription
 					identifiers needed to manage your plan.
 				</p>
 			</section>
