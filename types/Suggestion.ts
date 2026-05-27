@@ -34,6 +34,18 @@ export interface RescueTimeDaySummary {
 	topActivities: RescueTimeActivity[];
 }
 
+/**
+ * A real (already-logged, non-backdated) Jira worklog placed on its day.
+ * Surfaced per-day so the user can act on it (e.g. clone it elsewhere) — the
+ * Dashboard otherwise only keeps the aggregate `loggedSeconds`.
+ */
+export interface LoggedWorklog {
+	worklogId: string;
+	issueKey: string;
+	issueSummary?: string;
+	timeSpentSeconds: number;
+}
+
 export interface DaySummary {
 	date: string;
 	dayOfWeek: number;
@@ -43,6 +55,8 @@ export interface DaySummary {
 	gapSeconds: number;
 	absenceKind?: AbsenceKind;
 	suggestions: WorklogSuggestion[];
+	/** Non-backdated worklogs logged on this day (drives the "Clone to…" UI). */
+	loggedWorklogs: LoggedWorklog[];
 	rescueTime?: RescueTimeDaySummary;
 }
 

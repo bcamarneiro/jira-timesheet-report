@@ -1,0 +1,170 @@
+.popover {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	min-width: 280px;
+}
+
+.context {
+	margin: 0;
+	font-size: var(--text-sm);
+	color: var(--color-text-secondary);
+}
+
+.monthNav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.navButton {
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	width: 28px;
+	height: 28px;
+	font-size: var(--text-base);
+	line-height: 1;
+	color: var(--color-text);
+	cursor: pointer;
+}
+
+.navButton:hover {
+	background: var(--color-surface-sunken);
+}
+
+.monthLabel {
+	font-size: var(--text-sm);
+	font-weight: var(--font-semibold);
+	color: var(--color-text);
+}
+
+.weekdayRow,
+.grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 2px;
+}
+
+.weekdayLabel {
+	text-align: center;
+	font-size: 10px;
+	font-weight: var(--font-semibold);
+	color: var(--color-text-tertiary);
+	text-transform: uppercase;
+}
+
+.blank {
+	aspect-ratio: 1;
+}
+
+.day {
+	aspect-ratio: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var(--radius-md);
+	font-size: var(--text-sm);
+	color: var(--color-text);
+	cursor: pointer;
+}
+
+.day:hover {
+	background: var(--color-surface-sunken);
+}
+
+.selected {
+	background: var(--color-primary);
+	color: white;
+	border-color: var(--color-primary);
+}
+
+.selected:hover {
+	background: var(--color-primary);
+	opacity: 0.9;
+}
+
+.source {
+	opacity: 0.4;
+	cursor: not-allowed;
+	border-style: dashed;
+	border-color: var(--color-border);
+}
+
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-1);
+}
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: var(--text-xs);
+	border: 1px solid var(--color-border);
+	background: var(--color-surface-sunken);
+	border-radius: var(--radius-sm);
+	padding: 1px var(--space-2);
+	color: var(--color-text-secondary);
+	cursor: pointer;
+}
+
+.chip:hover {
+	color: var(--color-text);
+	border-color: var(--color-text-tertiary);
+}
+
+.footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	border-top: 1px solid var(--color-border);
+	padding-top: var(--space-3);
+}
+
+.count {
+	font-size: var(--text-sm);
+	color: var(--color-text-secondary);
+}
+
+.footerActions {
+	display: flex;
+	gap: var(--space-2);
+}
+
+.cancelButton {
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	padding: var(--space-1) var(--space-3);
+	font-size: var(--text-sm);
+	color: var(--color-text);
+	cursor: pointer;
+}
+
+.cancelButton:hover {
+	background: var(--color-surface-sunken);
+}
+
+.cloneButton {
+	background: var(--color-primary);
+	color: white;
+	border: none;
+	border-radius: var(--radius-md);
+	padding: var(--space-1) var(--space-4);
+	font-size: var(--text-sm);
+	font-weight: var(--font-semibold);
+	cursor: pointer;
+}
+
+.cloneButton:hover {
+	opacity: 0.9;
+}
+
+.cloneButton:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}

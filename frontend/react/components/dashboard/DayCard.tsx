@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from 'react';
-import type { DaySummary } from '../../../../types/Suggestion';
+import type { DaySummary, LoggedWorklog } from '../../../../types/Suggestion';
 import { useDashboardStore } from '../../../stores/useDashboardStore';
 import { useWorklogOperations } from '../../hooks/useWorklogOperations';
 import { getAbsenceKindLabel } from '../../utils/absence';
@@ -8,8 +8,10 @@ import {
 	toLocalDateString,
 	withLocalOffset,
 } from '../../utils/date';
-import { formatHours } from '../../utils/format';
+import { formatHours, formatJiraTimeSpent } from '../../utils/format';
+import { Modal } from '../ui/Modal';
 import { toast } from '../ui/Toast';
+import { CloneWorklogPopover } from './CloneWorklogPopover';
 import * as styles from './DayCard.module.css';
 import { DayNote } from './DayNote';
 import { SuggestionCard } from './SuggestionCard';
@@ -75,6 +77,49 @@ export const DayCard = memo<Props>(function DayCard({
 	// Today stays expanded so it's easy to keep working on.
 	const isClosed = !day.isWeekend && day.gapSeconds === 0;
 	const [expanded, setExpanded] = useState<boolean>(() => !isClosed || isToday);
+	const [cloneSource, setCloneSource] = useState<LoggedWorklog | null>(null);
+
+	const handleClone = async (source: LoggedWorklog, dates: string[]) => {
+		if (dates.length === 0) return;
+		const timeSpent = formatJiraTimeSpent(source.timeSpentSeconds);
+		try {
+			const params = dates.map((d) => ({
+				issueKey: source.issueKey,
+				timeSpent,
+				comment: '',
+				started: withLocalOffset(`${d}T09:00`),
+			}));
+
+			const result = await createMultipleWorklogs(params);
+			setCloneSource(null);
+
+			if (result.failed.length === 0) {
+				toast.success(
+					`Cloned ${source.issueKey} (${timeSpent}) to ${result.success} day${
+						result.success === 1 ? '' : 's'
+					}`,
+					{
+						action: {
+							label: 'Undo',
+							onClick: () => {
+								Promise.all(
+									result.created.map((w) =>
+										deleteWorklog(w.issueKey, w.worklogId),
+									),
+								);
+							},
+						},
+					},
+				);
+			} else {
+				toast.error(
+					`Cloned ${result.success} of ${params.length}: failed ${result.failed.join(', ')}`,
+				);
+			}
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Clone failed');
+		}
+	};
 
 	const handleLogAll = async () => {
 		setIsBatchLogging(true);
@@ -243,6 +288,33 @@ export const DayCard = memo<Props>(function DayCard({
 						</div>
 					)}
 
+					{day.loggedWorklogs.length > 0 && (
+						<div className={styles.loggedWorklogs}>
+							{day.loggedWorklogs.map((wl) => (
+								<div key={wl.worklogId} className={styles.loggedWorklog}>
+									<span className={styles.loggedWorklogCheck}>&#10003;</span>
+									<span className={styles.loggedWorklogKey}>{wl.issueKey}</span>
+									<span className={styles.loggedWorklogTime}>
+										{formatHours(wl.timeSpentSeconds)}
+									</span>
+									{wl.issueSummary && (
+										<span className={styles.loggedWorklogSummary}>
+											{wl.issueSummary}
+										</span>
+									)}
+									<button
+										type="button"
+										className={styles.cloneButton}
+										onClick={() => setCloneSource(wl)}
+										aria-label={`Clone ${wl.issueKey} to other days`}
+									>
+										Clone to…
+									</button>
+								</div>
+							))}
+						</div>
+					)}
+
 					{!day.isWeekend &&
 						!isTimeOff &&
 						day.gapSeconds > 0 &&
@@ -305,6 +377,22 @@ export const DayCard = memo<Props>(function DayCard({
 						</div>
 					)}
 				</>
+			)}
+
+			{cloneSource && (
+				<Modal
+					isOpen
+					onClose={() => setCloneSource(null)}
+					title="Clone worklog"
+				>
+					<CloneWorklogPopover
+						issueKey={cloneSource.issueKey}
+						timeSpent={formatJiraTimeSpent(cloneSource.timeSpentSeconds)}
+						sourceDate={day.date}
+						onClone={(dates) => handleClone(cloneSource, dates)}
+						onCancel={() => setCloneSource(null)}
+					/>
+				</Modal>
 			)}
 		</div>
 	);

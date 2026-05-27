@@ -1,5 +1,6 @@
 import type {
 	DaySummary,
+	LoggedWorklog,
 	RescueTimeDaySummary,
 	WorklogSuggestion,
 } from '../../types/Suggestion';
@@ -14,7 +15,10 @@ import type { AbsenceDay } from './absenceService';
 interface WorklogEntry {
 	date: string;
 	issueKey?: string;
+	issueSummary?: string;
 	timeSpentSeconds: number;
+	/** Jira worklog id — carried so the day's real worklogs are addressable. */
+	worklogId?: string;
 	/** Backdated entries are tracked but excluded from `loggedByDay` totals. */
 	isBackdated?: boolean;
 }
@@ -249,6 +253,9 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 	// Build a set of (date, issueKey) already logged
 	const loggedSet = new Set<string>();
 	const loggedByDay = new Map<string, number>();
+	// Real, non-backdated worklogs grouped per day. Built from the same source
+	// as `loggedByDay` so the clonable items and the day total never diverge.
+	const loggedWorklogsByDay = new Map<string, LoggedWorklog[]>();
 
 	for (const wl of existingWorklogs) {
 		const day = wl.date.slice(0, 10);
@@ -256,6 +263,16 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 		// they only feed the Dashboard ghost / side-note UI.
 		if (!wl.isBackdated) {
 			loggedByDay.set(day, (loggedByDay.get(day) || 0) + wl.timeSpentSeconds);
+			if (wl.issueKey && wl.worklogId) {
+				const list = loggedWorklogsByDay.get(day) ?? [];
+				list.push({
+					worklogId: wl.worklogId,
+					issueKey: wl.issueKey,
+					issueSummary: wl.issueSummary,
+					timeSpentSeconds: wl.timeSpentSeconds,
+				});
+				loggedWorklogsByDay.set(day, list);
+			}
 		}
 		if (wl.issueKey) {
 			loggedSet.add(`${day}::${wl.issueKey}`);
@@ -408,6 +425,7 @@ export function mergeSuggestions(input: MergeSuggestionsInput): DaySummary[] {
 			gapSeconds,
 			absenceKind: absenceDay?.kind,
 			suggestions: [...roundedSuggestions, ...dayUnmapped],
+			loggedWorklogs: loggedWorklogsByDay.get(date) ?? [],
 			rescueTime: rtDay,
 		};
 	});

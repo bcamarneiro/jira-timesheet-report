@@ -15,6 +15,7 @@ function makeDay(overrides: Partial<DaySummary> = {}): DaySummary {
 		targetSeconds: 28800,
 		gapSeconds: 0,
 		suggestions: [],
+		loggedWorklogs: [],
 		...overrides,
 	};
 }

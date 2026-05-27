@@ -27,6 +27,8 @@ interface WorklogEntry {
 	issueKey?: string;
 	issueSummary?: string;
 	timeSpentSeconds: number;
+	/** Jira worklog id — surfaced so the day's real worklogs are addressable. */
+	worklogId?: string;
 	created?: string;
 	comment?: string;
 	/**
@@ -57,6 +59,7 @@ export function deriveWeekWorklogs(
 				issueKey: wl.issue.key,
 				issueSummary: wl.issue.fields.summary as string,
 				timeSpentSeconds: wl.timeSpentSeconds ?? 0,
+				worklogId: wl.id,
 				created: wl.created,
 				comment: typeof wl.comment === 'string' ? wl.comment : undefined,
 				isBackdated: c.isBackdated,
