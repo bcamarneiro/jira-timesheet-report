@@ -328,6 +328,90 @@ describe('mergeSuggestions: backdated worklogs do not count toward day totals', 
 	});
 });
 
+describe('mergeSuggestions: loggedWorklogs per day', () => {
+	it('collects non-backdated worklogs into loggedWorklogs with a total matching loggedSeconds', () => {
+		const result = mergeSuggestions({
+			weekStart: '2026-04-13',
+			jiraSuggestions: [],
+			gitlabSuggestions: [],
+			calendarSuggestions: [],
+			rescueTimeData: new Map(),
+			existingWorklogs: [
+				{
+					date: '2026-04-15',
+					issueKey: 'PROJ-1',
+					issueSummary: 'Build the thing',
+					timeSpentSeconds: 4 * 3600,
+					worklogId: 'w1',
+				},
+				{
+					date: '2026-04-15',
+					issueKey: 'PROJ-2',
+					timeSpentSeconds: 2 * 3600,
+					worklogId: 'w2',
+				},
+			],
+		});
+
+		const wed = result.find((d) => d.date === '2026-04-15');
+		expect(wed?.loggedWorklogs).toHaveLength(2);
+		expect(wed?.loggedWorklogs[0]).toMatchObject({
+			worklogId: 'w1',
+			issueKey: 'PROJ-1',
+			issueSummary: 'Build the thing',
+			timeSpentSeconds: 4 * 3600,
+		});
+		const total = (wed?.loggedWorklogs ?? []).reduce(
+			(sum, w) => sum + w.timeSpentSeconds,
+			0,
+		);
+		expect(total).toBe(wed?.loggedSeconds);
+	});
+
+	it('excludes backdated worklogs from loggedWorklogs', () => {
+		const result = mergeSuggestions({
+			weekStart: '2026-04-13',
+			jiraSuggestions: [],
+			gitlabSuggestions: [],
+			calendarSuggestions: [],
+			rescueTimeData: new Map(),
+			existingWorklogs: [
+				{
+					date: '2026-04-15',
+					issueKey: 'PROJ-1',
+					timeSpentSeconds: 4 * 3600,
+					worklogId: 'w1',
+				},
+				{
+					date: '2026-04-15',
+					issueKey: 'PROJ-2',
+					timeSpentSeconds: 3 * 3600,
+					worklogId: 'w2',
+					isBackdated: true,
+				},
+			],
+		});
+
+		const wed = result.find((d) => d.date === '2026-04-15');
+		expect(wed?.loggedWorklogs).toHaveLength(1);
+		expect(wed?.loggedWorklogs[0]?.issueKey).toBe('PROJ-1');
+	});
+
+	it('defaults to an empty array on days with no logged worklogs', () => {
+		const result = mergeSuggestions({
+			weekStart: '2026-04-13',
+			jiraSuggestions: [],
+			gitlabSuggestions: [],
+			calendarSuggestions: [],
+			rescueTimeData: new Map(),
+			existingWorklogs: [],
+		});
+
+		expect(result.every((d) => Array.isArray(d.loggedWorklogs))).toBe(true);
+		expect(result.every((d) => d.loggedWorklogs.length === 0)).toBe(true);
+	});
+});
+
 describe('roundingStepSeconds', () => {
 	it('returns 60 (one-minute) when rounding is off', () => {
 		expect(roundingStepSeconds('off')).toBe(60);

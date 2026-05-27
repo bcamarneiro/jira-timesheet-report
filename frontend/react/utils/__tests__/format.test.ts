@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { formatActivityTime } from '../../components/dashboard/DayCard';
-import { computeCompliancePct, formatHours } from '../format';
+import {
+	computeCompliancePct,
+	formatHours,
+	formatJiraTimeSpent,
+} from '../format';
 
 describe('formatHours', () => {
 	it('should format whole hours without decimal', () => {
@@ -34,6 +38,23 @@ describe('formatHours', () => {
 		expect(formatHours(900)).toBe('0.3h');
 		// 45 minutes
 		expect(formatHours(2700)).toBe('0.8h');
+	});
+});
+
+describe('formatJiraTimeSpent', () => {
+	it('formats whole hours as Nh', () => {
+		expect(formatJiraTimeSpent(28800)).toBe('8h');
+		expect(formatJiraTimeSpent(3600)).toBe('1h');
+	});
+
+	it('formats hours + minutes', () => {
+		expect(formatJiraTimeSpent(5400)).toBe('1h 30m');
+		expect(formatJiraTimeSpent(4500)).toBe('1h 15m');
+	});
+
+	it('formats sub-hour durations in minutes', () => {
+		expect(formatJiraTimeSpent(1800)).toBe('30m');
+		expect(formatJiraTimeSpent(900)).toBe('15m');
 	});
 });
 
