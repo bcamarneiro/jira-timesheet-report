@@ -71,6 +71,18 @@ describe('verifyPolarWebhook', () => {
 		);
 		expect(ok).toBe(true);
 	});
+
+	// Regression: Polar's secret is `polar_whs_…` with base64url chars. Strict
+	// atob() used to throw InvalidCharacterError → an uncaught 500 on every
+	// delivery. Must now decode leniently and return false (never throw).
+	it('does not throw on a polar_whs_ secret with url chars', async () => {
+		const ok = await verifyPolarWebhook(
+			VECTOR.payload,
+			vectorHeaders({ 'webhook-signature': 'v1,not-the-real-signature' }),
+			'polar_whs_u7ss4HAF-some_url-safe_chars',
+		);
+		expect(ok).toBe(false);
+	});
 });
 
 describe('createPolarCheckout', () => {
