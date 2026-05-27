@@ -70,6 +70,11 @@ export const DayCard = memo<Props>(function DayCard({
 		: undefined;
 	const rt = day.rescueTime;
 	const showFillButton = day.gapSeconds > 0 && activeSuggestions.length > 0;
+	// A weekday with no remaining gap is "closed": keep it visible but collapsed
+	// (instead of dropping it from the page) so it stays reviewable/editable.
+	// Today stays expanded so it's easy to keep working on.
+	const isClosed = !day.isWeekend && day.gapSeconds === 0;
+	const [expanded, setExpanded] = useState<boolean>(() => !isClosed || isToday);
 
 	const handleLogAll = async () => {
 		setIsBatchLogging(true);
@@ -130,7 +135,7 @@ export const DayCard = memo<Props>(function DayCard({
 
 	return (
 		<div
-			className={`${styles.card} ${isToday ? styles.today : ''} ${day.isWeekend ? styles.weekend : ''} ${isFocused ? styles.focused : ''}`}
+			className={`${styles.card} ${isToday ? styles.today : ''} ${day.isWeekend ? styles.weekend : ''} ${isFocused ? styles.focused : ''} ${isClosed && !expanded ? styles.closed : ''}`}
 		>
 			<div className={styles.header}>
 				<div className={styles.dayInfo}>
@@ -180,108 +185,126 @@ export const DayCard = memo<Props>(function DayCard({
 							{isBatchLogging ? 'Logging...' : 'Log All'}
 						</button>
 					)}
+					{isClosed && !isTimeOff && (
+						<span className={styles.closedChip}>✓ Closed</span>
+					)}
+					{isClosed && (
+						<button
+							type="button"
+							className={styles.collapseToggle}
+							onClick={() => setExpanded((v) => !v)}
+							aria-expanded={expanded}
+							aria-label={`${expanded ? 'Collapse' : 'Expand'} ${DAY_NAMES[day.dayOfWeek]}`}
+						>
+							{expanded ? '▴' : '▾'}
+						</button>
+					)}
 				</div>
 			</div>
 
-			<DayNote date={day.date} />
+			{expanded && (
+				<>
+					<DayNote date={day.date} />
 
-			{rt && rt.topActivities.length > 0 && (
-				<div className={styles.activities}>
-					{rt.topActivities.map((a, i) => (
-						<span
-							key={`${a.name}-${i}`}
-							className={styles.activityPill}
-							title={`${a.category} — ${formatActivityTime(a.seconds)}`}
-						>
-							{a.name}{' '}
-							<span className={styles.activityTime}>
-								{formatActivityTime(a.seconds)}
-							</span>
-						</span>
-					))}
-				</div>
-			)}
-
-			{activeSuggestions.length > 0 && (
-				<div className={styles.suggestions}>
-					{activeSuggestions.map((s, i) => (
-						<SuggestionCard
-							key={s.id}
-							suggestion={s}
-							isFocused={isFocused && focusedSuggestionIndex === i}
-						/>
-					))}
-				</div>
-			)}
-
-			{loggedSuggestions.length > 0 && (
-				<div className={styles.suggestions}>
-					{loggedSuggestions.map((s) => (
-						<SuggestionCard key={s.id} suggestion={s} />
-					))}
-				</div>
-			)}
-
-			{!day.isWeekend &&
-				!isTimeOff &&
-				day.gapSeconds > 0 &&
-				activeSuggestions.length === 0 && (
-					<div className={styles.noSuggestions}>
-						No suggestions available for this day
-					</div>
-				)}
-
-			{/*
-			 * Reconciled later: worklogs whose intendedFor is this day but were
-			 * logged in another week. They render here as a courtesy reference and
-			 * NEVER count toward day.loggedSeconds or day.gapSeconds — those values
-			 * come from useDashboardStore and the dataFetcher excludes ghosts from
-			 * the worklog projection that drives gap math.
-			 */}
-			{dayGhosts.length > 0 && (
-				<div className={styles.ghosts}>
-					<button
-						type="button"
-						className={styles.ghostsToggle}
-						onClick={() => setGhostsExpanded((v) => !v)}
-						aria-expanded={ghostsExpanded}
-						aria-controls={`day-ghosts-${day.date}`}
-					>
-						Reconciled later ({dayGhosts.length})
-					</button>
-					{ghostsExpanded && (
-						<ul
-							id={`day-ghosts-${day.date}`}
-							className={styles.ghostsList}
-							aria-label={`${dayGhosts.length} worklog${
-								dayGhosts.length === 1 ? '' : 's'
-							} reconciled later for ${day.date}`}
-						>
-							{dayGhosts.map((g, i) => (
-								<li
-									key={`${g.intendedFor}-${g.loggedOn}-${g.issueKey ?? 'unknown'}-${i}`}
-									className={styles.ghostItem}
-									role="note"
-									title={`Submitted on ${g.loggedOn} (${g.daysLate}d after this date). Counts toward ${g.loggedOn}, not this day.`}
-									aria-label={`Backdated worklog: ${formatHours(g.timeSpentSeconds)}, does not count toward this day, submitted on ${g.loggedOn}`}
+					{rt && rt.topActivities.length > 0 && (
+						<div className={styles.activities}>
+							{rt.topActivities.map((a, i) => (
+								<span
+									key={`${a.name}-${i}`}
+									className={styles.activityPill}
+									title={`${a.category} — ${formatActivityTime(a.seconds)}`}
 								>
-									<span className={styles.ghostHours}>
-										{formatHours(g.timeSpentSeconds)}
+									{a.name}{' '}
+									<span className={styles.activityTime}>
+										{formatActivityTime(a.seconds)}
 									</span>
-									{g.issueKey && (
-										<span className={styles.ghostIssue}>{g.issueKey}</span>
-									)}
-									<span className={styles.ghostArrow} aria-hidden="true">
-										→
-									</span>
-									<span className={styles.ghostLoggedOn}>
-										logged {g.loggedOn}
-									</span>
-								</li>
+								</span>
 							))}
-						</ul>
+						</div>
 					)}
-				</div>
+
+					{activeSuggestions.length > 0 && (
+						<div className={styles.suggestions}>
+							{activeSuggestions.map((s, i) => (
+								<SuggestionCard
+									key={s.id}
+									suggestion={s}
+									isFocused={isFocused && focusedSuggestionIndex === i}
+								/>
+							))}
+						</div>
+					)}
+
+					{loggedSuggestions.length > 0 && (
+						<div className={styles.suggestions}>
+							{loggedSuggestions.map((s) => (
+								<SuggestionCard key={s.id} suggestion={s} />
+							))}
+						</div>
+					)}
+
+					{!day.isWeekend &&
+						!isTimeOff &&
+						day.gapSeconds > 0 &&
+						activeSuggestions.length === 0 && (
+							<div className={styles.noSuggestions}>
+								No suggestions available for this day
+							</div>
+						)}
+
+					{/*
+					 * Reconciled later: worklogs whose intendedFor is this day but were
+					 * logged in another week. They render here as a courtesy reference and
+					 * NEVER count toward day.loggedSeconds or day.gapSeconds — those values
+					 * come from useDashboardStore and the dataFetcher excludes ghosts from
+					 * the worklog projection that drives gap math.
+					 */}
+					{dayGhosts.length > 0 && (
+						<div className={styles.ghosts}>
+							<button
+								type="button"
+								className={styles.ghostsToggle}
+								onClick={() => setGhostsExpanded((v) => !v)}
+								aria-expanded={ghostsExpanded}
+								aria-controls={`day-ghosts-${day.date}`}
+							>
+								Reconciled later ({dayGhosts.length})
+							</button>
+							{ghostsExpanded && (
+								<ul
+									id={`day-ghosts-${day.date}`}
+									className={styles.ghostsList}
+									aria-label={`${dayGhosts.length} worklog${
+										dayGhosts.length === 1 ? '' : 's'
+									} reconciled later for ${day.date}`}
+								>
+									{dayGhosts.map((g, i) => (
+										<li
+											key={`${g.intendedFor}-${g.loggedOn}-${g.issueKey ?? 'unknown'}-${i}`}
+											className={styles.ghostItem}
+											role="note"
+											title={`Submitted on ${g.loggedOn} (${g.daysLate}d after this date). Counts toward ${g.loggedOn}, not this day.`}
+											aria-label={`Backdated worklog: ${formatHours(g.timeSpentSeconds)}, does not count toward this day, submitted on ${g.loggedOn}`}
+										>
+											<span className={styles.ghostHours}>
+												{formatHours(g.timeSpentSeconds)}
+											</span>
+											{g.issueKey && (
+												<span className={styles.ghostIssue}>{g.issueKey}</span>
+											)}
+											<span className={styles.ghostArrow} aria-hidden="true">
+												→
+											</span>
+											<span className={styles.ghostLoggedOn}>
+												logged {g.loggedOn}
+											</span>
+										</li>
+									))}
+								</ul>
+							)}
+						</div>
+					)}
+				</>
 			)}
 		</div>
 	);

@@ -287,21 +287,22 @@ export const DashboardPage: React.FC = () => {
 
 					<WeekOverview days={daySummaries} />
 
-					{hasGaps && (
+					{weekdays.length > 0 && (
 						<div id={GAP_DAYS_SECTION_ID} className={styles.daysSection}>
-							<h3 className={styles.sectionTitle}>Days to fill</h3>
-							{weekdays
-								.filter((d) => d.gapSeconds > 0)
-								.map((day, i) => (
-									<DayCard
-										key={day.date}
-										day={day}
-										isFocused={focusedDayIndex === i}
-										focusedSuggestionIndex={
-											focusedDayIndex === i ? focusedSuggestionIndex : undefined
-										}
-									/>
-								))}
+							<h3 className={styles.sectionTitle}>This week</h3>
+							{/* All weekdays render in order; complete days collapse in
+							    place (DayCard) instead of disappearing, so they stay
+							    reviewable and editable. */}
+							{weekdays.map((day, i) => (
+								<DayCard
+									key={day.date}
+									day={day}
+									isFocused={focusedDayIndex === i}
+									focusedSuggestionIndex={
+										focusedDayIndex === i ? focusedSuggestionIndex : undefined
+									}
+								/>
+							))}
 						</div>
 					)}
 
