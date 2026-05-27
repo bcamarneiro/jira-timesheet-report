@@ -10,7 +10,7 @@ import * as styles from './LegalPage.module.css';
  * material terms change.
  */
 
-const EFFECTIVE_DATE = '2026-05-20';
+const EFFECTIVE_DATE = '2026-05-27';
 // TODO(ADA-283): replace once support@hoursmith.io is provisioned.
 const CONTACT_EMAIL = 'privacy@hoursmith.io';
 
@@ -64,11 +64,16 @@ export const TermsPage: React.FC = () => {
 			<section className={styles.section}>
 				<h2 className={styles.heading}>Subscriptions and billing</h2>
 				<p className={styles.body}>
-					Premium is sold as a{' '}
-					<strong>name-your-price annual subscription</strong> with a floor of
-					€3 per year. You choose the amount at checkout. The subscription
-					renews automatically each year at the amount you chose, unless you
-					cancel.
+					Premium is sold through <strong>Polar</strong> (Polar Software Inc.),
+					which acts as the <strong>Merchant of Record</strong> and seller of
+					record for your subscription. Premium is a{' '}
+					<strong>fixed-price annual subscription</strong>: the Hosted tier is{' '}
+					<strong>€29/year</strong> (with a founding rate of{' '}
+					<strong>€19/year</strong> for early subscribers, kept for as long as
+					the subscription stays active), and the Lead tier is{' '}
+					<strong>€60/year</strong>, rising to <strong>€120/year</strong> as
+					further Lead features ship. The subscription renews automatically each
+					year at your subscription's price, unless you cancel.
 				</p>
 				<p className={styles.body}>
 					<strong>14-day right of withdrawal (EU):</strong> Under the EU
@@ -79,7 +84,7 @@ export const TermsPage: React.FC = () => {
 				</p>
 				<p className={styles.body}>
 					<strong>Cancellation:</strong> You can cancel at any time from the
-					Stripe Customer Portal linked from <code>/account</code>. Cancellation
+					Polar customer portal linked from <code>/account</code>. Cancellation
 					takes effect at the end of the current billing period; the service
 					remains available until then. You will not be charged again.
 				</p>
@@ -91,10 +96,12 @@ export const TermsPage: React.FC = () => {
 					configuration (which lives in your browser) is unaffected.
 				</p>
 				<p className={styles.body}>
-					<strong>Taxes:</strong> Prices are exclusive of any applicable taxes.
-					Stripe Tax calculates and collects VAT for EU customers based on your
-					billing address. If you supply a valid VAT ID at checkout the
-					reverse-charge mechanism applies where eligible.
+					<strong>Taxes:</strong> Prices are shown exclusive of VAT; applicable
+					VAT is added at checkout. As Merchant of Record, Polar is the seller
+					of record and is responsible for calculating, collecting, and
+					remitting VAT for EU customers based on your billing address. If you
+					supply a valid VAT ID at checkout the reverse-charge mechanism applies
+					where eligible.
 				</p>
 			</section>
 
