@@ -11,6 +11,7 @@ import { BUILD_TIER, isPremiumBuild } from '../buildTier';
 import * as styles from './App.module.css';
 
 import { Navigation } from './components/Navigation';
+import { BuildInfoFooter } from './components/ui/BuildInfoFooter';
 import { Spinner } from './components/ui/Spinner';
 import { ToastContainer } from './components/ui/Toast';
 import { useTheme } from './hooks/useTheme';
@@ -157,6 +158,7 @@ const AppShell: React.FC = () => {
 				</Routes>
 			</Suspense>
 			<ToastContainer />
+			<BuildInfoFooter />
 		</div>
 	);
 
