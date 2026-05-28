@@ -1,45 +1,21 @@
 import type React from 'react';
-import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PremiumWaitlistForm } from '../components/marketing/PremiumWaitlistForm';
 import { usePageTitle } from '../hooks/usePageTitle';
 import * as styles from './PricingPage.module.css';
 
 /**
  * Public pricing page. Lives in the Free-tier app shell (everyone sees it).
  *
- * Linear: ADA-267. Embeds the waitlist form (ADA-268). Premium isn't
- * purchasable yet — Stripe Checkout is wired but the Stripe Product/Price
- * objects are deferred to ADA-258. The page is intentionally quiet: no
- * gradients, no emojis, no animated badges.
+ * Linear: ADA-304 (this rebuild) + ADA-301 (CTA honesty).
  *
- * Pricing model: name-your-price annual subscription with a €3 floor, €10
- * anchor (pre-selected), and €30 generous tier. Backend (ADA-260) validates
- * the floor/cap and creates the Checkout Session with inline price_data.
+ * Pricing model (confirmed 2026-05-25): three fixed-price annual tiers —
+ * Free €0, Hosted €29/yr (founding €19), Lead €60/yr founding → €120/yr public.
+ * No name-your-price, no slider, no custom amount. Polar is the Merchant of
+ * Record; the actual checkout flow lives at /account → Polar (the page CTAs
+ * route there via ?upgrade=<tier> so the checkout flow has one home).
  */
 
-/** Cents. Mirrors AMOUNT_FLOOR_CENTS / AMOUNT_CAP_CENTS in premium/api/checkout. */
-const FLOOR_CENTS = 300;
-const CAP_CENTS = 100_000;
-const DEFAULT_ANCHOR_CENTS = 1000;
-
-type AnchorId = 'lights' | 'fair' | 'thanks' | 'custom';
-
-interface Anchor {
-	id: AnchorId;
-	amountCents: number;
-	label: string;
-	caption: string;
-}
-
-const ANCHORS: ReadonlyArray<Anchor> = [
-	{ id: 'lights', amountCents: 300, label: '€3', caption: 'Lights on' },
-	{ id: 'fair', amountCents: 1000, label: '€10', caption: 'Fair' },
-	{ id: 'thanks', amountCents: 3000, label: '€30', caption: 'Thanks' },
-];
-
-// Shared feature list — Free and Premium are at parity on the product itself.
-// Only the proxy column and support diverges.
+// Shared feature list — same product on every tier. Only proxy/support diverges.
 const SHARED_FEATURES = [
 	'Personal weekly dashboard',
 	'Team and monthly reports',
@@ -49,49 +25,42 @@ const SHARED_FEATURES = [
 	'Local-only credentials',
 ];
 
-function formatEur(cents: number): string {
-	if (cents % 100 === 0) return `€${cents / 100}`;
-	return `€${(cents / 100).toFixed(2)}`;
-}
+const HOSTED_FEATURES = [
+	'Hosted CORS proxy (no local setup)',
+	'Priority email support',
+];
+
+const LEAD_V1_FEATURES = [
+	'Multi-client configuration',
+	'Per-client CSV format profiles',
+	'Holiday + PTO awareness',
+	'Per-client billable rate annotation',
+];
+
+const LEAD_V2_ROADMAP = [
+	'Scheduled CSV exports',
+	'Manager Friday digest',
+	'Audit log',
+	'Project budget tracking',
+];
+
+const TRUST_LINE = 'Cancel anytime · EU VAT handled · Powered by Polar';
 
 export const PricingPage: React.FC = () => {
 	usePageTitle('Pricing');
-	const [selectedAnchor, setSelectedAnchor] = useState<AnchorId>('fair');
-	const [customEuros, setCustomEuros] = useState<string>('15');
-	const [showForm, setShowForm] = useState(false);
-
-	const selectedCents = useMemo(() => {
-		if (selectedAnchor === 'custom') {
-			const parsed = Number.parseFloat(customEuros);
-			if (!Number.isFinite(parsed)) return null;
-			return Math.round(parsed * 100);
-		}
-		return ANCHORS.find((a) => a.id === selectedAnchor)?.amountCents ?? null;
-	}, [selectedAnchor, customEuros]);
-
-	const customError = useMemo((): string | null => {
-		if (selectedAnchor !== 'custom') return null;
-		if (selectedCents === null) return 'Enter an amount.';
-		if (selectedCents < FLOOR_CENTS)
-			return `Minimum is ${formatEur(FLOOR_CENTS)}/year.`;
-		if (selectedCents > CAP_CENTS)
-			return `Max ${formatEur(CAP_CENTS)}/year (Stripe sanity cap).`;
-		return null;
-	}, [selectedAnchor, selectedCents]);
-
-	const ctaLabel = useMemo(() => {
-		if (selectedCents === null || customError)
-			return 'Enter an amount to subscribe';
-		return `Subscribe ${formatEur(selectedCents)}/year`;
-	}, [selectedCents, customError]);
 
 	return (
 		<div className={styles.page}>
 			<header className={styles.hero}>
 				<h1 className={styles.title}>Pricing.</h1>
+				<p className={styles.timeCost}>
+					Hoursmith replaces ~2 hours of month-end timesheet chasing per client.
+					Worth €29 — or €60 if you serve multiple clients.
+				</p>
 			</header>
 
 			<section className={styles.tiers}>
+				{/* Free */}
 				<article className={styles.tier}>
 					<header className={styles.tierHeader}>
 						<h2 className={styles.tierName}>Free</h2>
@@ -100,7 +69,8 @@ export const PricingPage: React.FC = () => {
 							<span className={styles.priceCadence}>forever</span>
 						</p>
 						<p className={styles.tierTagline}>
-							Bring your own proxy. Full app, MIT-licensed. Run{' '}
+							For solo devs and self-hosters. Bring your own Jira credentials
+							and your own CORS proxy. Full app, MIT-licensed. Run{' '}
 							<code>npm run cors-proxy</code> and you're set.
 						</p>
 					</header>
@@ -120,18 +90,24 @@ export const PricingPage: React.FC = () => {
 					</div>
 				</article>
 
+				{/* Hosted */}
 				<article className={`${styles.tier} ${styles.tierFeatured}`}>
 					<header className={styles.tierHeader}>
-						<h2 className={styles.tierName}>Premium</h2>
+						<h2 className={styles.tierName}>Hosted</h2>
 						<p className={styles.tierPrice}>
-							<span className={styles.priceAmount}>
-								{formatEur(DEFAULT_ANCHOR_CENTS)}
-							</span>
+							<span className={styles.priceAmount}>€29</span>
 							<span className={styles.priceCadence}>/year</span>
 						</p>
+						<p className={styles.foundingNote}>
+							Founding rate <strong>€19/year</strong> for early subscribers
+							(locked for as long as you stay subscribed).
+						</p>
+						<p className={styles.tierHeadline}>
+							Stop running CORS proxies on your laptop.
+						</p>
 						<p className={styles.tierTagline}>
-							Or whatever feels fair — minimum {formatEur(FLOOR_CENTS)}. We host
-							the proxy, you sign in and go.
+							For individual team leads. Everything in Free, plus a hosted CORS
+							proxy and priority email support.
 						</p>
 					</header>
 					<ul className={styles.featureList}>
@@ -140,98 +116,83 @@ export const PricingPage: React.FC = () => {
 								{feature}
 							</li>
 						))}
-						<li className={styles.featureItem}>
-							<strong>Hosted CORS proxy</strong>
-						</li>
-						<li className={styles.featureItem}>
-							<strong>Priority email support</strong>
-						</li>
+						{HOSTED_FEATURES.map((feature) => (
+							<li key={feature} className={styles.featureItem}>
+								<strong>{feature}</strong>
+							</li>
+						))}
 					</ul>
-
-					<fieldset
-						className={styles.anchorGroup}
-						aria-label="Pick your annual price"
-					>
-						<legend className={styles.anchorLegend}>
-							Pick your annual price
-						</legend>
-						<div className={styles.anchorRow}>
-							{ANCHORS.map((anchor) => {
-								const active = selectedAnchor === anchor.id;
-								return (
-									<button
-										key={anchor.id}
-										type="button"
-										aria-pressed={active}
-										// TODO(plausible): emit "pricing_anchor_selected" with anchor.id
-										className={
-											active ? styles.anchorButtonActive : styles.anchorButton
-										}
-										onClick={() => setSelectedAnchor(anchor.id)}
-									>
-										<span className={styles.anchorAmount}>{anchor.label}</span>
-										<span className={styles.anchorCaption}>
-											{anchor.caption}
-											{anchor.id === 'fair' ? ' (default)' : ''}
-										</span>
-									</button>
-								);
-							})}
-						</div>
-						<div className={styles.customRow}>
-							{selectedAnchor === 'custom' ? (
-								<label className={styles.customLabel}>
-									<span>Custom amount (€/year)</span>
-									<input
-										type="number"
-										min={FLOOR_CENTS / 100}
-										max={CAP_CENTS / 100}
-										step="1"
-										inputMode="decimal"
-										value={customEuros}
-										onChange={(e) => setCustomEuros(e.target.value)}
-										className={styles.customInput}
-										aria-invalid={customError !== null}
-									/>
-								</label>
-							) : (
-								<button
-									type="button"
-									className={styles.customToggle}
-									onClick={() => setSelectedAnchor('custom')}
-								>
-									Custom amount
-								</button>
-							)}
-							{customError ? (
-								<p className={styles.customError} role="alert">
-									{customError}
-								</p>
-							) : null}
-						</div>
-					</fieldset>
-
 					<div className={styles.ctaSlot}>
-						{showForm ? (
-							<PremiumWaitlistForm source="pricing" />
-						) : (
-							<>
-								<p className={styles.ctaCopy}>
-									Premium isn't ready yet — leave your email to be the first to
-									know.
-								</p>
-								<button
-									type="button"
-									className={styles.primaryCta}
-									disabled={selectedCents === null || customError !== null}
-									onClick={() => setShowForm(true)}
-								>
-									{ctaLabel}
-								</button>
-							</>
-						)}
+						<a href="/account?upgrade=hosted" className={styles.primaryCta}>
+							Get Hosted — €29/year
+						</a>
+						<p className={styles.trustLine}>{TRUST_LINE}</p>
 					</div>
 				</article>
+
+				{/* Lead */}
+				<article className={styles.tier}>
+					<header className={styles.tierHeader}>
+						<h2 className={styles.tierName}>Lead</h2>
+						<p className={styles.tierPrice}>
+							<span className={styles.priceAmount}>€60</span>
+							<span className={styles.priceCadence}>/year (founding)</span>
+						</p>
+						<p className={styles.foundingNote}>
+							Public price rises to <strong>€120/year</strong> as V2 ships.
+							Founding subscribers keep €60.
+						</p>
+						<p className={styles.tierHeadline}>
+							Configure each client once. Switch in two clicks.
+						</p>
+						<p className={styles.tierTagline}>
+							For team leads invoicing multiple clients. Everything in Hosted,
+							plus the client-aware workflow.
+						</p>
+					</header>
+					<ul className={styles.featureList}>
+						{LEAD_V1_FEATURES.map((feature) => (
+							<li key={feature} className={styles.featureItem}>
+								<strong>{feature}</strong>
+							</li>
+						))}
+					</ul>
+					<p className={styles.roadmapHeading}>Coming to Lead in 2026:</p>
+					<ul className={styles.roadmapList}>
+						{LEAD_V2_ROADMAP.map((feature) => (
+							<li key={feature} className={styles.roadmapItem}>
+								{feature}
+							</li>
+						))}
+					</ul>
+					<div className={styles.ctaSlot}>
+						<a href="/account?upgrade=lead" className={styles.primaryCta}>
+							Get Lead — €60/year (founding)
+						</a>
+						<p className={styles.trustLine}>{TRUST_LINE}</p>
+					</div>
+				</article>
+			</section>
+
+			<section
+				className={styles.policy}
+				aria-labelledby="founding-policy-heading"
+			>
+				<h2 id="founding-policy-heading" className={styles.policyHeading}>
+					Founding-customer rate
+				</h2>
+				<p className={styles.policyBody}>
+					Subscribe at <strong>€60</strong> before the V2 features ship, and
+					your price stays €60/year while you stay subscribed. As we add
+					scheduled exports, manager digests, audit log, and project budget
+					tracking later in 2026, public pricing rises to{' '}
+					<strong>€120/year</strong>. Yours doesn't.
+				</p>
+				<p className={styles.policyBody}>
+					The same lock applies to Hosted founding subscribers:{' '}
+					<strong>€19 stays €19</strong> even after the public price returns to
+					€29.
+				</p>
 			</section>
 
 			<section className={styles.faq} aria-labelledby="pricing-faq-heading">
@@ -240,19 +201,22 @@ export const PricingPage: React.FC = () => {
 				</h2>
 				<dl className={styles.faqList}>
 					<div className={styles.faqItem}>
-						<dt className={styles.faqQuestion}>Why name-your-price?</dt>
+						<dt className={styles.faqQuestion}>
+							What's the difference between Hosted and Lead?
+						</dt>
 						<dd className={styles.faqAnswer}>
-							Hoursmith costs about €10/year per user to run. The floor covers
-							that. The other tiers are for people who want to give more —
-							entirely up to you.
+							Hosted gives you the hosted CORS proxy so you don't run anything
+							locally. Lead adds the multi-client workflow (per-client CSV
+							profiles, billable rates, PTO awareness) for people who invoice
+							two or more clients.
 						</dd>
 					</div>
 					<div className={styles.faqItem}>
 						<dt className={styles.faqQuestion}>Why pay if it's open source?</dt>
 						<dd className={styles.faqAnswer}>
-							Convenience — the hosted proxy means there's no terminal step and
-							it works on every device. Paying also supports continued
-							development of the open-source app.
+							Convenience. The hosted proxy means there's no terminal step and
+							it works on every device. Paying also keeps the open-source app
+							moving forward.
 						</dd>
 					</div>
 					<div className={styles.faqItem}>
@@ -274,13 +238,28 @@ export const PricingPage: React.FC = () => {
 						</dd>
 					</div>
 					<div className={styles.faqItem}>
-						<dt className={styles.faqQuestion}>What about a team plan?</dt>
+						<dt className={styles.faqQuestion}>
+							Annual only? What about monthly?
+						</dt>
 						<dd className={styles.faqAnswer}>
-							Not planned. If you'd benefit from one, leave your email above and
-							tell us what you'd want — we'll listen before building.
+							Annual only. Monthly subscriptions account for ~85% of churn
+							events on indie SaaS; annual billing is cleaner for both sides and
+							keeps the price genuinely low.
 						</dd>
 					</div>
 				</dl>
+			</section>
+
+			<section className={styles.license} aria-labelledby="license-heading">
+				<h2 id="license-heading" className={styles.licenseHeading}>
+					Source-available, MIT at the core
+				</h2>
+				<p className={styles.licenseBody}>
+					The app is MIT-licensed — fork it, run it, ship it commercially. The
+					hosted CORS proxy is under BSL 1.1 to sustain the hosted business; it
+					converts to Apache 2.0 in 2030. Self-host the whole stack today via
+					the README.
+				</p>
 			</section>
 
 			<footer className={styles.footer}>

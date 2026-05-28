@@ -21,8 +21,8 @@
  * Linear: ADA-257.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as styles from './AccountPage.module.css';
 import { getSupabase } from './supabaseClient';
 import { useAuth } from './useAuth';
@@ -65,10 +65,17 @@ async function postJson(
 }
 
 /**
- * The Account-page upgrade button subscribes to the Hosted tier. The Pricing
- * page is where the full Free / Hosted / Lead comparison lives.
+ * The Account-page upgrade button defaults to the Hosted tier. The Pricing
+ * page can route here with `?upgrade=hosted|lead` to pre-select a tier; the
+ * upgrade then fires automatically so a "Get Lead" click on /pricing becomes
+ * one round-trip to Polar instead of an extra click here.
  */
-const DEFAULT_UPGRADE_TIER = 'hosted';
+const DEFAULT_UPGRADE_TIER: 'hosted' | 'lead' = 'hosted';
+
+const UPGRADE_TIER_LABELS: Record<'hosted' | 'lead', string> = {
+	hosted: 'Hosted (€29/year)',
+	lead: 'Lead (€60/year)',
+};
 
 export function AccountPage(): JSX.Element {
 	useEffect(() => {
@@ -80,12 +87,18 @@ export function AccountPage(): JSX.Element {
 	}, []);
 	const { user, session, signOut } = useAuth();
 	const navigate = useNavigate();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const intendedTier = useMemo<'hosted' | 'lead' | null>(() => {
+		const v = searchParams.get('upgrade');
+		return v === 'hosted' || v === 'lead' ? v : null;
+	}, [searchParams]);
 	const [subscription, setSubscription] = useState<SubscriptionRow | null>(
 		null,
 	);
 	const [loadingSub, setLoadingSub] = useState(true);
 	const [actionPending, setActionPending] = useState<string | null>(null);
 	const [actionError, setActionError] = useState<string | null>(null);
+	const [autoUpgradeFired, setAutoUpgradeFired] = useState(false);
 
 	useEffect(() => {
 		if (!user) return;
@@ -111,26 +124,55 @@ export function AccountPage(): JSX.Element {
 		};
 	}, [user]);
 
-	const handleUpgrade = useCallback(async () => {
-		setActionPending('checkout');
-		setActionError(null);
-		try {
-			const res = await postJson('/api/checkout', session?.access_token, {
-				tier: DEFAULT_UPGRADE_TIER,
-			});
-			if (!res.ok) throw new Error('Checkout unavailable');
-			const body = (await res.json()) as { url?: string };
-			if (body.url) {
-				window.location.href = body.url;
-				return;
+	const handleUpgrade = useCallback(
+		async (tier: 'hosted' | 'lead' = DEFAULT_UPGRADE_TIER) => {
+			setActionPending('checkout');
+			setActionError(null);
+			try {
+				const res = await postJson('/api/checkout', session?.access_token, {
+					tier,
+				});
+				if (!res.ok) throw new Error('Checkout unavailable');
+				const body = (await res.json()) as { url?: string };
+				if (body.url) {
+					window.location.href = body.url;
+					return;
+				}
+				throw new Error('Missing checkout URL');
+			} catch (err) {
+				setActionError((err as Error).message);
+			} finally {
+				setActionPending(null);
 			}
-			throw new Error('Missing checkout URL');
-		} catch (err) {
-			setActionError((err as Error).message);
-		} finally {
-			setActionPending(null);
-		}
-	}, [session]);
+		},
+		[session],
+	);
+
+	// One-shot auto-upgrade when /account?upgrade=<tier> is set (the pricing
+	// page lands here that way). We clear the query param before firing so a
+	// back-button or refresh doesn't re-trigger the checkout redirect.
+	// `autoUpgradeFired` makes this a fire-once effect even if handleUpgrade
+	// is re-created (e.g. on session refresh).
+	useEffect(() => {
+		if (!intendedTier || autoUpgradeFired) return;
+		if (!user || loadingSub) return;
+		if (subscription?.tier === 'premium' && subscription?.status === 'active')
+			return;
+		setAutoUpgradeFired(true);
+		const next = new URLSearchParams(searchParams);
+		next.delete('upgrade');
+		setSearchParams(next, { replace: true });
+		void handleUpgrade(intendedTier);
+	}, [
+		intendedTier,
+		autoUpgradeFired,
+		user,
+		loadingSub,
+		subscription,
+		searchParams,
+		setSearchParams,
+		handleUpgrade,
+	]);
 
 	const handleExport = useCallback(async () => {
 		setActionPending('export');
@@ -266,19 +308,27 @@ export function AccountPage(): JSX.Element {
 								<button
 									type="button"
 									className={styles.primary}
-									onClick={handleUpgrade}
+									onClick={() =>
+										handleUpgrade(intendedTier ?? DEFAULT_UPGRADE_TIER)
+									}
 									disabled={actionPending === 'checkout'}
 								>
 									{actionPending === 'checkout'
 										? 'Redirecting…'
-										: 'Upgrade to Premium'}
+										: `Upgrade to ${
+												UPGRADE_TIER_LABELS[
+													intendedTier ?? DEFAULT_UPGRADE_TIER
+												]
+											}`}
 								</button>
 							)}
 							{status === 'canceled' && (
 								<button
 									type="button"
 									className={styles.primary}
-									onClick={handleUpgrade}
+									onClick={() =>
+										handleUpgrade(intendedTier ?? DEFAULT_UPGRADE_TIER)
+									}
 									disabled={actionPending === 'checkout'}
 								>
 									Resubscribe
