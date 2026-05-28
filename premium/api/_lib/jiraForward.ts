@@ -86,6 +86,18 @@ export function validateJiraBase(
 	if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
 		return { ok: false, reason: 'X-Jira-Base must be http(s).' };
 	}
+	// SSRF guard (ADA-296): only forward to Jira Cloud sites. An allowlist of the
+	// `.atlassian.net` suffix inherently rejects loopback, link-local, RFC-1918,
+	// the 169.254.x metadata endpoint, and look-alike hosts — none of which end
+	// in `.atlassian.net`. The URL parser lowercases the hostname and resolves
+	// any `user@host` userinfo, so `…@evil.com` is judged on its real host.
+	// Self-hosted Jira (a future per-user allowed-host hook) is out of scope.
+	if (!parsed.hostname.endsWith('.atlassian.net')) {
+		return {
+			ok: false,
+			reason: 'X-Jira-Base must be a Jira Cloud site (*.atlassian.net).',
+		};
+	}
 	return { ok: true, url: parsed };
 }
 
