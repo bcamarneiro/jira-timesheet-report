@@ -2,9 +2,9 @@ import { expect, test } from '@playwright/test';
 
 /**
  * Premium-tier smoke. Covers the paywall-adjacent surfaces a paying user
- * encounters before they actually hit Stripe:
- *   - Pricing page renders the name-your-price tiers and CTA gating.
- *   - Custom amount input enforces the €3 floor.
+ * encounters before they actually hit Polar:
+ *   - Pricing page renders the three fixed-price tiers (Free / Hosted / Lead).
+ *   - Each paid tier has a CTA pointing at /account?upgrade=<tier>.
  *   - /auth/sign-in renders form fields (only on premium builds; skipped otherwise).
  *
  * Runs against `npm run dev:offline` by default. For auth-route coverage,
@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test';
  */
 
 test.describe('Premium smoke', () => {
-	test('pricing surfaces name-your-price tiers and CTA gating', async ({
+	test('pricing shows three fixed-price tiers with checkout CTAs', async ({
 		page,
 	}) => {
 		await page.goto('/pricing');
@@ -20,26 +20,41 @@ test.describe('Premium smoke', () => {
 
 		await expect(page.getByRole('heading', { name: 'Pricing.' })).toBeVisible();
 
-		for (const label of ['€3', '€10', '€30']) {
+		// All three tier names visible.
+		for (const tier of ['Free', 'Hosted', 'Lead']) {
 			await expect(
-				page.getByRole('button', { name: new RegExp(`^${label}\\b`) }),
+				page.getByRole('heading', { level: 2, name: tier }),
 			).toBeVisible();
 		}
 
-		await expect(
-			page.getByRole('button', { name: 'Custom amount' }),
-		).toBeVisible();
+		// Headline prices visible (€0 / €29 / €60).
+		for (const price of ['€0', '€29', '€60']) {
+			await expect(
+				page.getByText(price, { exact: false }).first(),
+			).toBeVisible();
+		}
+
+		// Paid tiers route into the existing /account upgrade flow with a tier hint.
+		const hostedCta = page.getByRole('link', { name: /Get Hosted/ });
+		await expect(hostedCta).toBeVisible();
+		await expect(hostedCta).toHaveAttribute('href', '/account?upgrade=hosted');
+
+		const leadCta = page.getByRole('link', { name: /Get Lead/ });
+		await expect(leadCta).toBeVisible();
+		await expect(leadCta).toHaveAttribute('href', '/account?upgrade=lead');
 	});
 
-	test('custom amount below €3 floor blocks the CTA', async ({ page }) => {
+	test('pricing no longer surfaces name-your-price controls', async ({
+		page,
+	}) => {
 		await page.goto('/pricing');
 		await page.waitForLoadState('networkidle');
 
-		await page.getByRole('button', { name: 'Custom amount' }).click();
-		const customInput = page.getByLabel(/custom/i, { exact: false });
-		await customInput.fill('1');
-
-		await expect(page.getByRole('alert')).toBeVisible();
+		// Old NYP UI must be gone.
+		await expect(
+			page.getByRole('button', { name: 'Custom amount' }),
+		).toHaveCount(0);
+		await expect(page.getByText('Pick your annual price')).toHaveCount(0);
 	});
 
 	test('/auth/sign-in renders email + password fields', async ({ page }) => {
