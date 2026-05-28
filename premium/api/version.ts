@@ -26,6 +26,10 @@ const VERSION = '1.0.0';
 
 export default function handler(): Response {
 	const sha = process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev';
+	function safeHost(u: string | undefined): string | null {
+		if (!u) return null;
+		try { return new URL(u).hostname; } catch { return u; }
+	}
 	const body = {
 		version: VERSION,
 		sha,
@@ -33,6 +37,9 @@ export default function handler(): Response {
 		branch: process.env.VERCEL_GIT_COMMIT_REF ?? 'local',
 		env: process.env.VERCEL_ENV ?? 'development',
 		deployedAt: process.env.VERCEL_DEPLOYMENT_CREATED_AT ?? null,
+		// TEMP env-validation hints (revert before next release):
+		supabaseHost: safeHost(process.env.SUPABASE_URL),
+		polarHost: safeHost(process.env.POLAR_SERVER) ?? (process.env.POLAR_SERVER ?? null),
 	};
 	return new Response(JSON.stringify(body, null, 2), {
 		status: 200,
