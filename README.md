@@ -66,6 +66,25 @@ The repository uses a split license:
 
 The boundary is enforced in CI via `npm run check:premium-boundary`. If you only care about the open-source app, you can ignore `/premium` entirely.
 
+## Releases
+
+The repo uses two long-lived branches:
+
+- **`staging`** — default branch. PRs merge here. Auto-deploys to a Vercel preview at `jira-timesheet-report-git-staging-bruno-camarneiros-projects.vercel.app` (or a stable `staging.hoursmith.io` once the domain is wired). The `e2e-sandbox` workflow runs against this URL after merge.
+- **`main`** — production. Receives merges only from `staging`. Auto-deploys to `hoursmith.io`.
+
+### Cutting a release
+
+1. Make sure `staging` is green on `quality` and (once configured) `e2e-sandbox`.
+2. Bump the version: `npm version patch|minor|major` — updates `package.json` *and* `VERSION` in `premium/api/version.ts`. Commit on `staging`.
+3. Open a PR `staging → main`. Required checks re-run.
+4. Merge. Production redeploys.
+5. Tag the release: `gh release create v$(node -p "require('./package.json').version") --target main --generate-notes`.
+
+### Knowing what's running where
+
+`GET /api/version` returns the running version, git SHA, branch, and Vercel env. A tiny chip in the bottom-right of every page shows the same info — `v1.0.0 · abc1234 · prod` — so a customer's screenshot is matchable to an exact deploy.
+
 ## Contributing
 
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
