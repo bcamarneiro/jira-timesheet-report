@@ -15,10 +15,11 @@ name: e2e-sandbox
 #   POLAR_SANDBOX_PRODUCT_LEAD         sandbox product id for the Lead tier
 #   POLAR_SANDBOX_WEBHOOK_SECRET       sandbox webhook secret (Standard Webhooks)
 #   AGENTMAIL_API_KEY                  am_... for receiving the email-confirm
-#   SUPABASE_TEST_SERVICE_ROLE_KEY     service-role key for the *test* Supabase
-#                                      project (do NOT use the production one)
+#   SUPABASE_STAGING_SERVICE_ROLE_KEY  service-role key for the *staging* Supabase
+#                                      branch (project ref navbjcdtwywwgrgqkyob;
+#                                      separate DB from production)
 #   E2E_TARGET_URL                     where to point Playwright, e.g.
-#                                      https://hoursmith-staging.vercel.app
+#                                      https://staging.hoursmith.io
 #
 # Security: every value flowing into `run:` is passed via `env:` (never
 # interpolated directly into the shell), per the GitHub Actions injection
@@ -88,7 +89,7 @@ jobs:
           POLAR_SANDBOX_PRODUCT_HOSTED: ${{ secrets.POLAR_SANDBOX_PRODUCT_HOSTED }}
           POLAR_SANDBOX_PRODUCT_LEAD: ${{ secrets.POLAR_SANDBOX_PRODUCT_LEAD }}
           AGENTMAIL_API_KEY: ${{ secrets.AGENTMAIL_API_KEY }}
-          SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+          SUPABASE_STAGING_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_STAGING_SERVICE_ROLE_KEY }}
         run: |
           echo "TODO: invoke 'npx playwright test e2e/paywall-sandbox.spec.ts' once the spec lands (ADA-274)."
           exit 1
