@@ -1,11 +1,12 @@
 /**
  * Tests for the consolidated JWT verifier (ADA-343).
  *
- * Two layers:
- *  - orchestration: decode/expiry/fallback decisions, with injected
+ * Layers:
+ *  - orchestration: decode / expiry / claim / fallback decisions, with injected
  *    fetchJwks/restVerify so they're deterministic and network-free.
  *  - real crypto: an ES256 round-trip (generate key → sign → verify) exercising
  *    the actual WebCrypto import + verify path, plus tamper rejection.
+ *  - hardening: confirmWithServer, claim checks (exp/nbf/iss/aud), JWKS caching.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,6 +22,7 @@ const ENV = {
 	SUPABASE_URL: 'https://proj.supabase.co',
 	SUPABASE_SERVICE_ROLE_KEY: 'service-role',
 };
+const ISS = 'https://proj.supabase.co/auth/v1';
 
 function b64url(bytes: Uint8Array | string): string {
 	const arr =
@@ -59,7 +61,7 @@ describe('verifyJwt — orchestration', () => {
 		const restVerify = vi.fn(async () => null);
 		const token = makeUnsignedJwt(
 			{ alg: 'ES256', kid: 'k1' },
-			{ sub: 'u1', exp: Math.floor(Date.now() / 1000) - 10 },
+			{ sub: 'u1', exp: Math.floor(Date.now() / 1000) - 120 },
 		);
 		expect(await verifyJwt(token, { env: ENV, restVerify })).toBeNull();
 		expect(restVerify).not.toHaveBeenCalled();
@@ -97,6 +99,115 @@ describe('verifyJwt — orchestration', () => {
 	});
 });
 
+describe('verifyJwt — confirmWithServer (sensitive endpoints)', () => {
+	it('always uses REST and never touches the local JWKS path', async () => {
+		const restVerify = vi.fn(async () => ({ userId: 'srv', email: null }));
+		const fetchJwks = vi.fn(async (): Promise<Jwk[]> => []);
+		// A token that WOULD verify locally still goes to the server.
+		const token = makeUnsignedJwt(
+			{ alg: 'ES256', kid: 'k1' },
+			{ sub: 'local', exp: FUTURE },
+		);
+		const out = await verifyJwt(token, {
+			env: ENV,
+			confirmWithServer: true,
+			restVerify,
+			fetchJwks,
+		});
+		expect(out).toEqual({ userId: 'srv', email: null });
+		expect(restVerify).toHaveBeenCalledOnce();
+		expect(fetchJwks).not.toHaveBeenCalled();
+	});
+
+	it('rejects when the server rejects (e.g. deleted/revoked user)', async () => {
+		const restVerify = vi.fn(async () => null);
+		const token = makeUnsignedJwt(
+			{ alg: 'ES256', kid: 'k1' },
+			{ sub: 'gone', exp: FUTURE },
+		);
+		const out = await verifyJwt(token, {
+			env: ENV,
+			confirmWithServer: true,
+			restVerify,
+		});
+		expect(out).toBeNull();
+		expect(restVerify).toHaveBeenCalledOnce();
+	});
+});
+
+describe('verifyJwt — local claim checks', () => {
+	// These tokens reach the local path (ES256 + kid + url) and are rejected on
+	// claims BEFORE signature work, so they need no valid signature and must not
+	// fall back to REST.
+	function localToken(payload: Record<string, unknown>): string {
+		return makeUnsignedJwt({ alg: 'ES256', kid: 'k1' }, payload);
+	}
+
+	it('rejects a token with no exp (no unbounded local accepts)', async () => {
+		const restVerify = vi.fn(async () => null);
+		const fetchJwks = vi.fn(async (): Promise<Jwk[]> => []);
+		const out = await verifyJwt(localToken({ sub: 'u1' }), {
+			env: ENV,
+			restVerify,
+			fetchJwks,
+		});
+		expect(out).toBeNull();
+		expect(restVerify).not.toHaveBeenCalled();
+		expect(fetchJwks).not.toHaveBeenCalled();
+	});
+
+	it('rejects a token whose nbf is in the future', async () => {
+		const restVerify = vi.fn(async () => null);
+		const out = await verifyJwt(
+			localToken({ sub: 'u1', exp: FUTURE, nbf: FUTURE }),
+			{ env: ENV, restVerify },
+		);
+		expect(out).toBeNull();
+		expect(restVerify).not.toHaveBeenCalled();
+	});
+
+	it('rejects a token whose iss is a different project', async () => {
+		const restVerify = vi.fn(async () => null);
+		const out = await verifyJwt(
+			localToken({
+				sub: 'u1',
+				exp: FUTURE,
+				iss: 'https://evil.supabase.co/auth/v1',
+			}),
+			{ env: ENV, restVerify },
+		);
+		expect(out).toBeNull();
+		expect(restVerify).not.toHaveBeenCalled();
+	});
+
+	it('rejects a token whose aud is not "authenticated"', async () => {
+		const restVerify = vi.fn(async () => null);
+		const out = await verifyJwt(
+			localToken({ sub: 'u1', exp: FUTURE, aud: 'anon' }),
+			{ env: ENV, restVerify },
+		);
+		expect(out).toBeNull();
+		expect(restVerify).not.toHaveBeenCalled();
+	});
+});
+
+describe('verifyJwt — JWKS caching (amplification guard)', () => {
+	it('fetches the JWKS at most once within the TTL across requests', async () => {
+		const restVerify = vi.fn(async () => null);
+		const fetchJwks = vi.fn(async (): Promise<Jwk[]> => [{ kid: 'real' }]);
+		const now = Date.now();
+		// Two requests with an unknown kid, same window → one fetch total.
+		const tok = makeUnsignedJwt(
+			{ alg: 'ES256', kid: 'unknown' },
+			{ sub: 'u1', exp: FUTURE },
+		);
+		await verifyJwt(tok, { env: ENV, restVerify, fetchJwks, nowMs: now });
+		await verifyJwt(tok, { env: ENV, restVerify, fetchJwks, nowMs: now });
+		expect(fetchJwks).toHaveBeenCalledOnce();
+		expect(restVerify).toHaveBeenCalledTimes(2);
+	});
+});
+
 describe('verifyJwt — real ES256 crypto', () => {
 	async function setup() {
 		const pair = (await crypto.subtle.generateKey(
@@ -130,7 +241,13 @@ describe('verifyJwt — real ES256 crypto', () => {
 
 	it('accepts a validly-signed token locally (no REST hop)', async () => {
 		const { sign, fetchJwks, restVerify } = await setup();
-		const token = await sign({ sub: 'user-9', email: 'x@y.com', exp: FUTURE });
+		const token = await sign({
+			sub: 'user-9',
+			email: 'x@y.com',
+			exp: FUTURE,
+			iss: ISS,
+			aud: 'authenticated',
+		});
 		const out = await verifyJwt(token, { env: ENV, fetchJwks, restVerify });
 		expect(out).toEqual({ userId: 'user-9', email: 'x@y.com' });
 		expect(restVerify).not.toHaveBeenCalled();

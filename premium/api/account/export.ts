@@ -65,7 +65,11 @@ export async function handleExport(
 		});
 	}
 
-	const verifyJwt = deps.verifyJwt ?? userIdFromToken;
+	// GDPR data export discloses personal data — require the live server check so
+	// a deleted/revoked user can't export with a still-unexpired token (ADA-343).
+	const verifyJwt =
+		deps.verifyJwt ??
+		((t: string) => userIdFromToken(t, { confirmWithServer: true }));
 	const userId = await verifyJwt(token);
 	if (!userId) {
 		logEvent({ event: 'data_export', status: 401, note: 'invalid_token' });

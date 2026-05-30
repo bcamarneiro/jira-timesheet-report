@@ -8,19 +8,34 @@
  * signature verification** (no network) and falls back to the REST check only
  * when it genuinely can't decide locally.
  *
- * Verification strategy:
+ * Two trust modes (the caller chooses):
+ *   - LOCAL-FIRST (default) — for the hot proxy path. Verify signature + claims
+ *     locally; only hit GoTrue when we can't decide locally. Fast, but it does
+ *     NOT see server-side revocation: a correctly-signed, unexpired token from a
+ *     since-deleted/banned user is accepted until `exp`. Acceptable on the proxy
+ *     (it only forwards the user's own Jira creds for that window).
+ *   - `confirmWithServer: true` — for low-traffic, sensitive endpoints (account
+ *     delete/export, checkout/portal). Always does the live `GET /auth/v1/user`
+ *     check, so a deleted user / revoked session is rejected immediately. This
+ *     restores the pre-consolidation guarantee on the paths that need it
+ *     (notably the GDPR delete/export endpoints and ADA-313 session revocation).
+ *
+ * Local verification strategy:
  *   1. Decode the JWT. Malformed → REST fallback (can't judge locally).
- *   2. Expired (`exp` in the past) → reject. Definitive; no wasted REST call.
- *   3. Symmetric/unknown alg (legacy HS256) → REST fallback (we don't hold the
- *      shared secret here, so we can't verify locally).
- *   4. Asymmetric (ES256/RS256): fetch the project JWKS (cached by `kid`), import
- *      the matching key, verify the signature.
+ *   2. Expired (`exp` in the past, minus skew) → reject. Definitive.
+ *   3. Symmetric/unknown alg (legacy HS256), no `kid`, or no URL → REST fallback
+ *      (we can't verify the signature locally).
+ *   4. Claim checks the old GoTrue path enforced: `exp` REQUIRED, `nbf` honored,
+ *      `iss` pinned to the project, `aud` must include `authenticated`. A token
+ *      failing these is rejected outright — never given a second chance via REST.
+ *   5. Asymmetric (ES256/RS256): resolve the JWKS key by `kid` (key set cached
+ *      with a short TTL so a burst of unknown-`kid` tokens can't trigger a fetch
+ *      per request), import it, verify the signature.
  *        - matching key + valid signature → accept.
- *        - matching key + invalid signature → reject (a genuine forgery; never
- *          fall back, or REST would rubber-stamp the forged claims).
- *        - no matching `kid` even after a cache-busting refetch → REST fallback
- *          (this is the key-rotation window — fail safe, not closed).
- *   5. Any unexpected error in the local path → REST fallback.
+ *        - matching key + invalid signature → reject (forgery; never fall back,
+ *          or REST would rubber-stamp the forged claims).
+ *        - no matching `kid` → REST fallback (key-rotation window — fail safe).
+ *   6. Any unexpected error in the local path → REST fallback.
  *
  * Edge-runtime compatible: WebCrypto + `fetch` only, no Node-only deps and no
  * `jose` dependency (mirrors the WebCrypto HMAC verify already in polarClient).
@@ -29,6 +44,15 @@
  */
 
 type Env = Partial<Record<string, string | undefined>>;
+
+/** Tolerance for clock drift between the edge node and the auth server. */
+const CLOCK_SKEW_MS = 60 * 1000;
+
+/** TTL for the cached JWKS key set (caps JWKS fetches under unknown-kid bursts). */
+const JWKS_TTL_MS = 5 * 60 * 1000;
+
+/** The audience Supabase user (access) tokens carry. */
+const EXPECTED_AUDIENCE = 'authenticated';
 
 export interface VerifiedToken {
 	userId: string;
@@ -44,6 +68,9 @@ interface JwtPayload {
 	sub?: string;
 	email?: string;
 	exp?: number;
+	nbf?: number;
+	iss?: string;
+	aud?: string | string[];
 }
 
 interface DecodedJwt {
@@ -51,6 +78,12 @@ interface DecodedJwt {
 	payload: JwtPayload;
 	signingInput: string;
 	signature: Uint8Array;
+}
+
+/** WebCrypto import + verify parameters for a supported asymmetric alg. */
+interface AlgParams {
+	importAlg: EcKeyImportParams | RsaHashedImportParams;
+	verifyAlg: AlgorithmIdentifier | EcdsaParams;
 }
 
 /** Minimal JWK shape we consume from the Supabase JWKS endpoint. */
@@ -66,6 +99,12 @@ export interface VerifyJwtOptions {
 	env?: Env;
 	/** Override "now" in ms (tests). Defaults to `Date.now()`. */
 	nowMs?: number;
+	/**
+	 * Force a live GoTrue (`GET /auth/v1/user`) check instead of local-only
+	 * verification. Sensitive, low-traffic endpoints set this so a deleted user
+	 * or revoked session is rejected, not just an expired token.
+	 */
+	confirmWithServer?: boolean;
 	/** Inject the JWKS fetcher (tests). Returns the key set, or null on failure. */
 	fetchJwks?: (jwksUrl: string) => Promise<Jwk[] | null>;
 	/** Inject the REST fallback verifier (tests). */
@@ -74,10 +113,16 @@ export interface VerifyJwtOptions {
 
 // Imported public keys, cached by `kid` across invocations of a warm instance.
 const keyCache = new Map<string, CryptoKey>();
+// The JWKS key set, cached with a short TTL. Without this, a burst of tokens
+// each bearing an unrecognized `kid` would trigger one JWKS fetch per request
+// (amplification). The TTL caps fetches to one per window; positive lookups are
+// additionally memoized in `keyCache`.
+let jwksCache: { keys: Jwk[]; fetchedAt: number } | null = null;
 
-/** Test hook: clear the module-level JWKS key cache between cases. */
+/** Test hook: clear the module-level caches between cases. */
 export function __resetAuthCache(): void {
 	keyCache.clear();
+	jwksCache = null;
 }
 
 function base64UrlToBytes(input: string): Uint8Array {
@@ -110,15 +155,47 @@ function decodeJwt(token: string): DecodedJwt | null {
 	}
 }
 
+/** Expired iff `exp` is present and in the past (with skew). */
 function isExpired(payload: JwtPayload, nowMs: number): boolean {
-	return typeof payload.exp === 'number' && payload.exp * 1000 <= nowMs;
+	return (
+		typeof payload.exp === 'number' &&
+		payload.exp * 1000 <= nowMs - CLOCK_SKEW_MS
+	);
+}
+
+function audienceMatches(aud: JwtPayload['aud']): boolean {
+	if (aud === undefined) return true; // tolerate absent; reject only a mismatch
+	return Array.isArray(aud)
+		? aud.includes(EXPECTED_AUDIENCE)
+		: aud === EXPECTED_AUDIENCE;
+}
+
+/**
+ * Claim checks the old GoTrue REST path enforced server-side, now enforced
+ * locally for the asymmetric path. `exp` is REQUIRED here (a server-less accept
+ * must be time-bounded); `nbf`/`iss`/`aud` are validated when present so a token
+ * for a different project (iss) or audience is rejected. Returns false → reject.
+ */
+function localClaimsValid(
+	payload: JwtPayload,
+	nowMs: number,
+	expectedIss: string,
+): boolean {
+	if (typeof payload.exp !== 'number') return false; // no unbounded local accepts
+	if (payload.exp * 1000 <= nowMs - CLOCK_SKEW_MS) return false;
+	if (
+		typeof payload.nbf === 'number' &&
+		payload.nbf * 1000 > nowMs + CLOCK_SKEW_MS
+	) {
+		return false;
+	}
+	if (payload.iss && payload.iss !== expectedIss) return false;
+	if (!audienceMatches(payload.aud)) return false;
+	return true;
 }
 
 /** Map a JWT `alg` to the WebCrypto import + verify parameters, or null. */
-function algParams(alg: string | undefined): {
-	importAlg: EcKeyImportParams | RsaHashedImportParams;
-	verifyAlg: AlgorithmIdentifier | EcdsaParams;
-} | null {
+function algParams(alg: string | undefined): AlgParams | null {
 	if (alg === 'ES256') {
 		return {
 			importAlg: { name: 'ECDSA', namedCurve: 'P-256' },
@@ -166,24 +243,41 @@ async function defaultRestVerify(
 }
 
 /**
- * Resolve the CryptoKey for a `kid`, importing from JWKS on a cache miss. A
- * cache miss triggers a single fresh JWKS fetch (covers key rotation). Returns
- * null if the key can't be found/imported — the caller treats that as
- * "inconclusive" and falls back to REST.
+ * Return the JWKS key set, fetching at most once per {@link JWKS_TTL_MS} window.
+ * On a fetch failure, serves a stale cached set if one exists (fail safe).
+ */
+async function getJwks(
+	jwksUrl: string,
+	fetchJwks: (u: string) => Promise<Jwk[] | null>,
+	nowMs: number,
+): Promise<Jwk[] | null> {
+	if (jwksCache && nowMs - jwksCache.fetchedAt < JWKS_TTL_MS) {
+		return jwksCache.keys;
+	}
+	const keys = await fetchJwks(jwksUrl);
+	if (keys) {
+		jwksCache = { keys, fetchedAt: nowMs };
+		return keys;
+	}
+	return jwksCache?.keys ?? null;
+}
+
+/**
+ * Resolve the CryptoKey for a `kid`, importing from the (TTL-cached) JWKS on a
+ * cache miss. Returns null if the key can't be found/imported — the caller
+ * treats that as "inconclusive" and falls back to REST.
  */
 async function resolveKey(
 	kid: string,
-	alg: string,
+	params: AlgParams,
 	jwksUrl: string,
 	fetchJwks: (u: string) => Promise<Jwk[] | null>,
+	nowMs: number,
 ): Promise<CryptoKey | null> {
 	const cached = keyCache.get(kid);
 	if (cached) return cached;
 
-	const params = algParams(alg);
-	if (!params) return null;
-
-	const keys = await fetchJwks(jwksUrl);
+	const keys = await getJwks(jwksUrl, fetchJwks, nowMs);
 	if (!keys) return null;
 
 	const jwk = keys.find((k) => k.kid === kid);
@@ -221,7 +315,11 @@ export async function verifyJwt(
 	// Not a well-formed JWT — let REST be the judge (it may be an opaque token).
 	if (!decoded) return restVerify(token, env);
 
-	// Expired is definitive; don't spend a REST round-trip on it.
+	// Sensitive callers require a live server check (existence + revocation),
+	// not just a local signature. Restores the pre-ADA-343 guarantee.
+	if (options.confirmWithServer) return restVerify(token, env);
+
+	// Expired is definitive for any alg; don't spend a REST round-trip on it.
 	if (isExpired(decoded.payload, nowMs)) return null;
 
 	const params = algParams(decoded.header.alg);
@@ -231,13 +329,22 @@ export async function verifyJwt(
 		return restVerify(token, env);
 	}
 
+	const base = url.replace(/\/+$/, '');
+
+	// Standards claims the old GoTrue check enforced. A token that fails these is
+	// rejected outright — it must not get a second chance via the REST fallback.
+	if (!localClaimsValid(decoded.payload, nowMs, `${base}/auth/v1`)) {
+		return null;
+	}
+
 	try {
-		const jwksUrl = `${url.replace(/\/+$/, '')}/auth/v1/.well-known/jwks.json`;
+		const jwksUrl = `${base}/auth/v1/.well-known/jwks.json`;
 		const key = await resolveKey(
 			decoded.header.kid,
-			decoded.header.alg as string,
+			params,
 			jwksUrl,
 			fetchJwks,
+			nowMs,
 		);
 		// Unknown kid even after a fresh fetch → rotation window → REST fallback.
 		if (!key) return restVerify(token, env);

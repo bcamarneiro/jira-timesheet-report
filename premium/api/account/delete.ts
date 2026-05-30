@@ -75,7 +75,11 @@ export async function handleDelete(
 		});
 	}
 
-	const verifyJwt = deps.verifyJwt ?? userIdFromToken;
+	// GDPR erasure is irreversible and must reject a deleted/revoked user, not
+	// just an expired token — force the live server check (ADA-343 / ADA-313).
+	const verifyJwt =
+		deps.verifyJwt ??
+		((t: string) => userIdFromToken(t, { confirmWithServer: true }));
 	const userId = await verifyJwt(token);
 	if (!userId) {
 		logEvent({ event: 'account_delete', status: 401, note: 'invalid_token' });

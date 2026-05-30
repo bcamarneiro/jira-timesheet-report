@@ -175,8 +175,13 @@ class FetchSupabaseAdminClient implements SupabaseAdminClient {
 	}
 
 	async getUserIdFromToken(token: string): Promise<string | null> {
-		// Consolidated verify (ADA-343): local JWKS check + REST fallback.
+		// Consolidated verify (ADA-343). This client backs the low-traffic,
+		// sensitive flows (checkout, billing portal, account subscription), so we
+		// require a live GoTrue check (`confirmWithServer`): a deleted user or
+		// revoked session must be rejected here, not accepted until token expiry.
+		// The hot proxy path uses entitlement.ts's local-first client instead.
 		return userIdFromToken(token, {
+			confirmWithServer: true,
 			env: {
 				SUPABASE_URL: this.url,
 				SUPABASE_SERVICE_ROLE_KEY: this.serviceRoleKey,
