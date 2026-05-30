@@ -7,8 +7,10 @@
  *
  * NEVER expose the service-role key to the browser.
  *
- * Linear: ADA-263, ADA-264.
+ * Linear: ADA-263, ADA-264, ADA-343 (JWT verify via _lib/auth.ts).
  */
+
+import { userIdFromToken } from './auth.js';
 
 export interface ProfileRow {
 	id: string;
@@ -173,15 +175,13 @@ class FetchSupabaseAdminClient implements SupabaseAdminClient {
 	}
 
 	async getUserIdFromToken(token: string): Promise<string | null> {
-		const res = await fetch(`${this.url}/auth/v1/user`, {
-			headers: {
-				apikey: this.serviceRoleKey,
-				authorization: `Bearer ${token}`,
+		// Consolidated verify (ADA-343): local JWKS check + REST fallback.
+		return userIdFromToken(token, {
+			env: {
+				SUPABASE_URL: this.url,
+				SUPABASE_SERVICE_ROLE_KEY: this.serviceRoleKey,
 			},
 		});
-		if (!res.ok) return null;
-		const body = (await res.json()) as { id?: string };
-		return body.id ?? null;
 	}
 
 	async insertIncompleteSubscription(input: {
